@@ -49,6 +49,8 @@ tbody tr[data-i]{cursor:pointer}h3{font-size:14px;margin:14px 0 0}.bar{display:f
 .chips button[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:#fff}
 .dts{display:grid;grid-template-columns:1fr 1fr;gap:10px}.dts label{margin-top:4px}
 .cvl{position:relative;height:300px}
+.hm td,.hm th{padding:6px 4px;text-align:center;font-size:12px;white-space:nowrap}.hm td:first-child,.hm th:first-child{text-align:left;font-weight:600}
+.gj{height:14px;border-radius:99px;background:var(--line);overflow:hidden;margin:8px 0}.gj i{display:block;height:100%;background:var(--acc)}
 </style>
 </head>
 <body>
@@ -79,7 +81,7 @@ tbody tr[data-i]{cursor:pointer}h3{font-size:14px;margin:14px 0 0}.bar{display:f
     <h3>Données</h3>
     <label for="csv">Importer un export CSV</label>
     <input type="file" id="csv" accept=".csv,text/csv">
-    <div class="bar"><button type="button" id="exp">Exporter en CSV</button></div>
+    <div class="bar"><button type="button" id="exp">CSV</button><button type="button" id="expx">XML</button><button type="button" id="expp">PDF</button></div>
     <p class="hint">Sans connexion, les données restent dans ce navigateur.</p>
     <h3>Cours en direct</h3>
     <label for="url">Adresse du script Google</label>
@@ -332,8 +334,245 @@ function drawPerf(v){
     scales:{y:{grid:{color:css('--line')},ticks:{callback:x=>eur?nf(0).format(x)+' €':nf(0).format(x)+' %'}},x:{grid:{display:false},ticks:{maxTicksLimit:6,maxRotation:0}}}}});
   setTimeout(ensureHist,0)}
 
+/* ---------- Analyse ---------- */
+S.goal=Object.assign({obj:0,to:'',mens:0,r:5},LS.g('goal')||{});
+const MN=['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'],mkey=(y,m)=>{const d=new Date(y,m,1);return d.getFullYear()+'-'+pad(d.getMonth()+1)};
+function hgrid(rows,f,sc,ft){
+  const bg=v=>v?`background:color-mix(in srgb,var(${v>0?'--up':'--dn'}) ${Math.min(60,Math.round(Math.abs(v)*sc))}%,transparent)`:'';
+  return`<div class="tw"><table class="hm"><thead><tr><th></th>${MN.map(m=>`<th>${m}</th>`).join('')}${ft?'<th>Année</th>':''}</tr></thead><tbody>${rows.map(r=>`<tr><td>${r.y}</td>${r.m.map((v,i)=>`<td style="${bg(v)}" title="${r.tt&&r.tt[i]||''}">${v==null?'':f(v)}</td>`).join('')}${ft?`<td style="${bg(r.t)}"><b>${r.t==null?'':ft(r.t)}</b></td>`:''}</tr>`).join('')}</tbody></table></div>`}
+
+/* ---------- Configuration partagée avec le Streamlit (clé « config » de Supabase) ---------- */
+S.cfg=LS.g('cfg')||{};S.cfgOk=false;S.cfgTry=false;S.sim={};S.wlsrc='wl';S.wlmsg='';S.fmsg='';S.wlbusy=false;S.fbusy=false;S.wlAt=0;S.wlKey='';
+S.wl={px:{},h:LS.g('wlh')||{},f:LS.g('wlf')||{}};
+const cg=(k,d)=>S.cfg[k]!==undefined&&S.cfg[k]!==null?S.cfg[k]:d,n2=v=>parseFloat(String(v).replace(',','.'))||0,PL=150000;
+const cfgGet=async()=>raw(`/rest/v1/app_storage?select=value&key=eq.config&user_id=eq.${SB.s.uid}`,{},await ensure());
+async function cfgLoad(){if(!connected()||S.cfgOk||S.cfgTry)return;S.cfgTry=true;
+  try{const j=await cfgGet();if(j.length&&j[0].value&&typeof j[0].value=='object')S.cfg=j[0].value;S.cfgOk=true;LS.s('cfg',S.cfg);draw()}
+  catch(e){st('Configuration indisponible : '+e.message)}}
+async function cfgSave(patch){
+  if(!connected()){S.cfg={...S.cfg,...patch};LS.s('cfg',S.cfg);return}
+  try{const j=await cfgGet(),m={...((j.length&&j[0].value)||{}),...patch};
+    await raw('/rest/v1/app_storage?on_conflict=user_id,key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({user_id:SB.s.uid,key:'config',value:m})},await ensure());
+    S.cfg=m;S.cfgOk=true;LS.s('cfg',m);st('Configuration enregistrée ✓')}
+  catch(e){st('Échec de l’enregistrement de la configuration : '+e.message)}}
+
+/* ---------- Simulateurs (même calculs que le Streamlit) ---------- */
+function simBase(){const first=S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d),ans=Math.max((Date.now()-first)/(365.25*864e5),0),
+  tot=R.pos.reduce((a,p)=>a+p.tot,0),pg=R.apports>0?tot/R.apports*100:0,
+  pa=ans>=.25&&1+pg/100>0?Math.pow(1+pg/100,1/ans)-1:0,moy=(ans>=.08?R.apports/ans:R.apports)/12;
+  return{ans,pa,moy}}
+function drawSim(v){
+  if(!S.cfgOk)setTimeout(cfgLoad,0);
+  const B=simBase(),g=(k,d)=>S.sim[k]!==undefined?S.sim[k]:d,
+    pf0=g('pf0',Math.round(R.total)),am=g('ap',cg('apport_mensuel_projection',Math.max(0,Math.round(B.moy/10)*10))),n=Math.max(1,Math.min(50,Math.round(g('n',cg('horizon_projection_annees',10))))),
+    pa=g('pa',cg('perf_annuelle_projection',B.pa>0?Math.round(B.pa*10000)/100:7)),imp=g('imp',cg('taux_prelevements_sociaux',18.6)),inf=g('inf',2),ret=g('ret',4);
+  const inv=am*12,r=pa/100,f=1+inf/100,vals=[pf0],ver=[Math.min(Math.max(R.apports,0),pf0)];let ap=R.apports;
+  for(let k=1;k<=n;k++){const a=Math.min(inv,Math.max(PL-ap,0));vals.push(la(vals)*(1+r)+a);ap+=a;ver.push(la(ver)+a)}
+  const reel=vals.map((x,k)=>x/Math.pow(f,k)),vb=la(vals),vr=la(reel),ti=imp+(B.ans+n>=5?0:12.8),vn=vb-Math.max(vb-la(ver),0)*ti/100,
+    rb=vr*ret/100/12,rn=(vn/Math.pow(f,n))*ret/100/12,apF=Math.min(ap,PL),rest=PL-R.apports,
+    dpl=rest<=0?'Déjà atteint':inv>0?new Date(Date.now()+rest/inv*365.25*864e5).toLocaleDateString('fr-FR'):'Jamais (aucun apport prévu)',
+    pc=Math.min(100,Math.max(0,apF/PL*100)),y0=new Date().getFullYear(),
+    lab=vals.map((_,k)=>k?`${k} an${k<2?'':'s'} (${y0+k})`:`Aujourd’hui (${y0})`),ir=reel.map((x,k)=>Math.max(x-ver[k],0));
+  const inp=(k,l,val,step)=>`<div><label>${l}</label><input type="number" inputmode="decimal" step="${step}" data-sim="${k}" value="${val}"></div>`;
+  const mt=g('mt',0),ps=g('ps',cg('taux_prelevements_sociaux',18.6)),a5=g('a5',true);
+  const rpv=R.total>0?Math.max(0,(R.total-R.apports)/R.total):0,pv=mt*rpv,cap=mt-pv,tps=pv*ps/100,tir=a5?0:pv*.128,tax=tps+tir,net=mt-tax;
+  v.innerHTML=`<section><h2>Simulateur d’épargne et de revenu passif</h2>
+    <div class="dts">${inp('pf0','Portefeuille actuel (€)',pf0,1000)}${inp('ap','Apport prévu par mois (€)',am,10)}${inp('n','Nombre d’années',n,1)}${inp('pa','Performance annuelle (%)',pa,.5)}
+    ${inp('imp','Imposition des gains (%)',imp,.1)}${inp('inf','Inflation (%)',inf,.1)}${inp('ret','Taux de retrait (%)',ret,.25)}</div>
+    <p class="hint">Apports moyens depuis l’ouverture : ${fE(B.moy)} / mois. Performance moyenne : ${fP(B.pa*100)} / an${B.ans<1?' (historique court, peu fiable)':''}.</p>
+    <div class="grid" style="margin-top:10px">${kpi('Valorisation (€ d’aujourd’hui)',fE(vr))}${kpi('Revenu passif / mois',fE(rb),'avant impôts')}${kpi('Revenu passif net / mois',fE(rn),'après impôts')}
+    ${kpi('Versements cumulés',fE(la(ver)))}${kpi('Intérêts',fE(Math.max(vr-la(ver),0)))}</div>
+    <div class="cvl" style="margin-top:14px"><canvas id="c7"></canvas></div>
+    <h2 style="margin-top:16px">Plafond de versements</h2><div class="gj"><i style="width:${pc}%"></i></div>
+    <p class="hint" style="margin:0">${fE(apF,0)} / ${fE(PL,0)}. Date de plafonnement selon les valeurs saisies : ${dpl}.</p></section>
+    <section><h2>Simulateur de retrait</h2><div class="dts">${inp('mt','Montant souhaité (€)',mt||'',500)}${inp('ps','Prélèvements sociaux (%)',ps,.1)}</div>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" data-sim="a5" ${a5?'checked':''} style="width:auto"> Le PEA a plus de 5 ans</label>
+    ${a5?'':'<p class="hint">Avant 5 ans, un retrait clôture le PEA : seule la part de gain du montant retiré est calculée ici.</p>'}
+    ${mt>0?`<div class="grid" style="margin-top:12px">${kpi('Montant net perçu',fE(net),nf(1).format(net/mt*100)+' % conservés')}${kpi('Total fiscalité',fE(tax))}${kpi('Dont capital',fE(cap),nf(2).format(cap/mt*100)+' %')}${kpi('Dont plus-value',fE(pv),nf(2).format(pv/mt*100)+' %')}${kpi('Prélèvements sociaux ('+nf(1).format(ps)+' %)',fE(tps))}${a5?'':kpi('Impôt sur le revenu (12,8 %)',fE(tir))}</div>`:'<p class="hint">Saisis un montant de retrait pour voir la simulation.</p>'}</section>`;
+  chart('c7',{type:'line',data:{labels:lab,datasets:[{label:'Versements',data:ver,borderColor:'#6366f1',backgroundColor:'#6366f14d',fill:true,pointRadius:0,borderWidth:1.5},
+    {label:'Intérêts',data:ir,borderColor:'#10b981',backgroundColor:'#10b9814d',fill:true,pointRadius:0,borderWidth:2}]},
+    options:{maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},plugins:{legend:{labels:{boxWidth:12}},tooltip:{callbacks:{label:c=>` ${c.dataset.label} : ${fE(c.parsed.y,0)}`}}},
+    scales:{y:{stacked:true,grid:{color:css('--line')},ticks:{callback:x=>nf(0).format(x)+' €'}},x:{grid:{display:false},ticks:{maxTicksLimit:4,maxRotation:0}}}}})}
+
+/* ---------- Watchlist, fondamentaux et analystes ---------- */
+async function wlFetch(force){const W=S.cfg.watchlist||[];if(!S.url||!W.length||S.wlbusy)return;
+  const tks=[...new Set(W.map(i=>i.ticker))].sort(),key=tks.join(',');
+  if(!force&&S.wlKey==key&&Date.now()-S.wlAt<3e5)return;
+  S.wlbusy=true;S.wlKey=key;S.wlAt=Date.now();S.wlmsg='';
+  try{const b=S.url+(S.url.includes('?')?'&':'?');
+    S.wl.px=await(await fetch(b+'t='+encodeURIComponent(key))).json();
+    if(S.wl.h._k!=key||Date.now()-(S.wl.h._at||0)>216e5){const h=await(await fetch(b+'h='+encodeURIComponent(key)+'&from='+dstr(new Date(Date.now()-400*864e5)))).json(),o={};
+      for(const k in h)if(h[k]&&Array.isArray(h[k].d))o[k]=h[k];o._k=key;o._at=Date.now();S.wl.h=o;LS.s('wlh',o)}}
+  catch(e){S.wlmsg='Cours indisponibles (script Google injoignable).'}
+  S.wlbusy=false;draw()}
+function wlVar(tk){const o={},h=S.wl.h[tk],pr=S.wl.px[tk]&&S.wl.px[tk].p;if(!h||!h.d||!h.d.length)return o;
+  const at=(ds,strict)=>{let j=-1;for(let i=0;i<h.d.length;i++)if(strict?h.d[i]<ds:h.d[i]<=ds)j=i;return j},td=dstr(new Date()),jd=at(td,true),dc=jd>=0?h.c[jd]:la(h.c);
+  if(pr!=null&&dc)o.jour=[pr-dc,(pr-dc)/dc*100];
+  const ref=pr!=null?pr:la(h.c);
+  [['sem',7],['m30',30],['m6',182],['a1',365]].forEach(([k,n])=>{const j=at(dstr(new Date(Date.now()-n*864e5)));if(j>=0&&h.c[j])o[k]=[ref-h.c[j],(ref-h.c[j])/h.c[j]*100]});return o}
+async function fundFetch(tks){if(!S.url||S.fbusy)return;S.fbusy=true;S.fmsg='Chargement des fondamentaux…';draw();
+  try{const j=await(await fetch(S.url+(S.url.includes('?')?'&':'?')+'f='+encodeURIComponent(tks.join(',')))).json();let n=0;
+    for(const k in j)if(j[k]&&typeof j[k]=='object'&&!j[k].error){j[k]._at=Date.now();S.wl.f[k]=j[k];n++}
+    LS.s('wlf',S.wl.f);S.fmsg=n?'':'Aucune donnée : colle la nouvelle version du script Google (script_google.gs) puis redéploie-la.'}
+  catch(e){S.fmsg='Fondamentaux indisponibles (script Google injoignable ou ancienne version).'}
+  S.fbusy=false;draw()}
+const RK={strong_buy:'Achat fort',buy:'Achat',hold:'Conserver',underperform:'Sous-performance',sell:'Vendre',strong_sell:'Vente forte'};
+function drawWl(v){
+  if(!S.cfgOk)setTimeout(cfgLoad,0);
+  const W=S.cfg.watchlist||[],vc=a=>a?`<span class="${cl(a[1])}">${ar(a[1])} ${fS(a[0])} (${fP(a[1])})</span>`:'–',SEUIL=3;
+  const rows=W.map((it,i)=>{const pr=S.wl.px[it.ticker]&&S.wl.px[it.ticker].p,z=it.zone_achat,va=wlVar(it.ticker);
+    let ec=null,stt='Zone non définie',ic='➖';
+    if(pr!=null&&z){ec=(pr-z)/z*100;if(ec<=0){stt='Dans la zone d’achat';ic='🟢'}else if(ec<=SEUIL){stt='Proche de la zone';ic='🟡'}else{stt='Au-dessus de la zone';ic='⚪'}}
+    else if(z){stt='Prix indisponible'}
+    return{wi:i,nom:it.nom,tk:it.ticker,pr,z,ec,stt:`${ic} ${stt}`,va}}).sort((a,b)=>(a.ec==null)-(b.ec==null)||(a.ec||0)-(b.ec||0)||(a.nom>b.nom?1:-1));
+  const tbl=rows.length?table([{k:'nom',h:'Nom',f:x=>x},{k:'pr',h:'Prix actuel',f:(x,r)=>x==null?'–':fE(x)+(r.va.jour?` <span class="${cl(r.va.jour[1])}">(${fP(r.va.jour[1])})</span>`:'')},
+    {k:'z',h:'Zone d’achat',f:x=>x?fE(x):'Non définie'},{k:'ec',h:'Écart',f:x=>x==null?'–':(x>=0?'+':'')+nf(1).format(x)+' %'},{k:'stt',h:'Statut',f:x=>x},
+    {k:'va',h:'7 j',f:x=>vc(x.sem)},{k:'va',h:'30 j',f:x=>vc(x.m30)},{k:'va',h:'6 mois',f:x=>vc(x.m6)},{k:'va',h:'12 mois',f:x=>vc(x.a1)},
+    {k:'wi',h:'',f:x=>`<button data-wled="${x}" title="Modifier la zone">✎</button> <button data-wldel="${x}" title="Supprimer">✕</button>`}],rows,0):'<p class="hint">Ta watchlist est vide. Ajoute une première valeur ci-dessus.</p>';
+  const src=S.wlsrc,items=src=='pf'?R.pos.filter(p=>p.open).map(p=>({nom:p.nom,ticker:p.tk})):W,tks=items.map(i=>i.ticker),F=S.wl.f,pc=x=>x==null?'–':nf(1).format(x*100)+' %',r1=x=>x==null?'–':nf(1).format(x);
+  const frows=items.filter(i=>F[i.ticker]).map(i=>{const f=F[i.ticker],pr=(S.wl.px[i.ticker]&&S.wl.px[i.ticker].p)||(S.prices[i.ticker]&&S.prices[i.ticker].p)||f.prix;
+    return{nom:i.nom,f,pot:f.cible&&pr?(f.cible/pr-1)*100:null}});
+  const ftb=frows.length?table([{k:'nom',h:'Valeur',f:x=>x},{k:'f',h:'PER',f:x=>r1(x.per)},{k:'f',h:'P/B',f:x=>r1(x.pb)},{k:'f',h:'PEG',f:x=>r1(x.peg)},{k:'f',h:'Marge',f:x=>pc(x.marge)},{k:'f',h:'ROE',f:x=>pc(x.roe)},
+    {k:'f',h:'Dette nette / EBITDA',f:x=>r1(x.dn)},{k:'f',h:'Résultats',f:x=>x.earn?fD(x.earn):'–'},{k:'f',h:'Objectif moyen (bas – haut)',f:x=>x.cible?`${fE(x.cible)} (${x.cb?fE(x.cb,0):'–'} – ${x.ch?fE(x.ch,0):'–'})`:'–'},
+    {k:'pot',h:'Potentiel',c:1,f:x=>x==null?'–':fP(x)},{k:'f',h:'Analystes',f:x=>x.nb?String(Math.round(x.nb)):'–'},{k:'f',h:'Avis',f:x=>RK[x.rk]||x.rk||'–'},
+    {k:'f',h:'Répartition (AF/A/C/V/VF)',f:x=>x.reco?[x.reco.sb,x.reco.b,x.reco.h,x.reco.s,x.reco.ss].map(y=>y||0).join(' / '):'–'}],frows,0):'<p class="hint">Aucune donnée chargée pour cette liste.</p>';
+  v.innerHTML=`<section><h2>Watchlist</h2>
+    <div class="dts"><div><label for="wl_nom">Nom</label><input id="wl_nom" placeholder="Ex. Air Liquide"></div><div><label for="wl_tk">Ticker</label><input id="wl_tk" placeholder="Ex. AI.PA" autocapitalize="characters"></div></div>
+    <div class="dts"><div><label for="wl_zone">Zone d’achat (€)</label><input id="wl_zone" type="number" inputmode="decimal" step="0.5"></div><div style="display:flex;align-items:flex-end"><button id="wladd" style="width:100%">Ajouter</button></div></div>
+    ${S.wlmsg?`<p class="hint">${S.wlmsg}</p>`:''}${S.wlbusy?'<p class="hint">Chargement des cours…</p>':''}
+    <div style="margin-top:12px">${tbl}</div><div class="bar"><button id="wlref">Actualiser les cours</button></div>
+    <p class="hint">Proche de la zone : jusqu’à ${SEUIL} % au-dessus. La watchlist est partagée avec le Streamlit.</p></section>
+    <section><h2>Fondamentaux et analystes</h2>
+    <div class="bar chips" style="margin:0 0 8px"><button data-wlsrc="wl" aria-pressed="${src=='wl'}">Watchlist</button><button data-wlsrc="pf" aria-pressed="${src=='pf'}">Portefeuille</button><span style="flex:1"></span><button id="fundgo">${frows.length?'Actualiser':'Charger'}</button></div>
+    ${S.fmsg?`<p class="hint">${S.fmsg}</p>`:''}${ftb}</section>`;
+  v.dataset.ft=tks.join(',');setTimeout(()=>wlFetch(),0)}
+
+/* ---------- Onglets : mêmes noms, même ordre que le Streamlit ---------- */
+S.wlDis=new Set();
+const draw0=draw;
+draw=function(){draw0();if(!S.tx.length)return;const X={ov:ovX,pos:posX,app:appX,cla:drawCla,sai:drawSai,his:drawHis,div:divX,fra:drawFra}[S.tab];if(X)X($('#view'))};
+const getC=()=>{if(!Object.keys(S.hist).length)return null;try{return perfCalc()}catch(e){return null}};
+const needHist=()=>`<p class="hint">${S.hbusy?'Chargement de l’historique des cours…':'Historique des cours indisponible : vérifie l’adresse du script Google dans Réglages.'}</p>`;
+const MY=k=>MN[+k.slice(5)-1]+' '+k.slice(0,4);
+function periods(C,kf){const{D,V,F}=C,b=V.findIndex(x=>x>.01),m={},o=[];
+  for(let i=b+1;i<D.length;i++)if(V[i-1]>.01){const k=kf(D[i]),a=m[k]||(m[k]={k,f:1,e:0,val:0,o:o.length}),j=a.o;if(!m[k].in){m[k].in=1;o.push(m[k])}a.f*=(V[i]-F[i])/V[i-1];a.e+=V[i]-V[i-1]-F[i];a.val=V[i]}
+  return o.map(a=>({k:a.k,pct:(a.f-1)*100,eur:a.e,val:a.val}))}
+function bw(title,arr,lab){
+  const mk=by=>{const s2=[...arr].sort((a,b)=>b[by]-a[by]),n=Math.min(5,Math.floor(s2.length/2)||s2.length),rows=[...s2.slice(0,n),...s2.slice(-n).reverse()].filter((x,i,a)=>a.indexOf(x)==i);
+    return table([{k:'k',h:'Période',f:lab},{k:'eur',h:'Gain',c:1,f:x=>sgn(x)},{k:'pct',h:'Perf.',c:1,f:x=>fP(x)}],rows,0)};
+  return`<section><h2>${title}</h2><p class="hint" style="margin:0 0 6px">En € : les 5 meilleurs puis les 5 pires</p>${mk('eur')}<p class="hint" style="margin:12px 0 6px">En % : les 5 meilleurs puis les 5 pires</p>${mk('pct')}</section>`}
+function sales(){const by={},out=[];S.tx.forEach(t=>{if(t.type!='APPORT'&&t.type!='RETRAIT')(by[t.tk]=by[t.tk]||[]).push(t)});
+  const key=t=>{const d=new Date(t.d);if(t.type=='SPLIT')d.setHours(0,0,0,0);return d.getTime()};
+  for(const tk in by){let sh=0,inv=0;by[tk].sort((a,b)=>key(a)-key(b)).forEach(t=>{
+    if(t.type=='ACHAT'){sh+=t.q;inv+=t.q*t.p+t.f}
+    else if(t.type=='VENTE'){const rev=t.q*t.p-t.f;if(sh>0){const pru=inv/sh,g=rev-t.q*pru;out.push({d:t.d,nom:t.nom,g,pct:t.q*pru>0?g/(t.q*pru)*100:0});sh-=t.q;inv=sh*pru}}
+    else if(t.type=='SPLIT'){if(sh>0)sh=Math.trunc(sh*t.q+1e-9)}
+    else if(t.type=='DIVIDENDE'&&t.remb>0)inv=Math.max(0,inv-t.remb)})}
+  return out}
+const mapRows=(items,val)=>{const y={};items.forEach(t=>{const a=t.d.getFullYear(),i=t.d.getMonth();(y[a]=y[a]||Array(12).fill(0))[i]+=val(t)});
+  return Object.keys(y).sort().map(a=>({y:a,m:y[a].map(x=>x||null),t:y[a].reduce((p,x)=>p+x,0)}))};
+function bars(id,lab,data,col){chart(id,{type:'bar',data:{labels:lab,datasets:[{data,backgroundColor:col,borderRadius:4}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fE(c.parsed.y)}}},scales:{y:{grid:{color:css('--line')}},x:{grid:{display:false}}}}})}
+
+/* Vue d'ensemble & Objectif : alerte watchlist + objectif (clés partagées yearly_target, objectif_fin, objectif_perf) */
+function ovX(v){
+  const al=[];(S.cfg.watchlist||[]).forEach(it=>{const pr=S.wl.px[it.ticker]&&S.wl.px[it.ticker].p;if(it.zone_achat&&pr!=null){const ec=(pr-it.zone_achat)/it.zone_achat*100;if(ec<=3&&!S.wlDis.has(it.ticker))al.push([it,pr,ec])}});
+  const alh=al.map(([it,pr,ec])=>`<div style="margin:10px 0;padding:12px 14px;background:#fefce8;border:1px solid #fde68a;border-left:4px solid #d97706;border-radius:10px;color:#78350f"><b>${ec<=0?'🟢':'🟡'} Watchlist : ${esc(it.nom)} proche de sa zone d’achat</b><div style="font-size:13px;margin-top:4px">${esc(it.nom)} : ${fE(pr)} (${ec<=0?'déjà dans la zone':'à '+(ec>=0?'+':'')+nf(1).format(ec)+' % de la zone'}), zone d’achat ${fE(it.zone_achat)}</div><button data-wldis="${esc(it.ticker)}" style="margin-top:8px">Compris, masquer cet avertissement</button></div>`).join('');
+  const T=cg('yearly_target',10000),fin=cg('objectif_fin',new Date().getFullYear()+'-12-31'),pf=cg('objectif_perf',7),v0=R.total,
+    days=Math.floor((new Date(fin+'T00:00:00')-new Date(dstr(new Date())+'T00:00:00'))/864e5),prog=Math.max(0,Math.min(T>0?v0/T*100:0,100));
+  let body;
+  if(!(T>0))body='<p class="hint">Renseigne une valeur visée supérieure à 0.</p>';
+  else if(!(days>=15))body='<p class="hint">La date de fin est trop proche (ou dépassée) pour calculer un apport mensuel.</p>';
+  else{const n=days/30.4375,rm=Math.pow(1+pf/100,1/12)-1,g=Math.pow(1+rm,n),sans=v0*g,mq=T-sans,pmt=mq<=0?0:Math.abs(rm)<1e-9?mq/n:mq*rm/(g-1);
+    let col,ban;if(pmt<=0){col='#15803d';ban='🎉 Objectif atteint sans nouvel apport'}else{const ef=pmt/T*100;[col,ban]=ef<=.5?['#16a34a','🌊 Effort léger']:ef<=1.5?['#4d7c0f','🚀 Effort raisonnable']:ef<=3?['#d97706','⚡ Effort soutenu']:['#dc2626','🔥 Effort important']}
+    body=`<div class="gj"><i style="width:${prog}%;background:${col}"></i></div><p class="hint" style="margin:0">${nf(1).format(prog)} % de l’objectif</p><div class="grid" style="margin-top:8px">${kpi('Apport mensuel nécessaire',fE(pmt))}${kpi('Niveau d’effort',ban)}${kpi('Actuel',fE(v0))}${kpi('Total à verser',fE(pmt*n))}${kpi('Sans nouvel apport',fE(sans))}</div>`}
+  v.insertAdjacentHTML('afterbegin',alh);
+  v.insertAdjacentHTML('beforeend',`<section><h2>🎯 Objectif</h2><div class="dts" style="grid-template-columns:1fr 1fr 1fr"><div><label>Valeur visée (€)</label><input type="number" inputmode="decimal" data-cfg="yearly_target" value="${T}"></div>
+    <div><label>Date de fin</label><input type="date" data-cfg="objectif_fin" value="${fin}"></div><div><label>Perf. / an (%)</label><input type="number" inputmode="decimal" step="0.5" data-cfg="objectif_perf" value="${pf}"></div></div>${body}</section>`);
+  if(!S.cfgOk)setTimeout(cfgLoad,0);setTimeout(()=>wlFetch(),0)}
+
+/* Positions & Transactions */
+function posX(v){
+  const P=R.pos,open=P.filter(p=>p.open),cols=[{k:'nom',h:'Valeur',f:x=>x},{k:'sh',h:'Qté',f:x=>nf(x%1?4:0).format(x)},{k:'pru',h:'PRU',f:x=>fE(x,3)},{k:'px',h:'Cours',f:x=>fE(x,3)},{k:'val',h:'Valeur',f:x=>fE(x)},
+    {k:'lat',h:'Gain latent',c:1,f:(x,r)=>`${ar(x)} ${fS(x)}<br><small>${fP(r.latP)}</small>`},{k:'div',h:'Dividendes',f:x=>fE(x)},{k:'rl',h:'Réalisé',c:1,f:x=>sgn(x)},{k:'perf',h:'Perf. totale',c:1,f:x=>`${ar(x)} ${fP(x)}`}];
+  const rows=[...S.tx].sort((a,b)=>b.d-a.d).map(t=>({...t,ds:t.d.toLocaleDateString('fr-FR'),mt:t.type=='ACHAT'?-(t.q*t.p+t.f):t.type=='VENTE'?t.q*t.p-t.f:t.type=='DIVIDENDE'?t.p-t.ret-t.c+t.arr:t.type=='APPORT'?t.q:t.type=='RETRAIT'?-t.q:0}));
+  const rk=[...P].sort((a,b)=>b.tot-a.tot).map((p,i)=>({...p,rang:i+1}));
+  v.innerHTML=`<section><h2>📌 Détail des positions actives (${open.length})</h2>${table(cols,open,1)}</section>`+
+    (P.length>open.length?`<section><h2>Lignes soldées</h2>${table(cols.filter(c=>['nom','div','rl','perf'].includes(c.k)),P.filter(p=>!p.open),1)}</section>`:'')+
+    `<section><h2>🥧 Répartition du portefeuille</h2><div class="cv"><canvas id="c8"></canvas></div></section>
+    <section><h2>📜 Détail complet des transactions (${rows.length})</h2>${table([{k:'ds',h:'Date',f:x=>x},{k:'type',h:'Type',f:x=>x.charAt(0)+x.slice(1).toLowerCase()},{k:'nom',h:'Valeur',f:x=>x},{k:'q',h:'Qté',f:x=>nf(x%1?4:0).format(x)},{k:'f',h:'Frais',f:x=>fE(x)},{k:'mt',h:'Montant',c:1,f:x=>fS(x)}],rows,0)}<p class="hint">Touche une ligne pour la modifier ou la supprimer.</p></section>
+    <section><h2>🏆 Classement des actions par gain</h2>${table([{k:'rang',h:'#',f:x=>x},{k:'nom',h:'Valeur',f:x=>x},{k:'tot',h:'Gain total',c:1,f:x=>sgn(x)},{k:'perf',h:'Perf.',c:1,f:x=>fP(x)}],rk,0)}</section>`;
+  const top=[...P].sort((a,b)=>b.val-a.val).filter(p=>p.val>0);
+  chart('c8',{type:'doughnut',data:{labels:top.map(p=>p.nom),datasets:[{data:top.map(p=>p.val),backgroundColor:top.map((_,i)=>`hsl(${(i*137)%360} 55% 55%)`),borderColor:css('--card'),borderWidth:2}]},
+    options:{maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.label} : ${fE(c.parsed)} (${nf(1).format(c.parsed/R.valeur*100)} %)`}}}}})}
+
+/* Apports */
+function appX(v){
+  const mv=S.tx.filter(t=>t.type=='APPORT'||t.type=='RETRAIT').sort((a,b)=>a.d-b.d);
+  if(!mv.length){v.innerHTML='<section><p class="hint">Aucun apport enregistré pour le moment.</p></section>';return}
+  const ap=mv.filter(t=>t.type=='APPORT'),rt=mv.filter(t=>t.type=='RETRAIT'),vers=ap.reduce((a,t)=>a+t.q,0),net=vers-rt.reduce((a,t)=>a+t.q,0);
+  let c=0;const cum=mv.map(t=>{c+=t.type=='APPORT'?t.q:-t.q;return c}),ys=[...new Set(mv.map(t=>t.d.getFullYear()))].sort(),sy=(a,y)=>a.filter(t=>t.d.getFullYear()==y).reduce((x,t)=>x+t.q,0);
+  v.innerHTML=`<section><h2>🎯 Jauge de versements du PEA</h2><div class="gj"><i style="width:${Math.min(100,vers/PL*100)}%"></i></div><p class="hint" style="margin:0">${fE(vers,0)} / ${fE(PL,0)} (${nf(1).format(vers/PL*100)} %), il reste ${fE(Math.max(0,PL-vers),0)}.</p></section>
+    <section><h2>📈 Évolution des apports cumulés</h2><div class="cv"><canvas id="c4"></canvas></div></section>
+    <section><h2>📊 Versements par année</h2><div class="cv"><canvas id="c9"></canvas></div></section>
+    <section><h2>🗓️ Cartographie mensuelle des versements</h2>${hgrid(mapRows(ap,t=>t.q),x=>nf(0).format(x),.2,x=>nf(0).format(x))}</section>`
+    +(rt.length?`<section><h2>📊 Retraits par année</h2><div class="cv"><canvas id="c10"></canvas></div></section>
+    <section><h2>🗓️ Cartographie mensuelle des retraits</h2>${hgrid(mapRows(rt,t=>-t.q),x=>nf(0).format(-x),.2,x=>nf(0).format(-x))}</section>`:'');
+  const ds=[{data:cum,stepped:true,fill:true,borderColor:'#06b6d4',backgroundColor:'#06b6d42e',borderWidth:3,pointRadius:0}];
+  if(net>=.6*PL)ds.push({data:cum.map(()=>PL),borderColor:'#d97706',borderDash:[3,4],borderWidth:1.5,pointRadius:0});
+  chart('c4',{type:'line',data:{labels:mv.map(t=>t.d.toLocaleDateString('fr-FR',{month:'2-digit',year:'2-digit'})),datasets:ds},options:{maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},plugins:{legend:{display:false},tooltip:{callbacks:{label:x=>' '+fE(x.parsed.y,0)}}},scales:{y:{beginAtZero:true,grid:{color:css('--line')}},x:{grid:{display:false},ticks:{maxTicksLimit:5}}}}});
+  bars('c9',ys.map(String),ys.map(y=>sy(ap,y)),'#06b6d4');if(rt.length)bars('c10',ys.map(String),ys.map(y=>sy(rt,y)),'#f87171')}
+
+/* Dividendes & Cartographie */
+function divX(v){
+  const dv=S.tx.filter(t=>t.type=='DIVIDENDE'),net=t=>t.p-t.ret-t.c+t.arr,y={};dv.forEach(t=>{const k=t.d.getFullYear();y[k]=(y[k]||0)+net(t)});const ys=Object.keys(y).sort();
+  const g={};dv.forEach(t=>{const a=t.d.getFullYear(),i=t.d.getMonth();(g[a]=g[a]||Array.from({length:12},()=>({s:0,n:[]})))[i].s+=net(t);g[a][i].n.push(t.nom)});
+  const gr=Object.keys(g).sort().map(a=>({y:a,m:g[a].map(c=>c.s||null),tt:g[a].map(c=>[...new Set(c.n)].join(', ')),t:g[a].reduce((p,c)=>p+c.s,0)}));
+  v.innerHTML=`<section><h2>💶 Dividendes nets par année</h2><div class="cv"><canvas id="c3"></canvas></div></section>
+    <section><h2>🗓️ Cartographie mensuelle des dividendes</h2>${gr.length?hgrid(gr,x=>nf(0).format(x),3,x=>nf(0).format(x))+'<p class="hint">Dividendes nets reçus, en €. Touche une case pour voir les lignes.</p>':'<p class="hint">Aucun dividende enregistré.</p>'}</section>
+    <section><h2>Par ligne</h2>${table([{k:'nom',h:'Valeur',f:x=>x},{k:'div',h:'Dividendes nets',f:x=>fE(x)}],R.pos.filter(p=>p.div>0),1)}</section>`;
+  bars('c3',ys,ys.map(k=>y[k]),css('--acc'))}
+
+/* Classements */
+function drawCla(v){
+  const C=getC(),sl=sales().map(x=>({k:x.d.toLocaleDateString('fr-FR')+' – '+x.nom,eur:x.g,pct:x.pct}));
+  let h=sl.length?bw('🎯 Meilleures et pires ventes réalisées',sl,x=>x):'<section><h2>🎯 Meilleures et pires ventes réalisées</h2><p class="hint">Aucune vente enregistrée.</p></section>';
+  if(!C){v.innerHTML=h+`<section>${needHist()}</section>`;setTimeout(ensureHist,0);return}
+  const Q=d=>d.slice(0,4)+' T'+(Math.floor((+d.slice(5,7)-1)/3)+1);
+  h+=bw('🏆 Meilleures et pires journées du portefeuille',periods(C,d=>d),fD)+bw('🏆 Meilleurs et pires mois du portefeuille',periods(C,d=>d.slice(0,7)),MY)+bw('🏆 Meilleurs et pires trimestres du portefeuille',periods(C,Q),x=>x)+bw('🏆 Meilleures et pires années du portefeuille',periods(C,d=>d.slice(0,4)),x=>x);
+  v.innerHTML=h}
+
+/* Saisonnalité : plus-values actées (ventes) */
+function drawSai(v){
+  const sl=sales();if(!sl.length){v.innerHTML='<section><p class="hint">Aucune vente enregistrée : pas de plus-value actée à analyser.</p></section>';return}
+  const JS=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+  const sec=(t,kf,ord)=>{const m={};sl.forEach(x=>{const k=kf(x.d);(m[k]=m[k]||{k,g:0,n:0}).g+=x.g;m[k].n++});const rows=Object.values(m).sort((a,b)=>ord(a.k)-ord(b.k));
+    return`<section><h2>${t}</h2>${table([{k:'k',h:'Période',f:x=>x},{k:'g',h:'Plus-values actées',c:1,f:x=>sgn(x)},{k:'n',h:'Ventes',f:x=>x}],rows,0)}</section>`};
+  const num=k=>parseFloat(String(k).replace(/\D+/g,' ').trim())||0;
+  v.innerHTML=sec('🗓️ Plus-values actées par trimestre',d=>'T'+(Math.floor(d.getMonth()/3)+1),num)+sec('🗓️ Plus-values actées par mois de l’année',d=>MN[d.getMonth()],k=>MN.indexOf(k))
+    +sec('📅 Plus-values actées par jour de la semaine',d=>JS[(d.getDay()+6)%7],k=>JS.indexOf(k))+sec('⏰ Plus-values actées par tranche horaire',d=>pad(d.getHours())+'h–'+pad(d.getHours()+1)+'h',num)}
+
+/* Historique : performances quotidienne, mensuelle, annuelle */
+function drawHis(v){
+  const C=getC();if(!C){v.innerHTML=`<section>${needHist()}</section>`;setTimeout(ensureHist,0);return}
+  const cols=lab=>[{k:'k',h:'Période',f:lab},{k:'val',h:'Valeur',f:x=>fE(x,0)},{k:'eur',h:'Gain',c:1,f:x=>sgn(x)},{k:'pct',h:'Perf.',c:1,f:x=>fP(x)}];
+  const d=periods(C,x=>x).slice(-90).reverse(),m=periods(C,x=>x.slice(0,7)),a=periods(C,x=>x.slice(0,4)).reverse();
+  const ys=[...new Set(m.map(x=>x.k.slice(0,4)))].sort(),mm={};m.forEach(x=>mm[x.k]=x.pct);
+  const gr=ys.map(y=>{const r=MN.map((_,i)=>mm[y+'-'+pad(i+1)]??null);return{y,m:r,t:(r.reduce((p,x)=>x==null?p:p*(1+x/100),1)-1)*100}});
+  v.innerHTML=`<section><h2>📅 Historique des performances quotidienne</h2>${table(cols(fD),d,0)}<p class="hint">Les 90 derniers jours de bourse.</p></section>
+    <section><h2>📅 Historique des performances mensuelles</h2>${hgrid(gr,x=>nf(1).format(x),8,x=>nf(1).format(x))}<p class="hint">Performance mensuelle en % (pondérée par le temps).</p>${table(cols(MY),[...m].reverse(),0)}</section>
+    <section><h2>📅 Historique des performances annuelles</h2>${table(cols(x=>x),a,0)}</section>`}
+
+/* Frais */
+function drawFra(v){
+  const fr=S.tx.filter(t=>(t.type=='ACHAT'||t.type=='VENTE')&&t.f>0),tot=fr.reduce((a,t)=>a+t.f,0),ys=[...new Set(fr.map(t=>t.d.getFullYear()))].sort(),n=S.tx.filter(t=>t.type=='ACHAT'||t.type=='VENTE').length;
+  if(!fr.length){v.innerHTML='<section><p class="hint">Aucun frais enregistré.</p></section>';return}
+  v.innerHTML=`<section><h2>🔍 Frais</h2><div class="grid">${kpi('Frais totaux',fE(tot))}${kpi('Nombre d’ordres',String(n))}${kpi('Frais moyen par ordre',fE(n?tot/n:0))}${kpi('Part de la plus-value',R.gain>0?nf(2).format(tot/R.gain*100)+' %':'–')}</div>
+    <h2 style="margin-top:16px">Frais par année</h2><div class="cv"><canvas id="c11"></canvas></div></section>
+    <section><h2>🗓️ Cartographie mensuelle des frais</h2>${hgrid(mapRows(fr,t=>-t.f),x=>nf(0).format(-x),6,x=>nf(0).format(-x))}</section>`;
+  bars('c11',ys.map(String),ys.map(y=>fr.filter(t=>t.d.getFullYear()==y).reduce((a,t)=>a+t.f,0)),'#d97706')}
+
 /* ---------- Affichage ---------- */
-const TABS=[['ov','Vue d’ensemble'],['perf','Performance'],['pos','Positions'],['div','Dividendes'],['app','Apports'],['hist','Historique']];
+const TABS=[['ov',"📊 Vue d'ensemble & Objectif"],['pos','📌 Positions & Transactions'],['app','💰 Apports'],['cla','🏆 Classements'],['sai','🗓️ Saisonnalité'],['perf','📈 Performances & Indices'],['his','📅 Historique'],['div','💶 Dividendes & Cartographie'],['fra','🔍 Frais'],['wl','👁️ Watchlist'],['sim','🧮 Simulateurs']];
 function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
 function chart(id,cfg){if(CH[id])CH[id].destroy();const el=document.getElementById(id);if(!el||!window.Chart)return;
   Chart.defaults.color=css('--mute');Chart.defaults.font.family='system-ui,sans-serif';CH[id]=new Chart(el,cfg)}
@@ -370,14 +609,16 @@ function draw(){
       options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fS(c.parsed.x)}}},scales:{x:{grid:{color:css('--line')}},y:{grid:{display:false}}}}});
   }
   else if(S.tab=='perf')drawPerf(v);
-  else if(S.tab=='pos'){
+  else if(S.tab=='sim')drawSim(v);
+  else if(S.tab=='wl')drawWl(v);
+  else if(S.tab=='pos0'){
     const cols=[{k:'nom',h:'Valeur',f:x=>x},{k:'sh',h:'Qté',f:x=>nf(x%1?4:0).format(x)},{k:'pru',h:'PRU',f:x=>fE(x,3)},
       {k:'px',h:'Cours',f:x=>fE(x,3)},{k:'val',h:'Valeur',f:x=>fE(x)},{k:'lat',h:'Gain latent',c:1,f:(x,r)=>`${ar(x)} ${fS(x)}<br><small>${fP(r.latP)}</small>`},
       {k:'div',h:'Dividendes',f:x=>fE(x)},{k:'rl',h:'Réalisé',c:1,f:x=>sgn(x)},{k:'perf',h:'Perf. totale',c:1,f:x=>`${ar(x)} ${fP(x)}`}];
     v.innerHTML=`<section><h2>Positions détenues (${open.length})</h2>${table(cols,open,1)}</section>`+
       (P.length>open.length?`<section><h2>Lignes soldées</h2>${table(cols.filter(c=>['nom','div','rl','perf'].includes(c.k)),P.filter(p=>!p.open),1)}</section>`:'');
   }
-  else if(S.tab=='div'){
+  else if(S.tab=='div0'){
     const y={};S.tx.filter(t=>t.type=='DIVIDENDE').forEach(t=>{const k=t.d.getFullYear();y[k]=(y[k]||0)+t.p-t.ret-t.c+t.arr});
     const ys=Object.keys(y).sort();
     v.innerHTML=`<section><h2>Dividendes nets par année</h2><div class="cv"><canvas id="c3"></canvas></div></section>
@@ -385,7 +626,7 @@ function draw(){
     chart('c3',{type:'bar',data:{labels:ys,datasets:[{data:ys.map(k=>y[k]),backgroundColor:css('--acc'),borderRadius:4}]},
       options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fE(c.parsed.y)}}},scales:{y:{grid:{color:css('--line')}},x:{grid:{display:false}}}}});
   }
-  else if(S.tab=='app'){
+  else if(S.tab=='app0'){
     let c=0;const a=S.tx.filter(t=>t.type=='APPORT'||t.type=='RETRAIT').sort((x,z)=>x.d-z.d).map(t=>{c+=t.type=='APPORT'?t.q:-t.q;return{x:t.d,y:c}});
     v.innerHTML=`<section><h2>Évolution des apports cumulés</h2><div class="cv"><canvas id="c4"></canvas></div></section>
       <div class="grid" style="margin-top:14px">${kpi('Total versé',fE(R.apports,0))}${kpi('Nombre de versements',String(a.length))}${kpi('Versement moyen',fE(a.length?R.apports/a.length:0,0))}</div>`;
@@ -393,7 +634,7 @@ function draw(){
       backgroundColor:ctx=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,css('--acc')+'55');g.addColorStop(1,css('--acc')+'00');return g}}]},
       options:{maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fE(c.parsed.y,0)}}},scales:{y:{grid:{color:css('--line')}},x:{grid:{display:false},ticks:{maxTicksLimit:6}}}}});
   }
-  else{
+  else if(S.tab=='tx'){
     const rows=[...S.tx].sort((a,b)=>b.d-a.d).map(t=>({...t,ds:t.d.toLocaleDateString('fr-FR'),mt:t.type=='ACHAT'?-(t.q*t.p+t.f):t.type=='VENTE'?t.q*t.p-t.f:t.type=='DIVIDENDE'?t.p-t.ret-t.c+t.arr:t.type=='APPORT'?t.q:t.type=='RETRAIT'?-t.q:0}));
     v.innerHTML=`<section><h2>Historique (${rows.length} opérations)</h2>${table([{k:'ds',h:'Date',f:x=>x},{k:'type',h:'Type',f:x=>x.charAt(0)+x.slice(1).toLowerCase()},{k:'nom',h:'Valeur',f:x=>x},
       {k:'q',h:'Qté',f:x=>nf(x%1?4:0).format(x)},{k:'f',h:'Frais',f:x=>fE(x)},{k:'mt',h:'Montant',c:1,f:x=>fS(x)}],rows,0)}</section>`;
@@ -412,6 +653,16 @@ document.addEventListener('click',e=>{
   const ix=e.target.closest('[data-ix]');if(ix){const k=ix.dataset.ix,a=S.pf.idx;S.pf.idx=a.includes(k)?a.filter(x=>x!=k):[...a,k];LS.s('pf',S.pf);draw();return}
   const mo=e.target.closest('[data-m]');if(mo){S.pf.mode=mo.dataset.m;LS.s('pf',S.pf);draw();return}
   if(e.target.closest('#pfretry')){S.htry=null;S.hmsg='';ensureHist();return}
+  if(e.target.closest('#wladd')){const tk=$v('#wl_tk').trim().toUpperCase(),z=parseFloat($v('#wl_zone')),W=S.cfg.watchlist||[];
+    if(!tk)return alert('Le ticker est obligatoire.');if(W.some(i=>i.ticker==tk))return alert(tk+' est déjà dans la watchlist.');
+    cfgSave({watchlist:[...W,{nom:$v('#wl_nom').trim()||tk,ticker:tk,zone_achat:z>0?z:null}]}).then(()=>{S.wlAt=0;draw()});return}
+  const wd=e.target.closest('[data-wldel]');if(wd){const W=S.cfg.watchlist||[],it=W[+wd.dataset.wldel];if(it&&confirm('Retirer '+it.nom+' de la watchlist ?'))cfgSave({watchlist:W.filter((_,i)=>i!=+wd.dataset.wldel)}).then(()=>draw());return}
+  const we=e.target.closest('[data-wled]');if(we){const W=S.cfg.watchlist||[],i=+we.dataset.wled,it=W[i];if(!it)return;const x=prompt('Zone d’achat (€) pour '+it.nom+' (vide pour l’effacer)',it.zone_achat||'');
+    if(x===null)return;const z=n2(x);cfgSave({watchlist:W.map((a,j)=>j==i?{...a,zone_achat:z>0?z:null}:a)}).then(()=>draw());return}
+  if(e.target.closest('#wlref')){S.wlAt=0;wlFetch(true);return}
+  const ws=e.target.closest('[data-wlsrc]');if(ws){S.wlsrc=ws.dataset.wlsrc;draw();return}
+  if(e.target.closest('#fundgo')){const t=($('#view').dataset.ft||'').split(',').filter(String);if(t.length)fundFetch(t);return}
+  const wx=e.target.closest('[data-wldis]');if(wx){S.wlDis.add(wx.dataset.wldis);draw();return}
   const h=e.target.closest('th[data-k]');if(h){const k=h.dataset.k;S.sort={k,d:S.sort.k==k?-S.sort.d:-1};draw()}
 });
 $('#cfg').onclick=()=>{$('#url').value=S.url;const s=SB.s;$('#sbu').value=s.url||'';$('#sbk').value=s.key||'';$('#sbe').value=s.email||'';$('#sbst').textContent=connected()?'Connecté ('+(s.email||'')+')':'';$('#dlg').showModal()};
@@ -425,6 +676,17 @@ $('#o_del').onclick=async()=>{if(confirm('Supprimer cette opération ?')){S.raw.
 $('#exp').onclick=()=>{const q=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
   const csv='\uFEFF'+COLS.join(',')+'\n'+S.raw.map(r=>COLS.map(k=>q(r[k])).join(',')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='transactions_'+new Date().toISOString().slice(0,10)+'.csv';a.click()};
+const dl=(n,t,m)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:m}));a.download=n;a.click()},today=()=>new Date().toISOString().slice(0,10),
+  esc=x=>String(x??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+$('#expx').onclick=()=>{const tg=k=>k.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9_]+/g,'_').replace(/_+$/,'');
+  dl('transactions_'+today()+'.xml','<?xml version="1.0" encoding="UTF-8"?>\n<transactions>\n'+S.raw.map(r=>'  <operation>\n'+COLS.map(k=>`    <${tg(k)}>${esc(r[k])}</${tg(k)}>`).join('\n')+'\n  </operation>').join('\n')+'\n</transactions>\n','application/xml')};
+$('#expp').onclick=()=>{const w=window.open('','_blank');if(!w)return alert('Autorise les fenêtres pop-up pour exporter en PDF.');
+  const P=R.pos.filter(p=>p.open),T=[...S.tx].sort((a,b)=>a.d-b.d),qf=x=>nf(x%1?4:0).format(x);
+  w.document.write(`<!doctype html><meta charset="utf-8"><title>PEA ${today()}</title><style>body{font:12px system-ui,sans-serif;margin:18px;color:#14202b}h1{font-size:18px}h2{font-size:14px;margin:18px 0 6px}table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #ccd;padding:3px 5px;text-align:right}th:first-child,td:first-child{text-align:left}th{background:#eef2f6}</style>
+  <h1>Portefeuille PEA, ${new Date().toLocaleDateString('fr-FR')}</h1><p>Valeur totale ${fE(R.total)}, apports ${fE(R.apports,0)}, plus-value ${fS(R.gain)}</p>
+  <h2>Positions</h2><table><tr><th>Valeur</th><th>Qté</th><th>PRU</th><th>Cours</th><th>Valeur</th><th>+/- latente</th></tr>${P.map(p=>`<tr><td>${esc(p.nom)}</td><td>${qf(p.sh)}</td><td>${fE(p.pru)}</td><td>${fE(p.px)}</td><td>${fE(p.val)}</td><td>${fS(p.lat)}</td></tr>`).join('')}</table>
+  <h2>Opérations</h2><table><tr><th>Date</th><th>Type</th><th>Valeur</th><th>Qté</th><th>Prix</th><th>Frais</th></tr>${T.map(t=>`<tr><td>${t.d.toLocaleDateString('fr-FR')}</td><td>${esc(t.type)}</td><td>${esc(t.nom)}</td><td>${qf(t.q)}</td><td>${fE(t.p)}</td><td>${fE(t.f)}</td></tr>`).join('')}</table>`);
+  w.document.close();w.focus();setTimeout(()=>w.print(),300)};
 $('#sbsend').onclick=async()=>{SB.s={...SB.s,url:$v('#sbu').trim().replace(/\/$/,''),key:$v('#sbk').trim(),email:$v('#sbe').trim()};
   try{await raw('/auth/v1/otp',{method:'POST',body:JSON.stringify({email:SB.s.email,create_user:false})});$('#sbcode').hidden=false;$('#sbst').textContent='Code envoyé : vérifie ta boîte mail (et les spams).'}
   catch(e){$('#sbst').textContent='Erreur : '+e.message}};
@@ -432,8 +694,15 @@ $('#sbok').onclick=async()=>{try{sess(await raw('/auth/v1/verify',{method:'POST'
   $('#sbcode').hidden=true;$('#sbst').textContent='Connecté ✓';await pull()}catch(e){$('#sbst').textContent='Code invalide ou expiré : '+e.message}};
 $('#sbout').onclick=()=>{SB.s={...SB.s,access:null,refresh:null,uid:null};S.synced=false;$('#sbst').textContent='Déconnecté.';st('')};
 $('#dlg').addEventListener('close',()=>{const u=$('#url').value.trim();if(u!==S.url){S.url=u;LS.s('url',u);refreshPrices()}});
-$('#reset').onclick=()=>{if(confirm('Effacer toutes les données de ce navigateur ?')){['csv','raw','prices','pricesAt','hist','histAt','histKey','pf'].forEach(k=>localStorage.removeItem(k));S.prices={};S.hist={};S.htry=null;load();draw();$('#dlg').close()}};
-document.addEventListener('change',e=>{const i=e.target.id;if(i=='pf1'||i=='pf2'){S.pf[i=='pf1'?'d1':'d2']=e.target.value;LS.s('pf',S.pf);draw()}});
+$('#reset').onclick=()=>{if(confirm('Effacer toutes les données de ce navigateur ?')){['csv','raw','prices','pricesAt','hist','histAt','histKey','pf','goal','cfg','wlh','wlf'].forEach(k=>localStorage.removeItem(k));S.prices={};S.hist={};S.htry=null;load();draw();$('#dlg').close()}};
+document.addEventListener('change',e=>{const i=e.target.id;if(i=='go_o'||i=='go_t'||i=='go_m'||i=='go_r'){const x=e.target.value,n=parseFloat(String(x).replace(',','.'))||0;S.goal[{go_o:'obj',go_t:'to',go_m:'mens',go_r:'r'}[i]]=i=='go_t'?x:n;LS.s('goal',S.goal);draw()}
+  if(i=='pf1'||i=='pf2'){S.pf[i=='pf1'?'d1':'d2']=e.target.value;LS.s('pf',S.pf);draw()}});
+document.addEventListener('change',e=>{const el=e.target,c=el.dataset&&el.dataset.cfg;
+  if(c){cfgSave({[c]:el.type=='date'?el.value:n2(el.value)}).then(()=>draw());return}
+  const k=el.dataset&&el.dataset.sim;if(!k)return;
+  const x=el.type=='checkbox'?el.checked:n2(el.value);S.sim[k]=x;
+  const C={ap:'apport_mensuel_projection',n:'horizon_projection_annees',pa:'perf_annuelle_projection',ps:'taux_prelevements_sociaux'};
+  if(C[k])cfgSave({[C[k]]:(k=='ap'||k=='n')?Math.round(x):x});draw()});
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',draw);
 load();draw();refreshPrices();pull();
 </script>
