@@ -45,6 +45,10 @@ label{display:block;font-size:13px;color:var(--mute);margin:12px 0 4px}
 input:not([type=file]),select{width:100%;font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
 tbody tr[data-i]{cursor:pointer}h3{font-size:14px;margin:14px 0 0}.bar{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .hint{font-size:12.5px;color:var(--mute);margin:6px 0 0}
+.chips button{border-radius:99px;padding:6px 12px;color:var(--mute)}
+.chips button[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:#fff}
+.dts{display:grid;grid-template-columns:1fr 1fr;gap:10px}.dts label{margin-top:4px}
+.cvl{position:relative;height:300px}
 </style>
 </head>
 <body>
@@ -240,8 +244,96 @@ async function refreshPrices(){
   catch(e){$('#sub').textContent='Cours indisponibles (script Google injoignable)'}
 }
 
+/* ---------- Performance : historique des cours + courbe vs indices ---------- */
+const IDX=[['^FCHI','CAC 40'],['^GSPC','S&P 500'],['CW8.PA','MSCI World']],IC={'^FCHI':'#e0902f','^GSPC':'#8e6ad8','CW8.PA':'#2aa6a0'};
+const pad=n=>String(n).padStart(2,'0'),dstr=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const la=a=>a[a.length-1],fD=s=>s?s.split('-').reverse().join('/'):'–';
+S.hist=LS.g('hist')||{};S.pf=Object.assign({d1:'',d2:'',mode:'pct',idx:['^FCHI','CW8.PA']},LS.g('pf')||{});S.hbusy=false;S.hmsg='';S.htry=null;
+const histTickers=()=>[...new Set(S.raw.filter(r=>r.Ticker&&r.Ticker!='APPORT').map(r=>r.Ticker))];
+async function ensureHist(){
+  if(S.hbusy||!S.url||!S.tx.length)return;
+  const from=dstr(S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d)),tks=[...new Set([...histTickers(),...IDX.map(x=>x[0])])].sort(),key=tks.join(',')+'|'+from;
+  if(S.htry==key)return;
+  if(LS.g('histKey')==key&&Date.now()-(LS.g('histAt')||0)<216e5&&Object.keys(S.hist).length)return;
+  S.htry=key;S.hbusy=true;S.hmsg='Chargement de l’historique des cours…';draw();
+  try{const r=await fetch(S.url+(S.url.includes('?')?'&':'?')+'h='+encodeURIComponent(tks.join(','))+'&from='+from);const j=await r.json(),h={};
+    for(const k in j)if(j[k]&&Array.isArray(j[k].d)&&j[k].d.length)h[k]=j[k];
+    if(Object.keys(h).length){S.hist=h;LS.s('hist',h);LS.s('histKey',key);LS.s('histAt',Date.now());S.hmsg=''}
+    else S.hmsg='Le script Google n’a pas renvoyé d’historique : colle la nouvelle version (script_google.gs) puis redéploie-la.'}
+  catch(e){S.hmsg='Historique indisponible : script Google injoignable ou ancienne version.'}
+  S.hbusy=false;draw()}
+function perfCalc(){
+  const H=S.hist,tx=S.tx;if(!tx.length)return null;
+  const first=dstr(tx.reduce((m,t)=>t.d<m?t.d:m,tx[0].d)),set=new Set();
+  for(const k in H)H[k].d.forEach(x=>{if(x>=first)set.add(x)});
+  const D=[...set].sort();if(D.length<2)return null;
+  const al=src=>{const o=Array(D.length);let j=0,l=null;for(let i=0;i<D.length;i++){while(j<src.d.length&&src.d[j]<=D[i]){l=src.c[j];j++}o[i]=l}return o};
+  const PX={},IX={};
+  histTickers().forEach(k=>{
+    const a=H[k]?al(H[k]):null,sp=tx.filter(t=>t.tk==k&&t.type=='SPLIT').map(t=>[dstr(t.d),t.q]);
+    const tp=tx.filter(t=>t.tk==k&&(t.type=='ACHAT'||t.type=='VENTE')&&t.p>0).sort((x,y)=>x.d-y.d);
+    const b=al({d:tp.map(t=>dstr(t.d)),c:tp.map(t=>t.p)});
+    PX[k]=D.map((x,i)=>(a&&a[i]!=null)?a[i]*sp.reduce((f,[d,q])=>d>x?f*q:f,1):(b[i]??0))});
+  IDX.forEach(([k])=>{if(H[k])IX[k]=al(H[k])});
+  const ev=[];tx.forEach(t=>{const d=dstr(t.d);if(t.type=='SPLIT'){ev.push({d,t});if(t.rompu>0)ev.push({d:dstr(t.dr),t,c:1})}else ev.push({d,t})});
+  ev.sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:a.t.d-b.t.d);
+  const sh={},V=[],F=[];let cash=0,e=0;
+  for(let i=0;i<D.length;i++){let f=0;
+    while(e<ev.length&&ev[e].d<=D[i]){const x=ev[e++],t=x.t,k=t.tk;
+      if(x.c)cash+=t.rompu;
+      else if(t.type=='ACHAT'){sh[k]=(sh[k]||0)+t.q;cash-=t.q*t.p+t.f}
+      else if(t.type=='VENTE'){sh[k]=(sh[k]||0)-t.q;cash+=t.q*t.p-t.f}
+      else if(t.type=='SPLIT')sh[k]=Math.trunc((sh[k]||0)*t.q+1e-9);
+      else if(t.type=='DIVIDENDE')cash+=t.p-t.ret-t.c+t.remb+t.arr;
+      else if(t.type=='APPORT'){cash+=t.q;f+=t.q}
+      else if(t.type=='RETRAIT'){cash-=t.q;f-=t.q}}
+    let v=cash;for(const k in sh)if(Math.abs(sh[k])>1e-9&&PX[k])v+=sh[k]*PX[k][i];
+    V.push(v);F.push(f)}
+  return{D,V,F,IX}}
+function perfRange(C,d1,d2){
+  const{D,V,F,IX}=C,b=V.findIndex(v=>v>.01);if(b<0)return null;
+  let i1=b,i2=D.length-1;
+  if(d1){let j=-1;D.forEach((x,i)=>{if(x<=d1)j=i});if(j>i1)i1=j}
+  if(d2){let j=-1;D.forEach((x,i)=>{if(x<=d2)j=i});if(j>=0)i2=j}
+  if(i2<=i1)return null;
+  const idxs=S.pf.idx.filter(k=>IX[k]&&IX[k][i1]!=null),units={},ix={},lab=[],pf=[],val=[],paid=[];
+  idxs.forEach(k=>{units[k]=V[i1]/IX[k][i1];ix[k]={p:[],v:[]}});
+  let tw=1,cum=0;
+  for(let i=i1;i<=i2;i++){
+    if(i>i1){if(V[i-1]>.01)tw*=(V[i]-F[i])/V[i-1];cum+=F[i];idxs.forEach(k=>{units[k]+=F[i]/IX[k][i]})}
+    lab.push(D[i]);pf.push((tw-1)*100);val.push(V[i]);paid.push(V[i1]+cum);
+    idxs.forEach(k=>{ix[k].p.push((IX[k][i]/IX[k][i1]-1)*100);ix[k].v.push(units[k]*IX[k][i])})}
+  return{lab,pf,val,paid,ix,idxs,start:V[i1],end:V[i2],flows:cum,gain:V[i2]-V[i1]-cum,twr:(tw-1)*100,from:D[i1],to:D[i2]}}
+function drawPerf(v){
+  const P=S.pf,nm=k=>(IDX.find(x=>x[0]==k)||[0,k])[1];
+  let body='';
+  if(!S.url)body=`<p class="hint">Renseigne l’adresse du script Google dans Réglages pour charger l’historique des cours.</p>`;
+  else if(S.hmsg)body=`<p class="hint">${S.hmsg}</p>`+(S.hbusy?'':`<div class="bar"><button id="pfretry">Réessayer</button></div>`);
+  let C=null,X=null;
+  if(!body){C=perfCalc();X=C&&perfRange(C,P.d1,P.d2);if(!X)body=`<p class="hint">Pas assez de données sur cette période. Élargis les dates ou choisis « Tout ».</p>`}
+  const ctl=`<div class="bar chips" style="margin:0 0 4px">${['1M','3M','6M','YTD','1A','Tout'].map(q=>`<button data-q="${q}">${q}</button>`).join('')}</div>
+    <div class="dts"><div><label for="pf1">Du</label><input type="date" id="pf1" value="${P.d1}"></div><div><label for="pf2">Au</label><input type="date" id="pf2" value="${P.d2}"></div></div>
+    <div class="bar chips">${IDX.map(([k,n])=>`<button data-ix="${k}" aria-pressed="${P.idx.includes(k)}">${n}</button>`).join('')}<span style="flex:1"></span>
+    <button data-m="pct" aria-pressed="${P.mode=='pct'}">%</button><button data-m="eur" aria-pressed="${P.mode=='eur'}">€</button></div>`;
+  if(!X){v.innerHTML=`<section><h2>Performance du portefeuille</h2>${ctl}${body}</section>`;setTimeout(ensureHist,0);return}
+  const rows=[{n:'Portefeuille',end:X.end,gain:X.gain,twr:X.twr},...X.idxs.map(k=>({n:nm(k),end:la(X.ix[k].v),gain:la(X.ix[k].v)-X.start-X.flows,twr:la(X.ix[k].p)}))];
+  v.innerHTML=`<section><h2>Performance du portefeuille</h2>${ctl}
+    <div class="grid" style="margin-top:12px">${kpi('Valeur de départ',fE(X.start),fD(X.from))}${kpi('Valeur d’arrivée',fE(X.end),fD(X.to))}
+    ${kpi('Versements nets',X.flows?fS(X.flows):'–','sur la période')}${kpi('Gain',fS(X.gain),'',cl(X.gain))}
+    ${kpi('Performance',fP(X.twr),'pondérée par le temps',cl(X.twr))}${kpi('Durée',Math.round((new Date(X.to)-new Date(X.from))/864e5)+' jours')}</div>
+    <div class="cvl" style="margin-top:14px"><canvas id="c5"></canvas></div>
+    <p class="hint">Les indices reçoivent les mêmes versements que ton portefeuille, aux mêmes dates. Cours hors dividendes.</p></section>
+    <section><h2>Comparaison</h2>${table([{k:'n',h:'',f:x=>x},{k:'end',h:'Arrivée',f:x=>fE(x)},{k:'gain',h:'Gain',c:1,f:x=>sgn(x)},{k:'twr',h:'Perf.',c:1,f:x=>`${ar(x)} ${fP(x)}`}],rows,0)}</section>`;
+  const eur=P.mode=='eur',ds=[{label:'Portefeuille',data:eur?X.val:X.pf,borderColor:css('--acc'),borderWidth:2.5,pointRadius:0,tension:.15}];
+  if(eur)ds.push({label:'Versé',data:X.paid,borderColor:css('--mute'),borderWidth:1.5,borderDash:[5,4],pointRadius:0,stepped:true});
+  X.idxs.forEach(k=>ds.push({label:nm(k),data:eur?X.ix[k].v:X.ix[k].p,borderColor:IC[k],borderWidth:1.6,pointRadius:0,tension:.15}));
+  chart('c5',{type:'line',data:{labels:X.lab.map(fD),datasets:ds},options:{maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},
+    plugins:{legend:{display:ds.length>1,labels:{boxWidth:12}},tooltip:{callbacks:{label:c=>` ${c.dataset.label} : ${eur?fE(c.parsed.y,0):fP(c.parsed.y)}`}}},
+    scales:{y:{grid:{color:css('--line')},ticks:{callback:x=>eur?nf(0).format(x)+' €':nf(0).format(x)+' %'}},x:{grid:{display:false},ticks:{maxTicksLimit:6,maxRotation:0}}}}});
+  setTimeout(ensureHist,0)}
+
 /* ---------- Affichage ---------- */
-const TABS=[['ov','Vue d’ensemble'],['pos','Positions'],['div','Dividendes'],['app','Apports'],['hist','Historique']];
+const TABS=[['ov','Vue d’ensemble'],['perf','Performance'],['pos','Positions'],['div','Dividendes'],['app','Apports'],['hist','Historique']];
 function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
 function chart(id,cfg){if(CH[id])CH[id].destroy();const el=document.getElementById(id);if(!el||!window.Chart)return;
   Chart.defaults.color=css('--mute');Chart.defaults.font.family='system-ui,sans-serif';CH[id]=new Chart(el,cfg)}
@@ -277,6 +369,7 @@ function draw(){
     chart('c2',{type:'bar',data:{labels:b.map(p=>p.nom),datasets:[{data:b.map(p=>p.tot),backgroundColor:b.map(p=>p.tot>=0?css('--up'):css('--dn')),borderRadius:4}]},
       options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fS(c.parsed.x)}}},scales:{x:{grid:{color:css('--line')}},y:{grid:{display:false}}}}});
   }
+  else if(S.tab=='perf')drawPerf(v);
   else if(S.tab=='pos'){
     const cols=[{k:'nom',h:'Valeur',f:x=>x},{k:'sh',h:'Qté',f:x=>nf(x%1?4:0).format(x)},{k:'pru',h:'PRU',f:x=>fE(x,3)},
       {k:'px',h:'Cours',f:x=>fE(x,3)},{k:'val',h:'Valeur',f:x=>fE(x)},{k:'lat',h:'Gain latent',c:1,f:(x,r)=>`${ar(x)} ${fS(x)}<br><small>${fP(r.latP)}</small>`},
@@ -311,6 +404,14 @@ function draw(){
 document.addEventListener('click',e=>{
   const tr=e.target.closest('tr[data-i]');if(tr){openOp(+tr.dataset.i);return}
   const t=e.target.closest('[data-t]');if(t){S.tab=t.dataset.t;draw();return}
+  const q=e.target.closest('[data-q]');if(q){const n=new Date(),k=q.dataset.q;let d=null;
+    if(k=='1M')d=new Date(n.getFullYear(),n.getMonth()-1,n.getDate());else if(k=='3M')d=new Date(n.getFullYear(),n.getMonth()-3,n.getDate());
+    else if(k=='6M')d=new Date(n.getFullYear(),n.getMonth()-6,n.getDate());else if(k=='1A')d=new Date(n.getFullYear()-1,n.getMonth(),n.getDate());
+    else if(k=='YTD')d=new Date(n.getFullYear()-1,11,31);
+    S.pf.d1=d?dstr(d):'';S.pf.d2='';LS.s('pf',S.pf);draw();return}
+  const ix=e.target.closest('[data-ix]');if(ix){const k=ix.dataset.ix,a=S.pf.idx;S.pf.idx=a.includes(k)?a.filter(x=>x!=k):[...a,k];LS.s('pf',S.pf);draw();return}
+  const mo=e.target.closest('[data-m]');if(mo){S.pf.mode=mo.dataset.m;LS.s('pf',S.pf);draw();return}
+  if(e.target.closest('#pfretry')){S.htry=null;S.hmsg='';ensureHist();return}
   const h=e.target.closest('th[data-k]');if(h){const k=h.dataset.k;S.sort={k,d:S.sort.k==k?-S.sort.d:-1};draw()}
 });
 $('#cfg').onclick=()=>{$('#url').value=S.url;const s=SB.s;$('#sbu').value=s.url||'';$('#sbk').value=s.key||'';$('#sbe').value=s.email||'';$('#sbst').textContent=connected()?'Connecté ('+(s.email||'')+')':'';$('#dlg').showModal()};
@@ -331,7 +432,8 @@ $('#sbok').onclick=async()=>{try{sess(await raw('/auth/v1/verify',{method:'POST'
   $('#sbcode').hidden=true;$('#sbst').textContent='Connecté ✓';await pull()}catch(e){$('#sbst').textContent='Code invalide ou expiré : '+e.message}};
 $('#sbout').onclick=()=>{SB.s={...SB.s,access:null,refresh:null,uid:null};S.synced=false;$('#sbst').textContent='Déconnecté.';st('')};
 $('#dlg').addEventListener('close',()=>{const u=$('#url').value.trim();if(u!==S.url){S.url=u;LS.s('url',u);refreshPrices()}});
-$('#reset').onclick=()=>{if(confirm('Effacer toutes les données de ce navigateur ?')){['csv','raw','prices','pricesAt'].forEach(k=>localStorage.removeItem(k));S.prices={};load();draw();$('#dlg').close()}};
+$('#reset').onclick=()=>{if(confirm('Effacer toutes les données de ce navigateur ?')){['csv','raw','prices','pricesAt','hist','histAt','histKey','pf'].forEach(k=>localStorage.removeItem(k));S.prices={};S.hist={};S.htry=null;load();draw();$('#dlg').close()}};
+document.addEventListener('change',e=>{const i=e.target.id;if(i=='pf1'||i=='pf2'){S.pf[i=='pf1'?'d1':'d2']=e.target.value;LS.s('pf',S.pf);draw()}});
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',draw);
 load();draw();refreshPrices();pull();
 </script>
