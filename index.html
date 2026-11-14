@@ -103,6 +103,19 @@ hr.sh{border:0;border-top:1px solid var(--line);margin:10px 0}
 .err{background:rgba(255,43,43,.1);color:#9b2c2c;border-radius:8px;padding:12px 14px;font-size:14px;margin:8px 0}
 @media(prefers-color-scheme:dark){.warn{color:#f5d76e}.err{color:#ff9b9b}}
 .cap{font-size:.8rem;color:var(--mute);margin:6px 0}.rq{border-radius:10px}.rq.req{border:2px solid #ef4444;padding:1px;margin-bottom:8px}
+
+.pea-tbl-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card);box-sizing:border-box}
+.pea-tbl{border-collapse:separate;border-spacing:0;width:100%;font-size:.8rem;color:var(--ink)}
+.pea-tbl th{position:sticky;top:0;z-index:2;background:var(--alt);color:var(--mute);text-transform:uppercase;font-size:.68rem;font-weight:700;letter-spacing:.03em;padding:8px;text-align:center;white-space:nowrap;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+.pea-tbl th.s-asc::after{content:" ▲";font-size:.6rem}.pea-tbl th.s-desc::after{content:" ▼";font-size:.6rem}
+.pea-tbl td{text-align:center;padding:6px 8px;white-space:nowrap;border-bottom:1px solid var(--line)}
+.pea-tbl tbody tr:nth-child(even){background:rgba(148,163,184,.10)}
+.pea-tbl th.stk,.pea-tbl td.stk{position:sticky;left:0;z-index:3;background:var(--card);text-align:left;font-weight:700;box-shadow:2px 0 4px -2px rgba(15,23,42,.25)}
+.pea-tbl tbody tr:nth-child(even) td.stk{background:var(--alt)}.pea-tbl th.stk{background:var(--alt);z-index:4}
+.pea-tbl .ca{display:inline-flex;align-items:baseline;gap:.12em}.pea-tbl .ar{display:inline-block;width:.85em;text-align:center}
+.pea-tbl .rv{display:inline-block;text-align:right;font-variant-numeric:tabular-nums}.pea-tbl .un{display:inline-block;width:.9em;text-align:left;padding-left:.15em}
+.stv{display:flex;flex-direction:column;gap:1rem}.stv .exp{margin-top:0}.spin{color:var(--mute);font-size:14px}
+.c3m{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}.mtr .ml{font-size:14px;color:var(--mute)}.mtr .mv{font-size:1.75rem;font-weight:400}
 </style>
 </head>
 <body>
@@ -463,12 +476,6 @@ function wlVar(tk){const o={},h=S.wl.h[tk],pr=S.wl.px[tk]&&S.wl.px[tk].p;if(!h||
   if(pr!=null&&dc)o.jour=[pr-dc,(pr-dc)/dc*100];
   const ref=pr!=null?pr:la(h.c);
   [['sem',7],['m30',30],['m6',182],['a1',365]].forEach(([k,n])=>{const j=at(dstr(new Date(Date.now()-n*864e5)));if(j>=0&&h.c[j])o[k]=[ref-h.c[j],(ref-h.c[j])/h.c[j]*100]});return o}
-async function fundFetch(tks){if(!S.url||S.fbusy)return;S.fbusy=true;S.fmsg='Chargement des fondamentaux…';draw();
-  try{const j=await(await fetch(S.url+(S.url.includes('?')?'&':'?')+'f='+encodeURIComponent(tks.join(',')))).json();let n=0;
-    for(const k in j)if(j[k]&&typeof j[k]=='object'&&!j[k].error){j[k]._at=Date.now();S.wl.f[k]=j[k];n++}
-    LS.s('wlf',S.wl.f);S.fmsg=n?'':'Aucune donnée : colle la nouvelle version du script Google (script_google.gs) puis redéploie-la.'}
-  catch(e){S.fmsg='Fondamentaux indisponibles (script Google injoignable ou ancienne version).'}
-  S.fbusy=false;draw()}
 const RK={strong_buy:'Achat fort',buy:'Achat',hold:'Conserver',underperform:'Sous-performance',sell:'Vendre',strong_sell:'Vente forte'};
 function drawWl(v){
   if(!S.cfgOk)setTimeout(cfgLoad,0);
@@ -482,23 +489,14 @@ function drawWl(v){
     {k:'z',h:'Zone d’achat',f:x=>x?fE(x):'Non définie'},{k:'ec',h:'Écart',f:x=>x==null?'–':(x>=0?'+':'')+nf(1).format(x)+' %'},{k:'stt',h:'Statut',f:x=>x},
     {k:'va',h:'7 j',f:x=>vc(x.sem)},{k:'va',h:'30 j',f:x=>vc(x.m30)},{k:'va',h:'6 mois',f:x=>vc(x.m6)},{k:'va',h:'12 mois',f:x=>vc(x.a1)},
     {k:'wi',h:'',f:x=>`<button data-wled="${x}" title="Modifier la zone">✎</button> <button data-wldel="${x}" title="Supprimer">✕</button>`}],rows,0):'<p class="hint">Ta watchlist est vide. Ajoute une première valeur ci-dessus.</p>';
-  const src=S.wlsrc,items=src=='pf'?R.pos.filter(p=>p.open).map(p=>({nom:p.nom,ticker:p.tk})):W,tks=items.map(i=>i.ticker),F=S.wl.f,pc=x=>x==null?'–':nf(1).format(x*100)+' %',r1=x=>x==null?'–':nf(1).format(x);
-  const frows=items.filter(i=>F[i.ticker]).map(i=>{const f=F[i.ticker],pr=(S.wl.px[i.ticker]&&S.wl.px[i.ticker].p)||(S.prices[i.ticker]&&S.prices[i.ticker].p)||f.prix;
-    return{nom:i.nom,f,pot:f.cible&&pr?(f.cible/pr-1)*100:null}});
-  const ftb=frows.length?table([{k:'nom',h:'Valeur',f:x=>x},{k:'f',h:'PER',f:x=>r1(x.per)},{k:'f',h:'P/B',f:x=>r1(x.pb)},{k:'f',h:'PEG',f:x=>r1(x.peg)},{k:'f',h:'Marge',f:x=>pc(x.marge)},{k:'f',h:'ROE',f:x=>pc(x.roe)},
-    {k:'f',h:'Dette nette / EBITDA',f:x=>r1(x.dn)},{k:'f',h:'Résultats',f:x=>x.earn?fD(x.earn):'–'},{k:'f',h:'Objectif moyen (bas – haut)',f:x=>x.cible?`${fE(x.cible)} (${x.cb?fE(x.cb,0):'–'} – ${x.ch?fE(x.ch,0):'–'})`:'–'},
-    {k:'pot',h:'Potentiel',c:1,f:x=>x==null?'–':fP(x)},{k:'f',h:'Analystes',f:x=>x.nb?String(Math.round(x.nb)):'–'},{k:'f',h:'Avis',f:x=>RK[x.rk]||x.rk||'–'},
-    {k:'f',h:'Répartition (AF/A/C/V/VF)',f:x=>x.reco?[x.reco.sb,x.reco.b,x.reco.h,x.reco.s,x.reco.ss].map(y=>y||0).join(' / '):'–'}],frows,0):'<p class="hint">Aucune donnée chargée pour cette liste.</p>';
   v.innerHTML=`<section><h2>Watchlist</h2>
     <div class="dts"><div><label for="wl_nom">Nom</label><input id="wl_nom" placeholder="Ex. Air Liquide"></div><div><label for="wl_tk">Ticker</label><input id="wl_tk" placeholder="Ex. AI.PA" autocapitalize="characters"></div></div>
     <div class="dts"><div><label for="wl_zone">Zone d’achat (€)</label><input id="wl_zone" type="number" inputmode="decimal" step="0.5"></div><div style="display:flex;align-items:flex-end"><button id="wladd" style="width:100%">Ajouter</button></div></div>
     ${S.wlmsg?`<p class="hint">${S.wlmsg}</p>`:''}${S.wlbusy?'<p class="hint">Chargement des cours…</p>':''}
     <div style="margin-top:12px">${tbl}</div><div class="bar"><button id="wlref">Actualiser les cours</button></div>
     <p class="hint">Proche de la zone : jusqu’à ${SEUIL} % au-dessus. La watchlist est partagée avec le Streamlit.</p></section>
-    <section><h2>Fondamentaux et analystes</h2>
-    <div class="bar chips" style="margin:0 0 8px"><button data-wlsrc="wl" aria-pressed="${src=='wl'}">Watchlist</button><button data-wlsrc="pf" aria-pressed="${src=='pf'}">Portefeuille</button><span style="flex:1"></span><button id="fundgo">${frows.length?'Actualiser':'Charger'}</button></div>
-    ${S.fmsg?`<p class="hint">${S.fmsg}</p>`:''}${ftb}</section>`;
-  v.dataset.ft=tks.join(',');setTimeout(()=>wlFetch(),0)}
+    <div class="stv">${fondX()}</div>`;
+  setTimeout(()=>wlFetch(),0)}
 
 /* ---------- Onglets : mêmes noms, même ordre que le Streamlit ---------- */
 S.wlDis=new Set();
@@ -626,6 +624,91 @@ function chartDivCal(C){
     plugins:{legend:{position:'top',align:'start',labels:{boxWidth:12,boxHeight:12,font:{size:11}}},tooltip:extTip(tip)},
     scales:{x:{stacked:true,grid:{display:false},ticks:{maxRotation:45,minRotation:C.mo.length>8?45:0}},
       y:{stacked:true,beginAtZero:true,max:Math.max(...tot,1)*1.2,grid:{color:css('--line'),borderDash:[2,3]},ticks:{callback:v=>nf(0).format(v)+' €'}}}}})}
+
+/* ===== Tableau HTML commun (port de _html_table) : valeurs centrées, flèche/nombre/unité alignés, colonne figée, tri au clic ===== */
+const CELL_RE=/^(?:([▲▼▬=])\s)?(.*\d.*?)\s?(€|%)?$/,PAREN_RE=/^(.*?)\s?\((▲|▼|▬|=)\s?([^()]*\d[^()]*)\)$/,BG_RE=/background(?:-color)?\s*:\s*([^;]+)/;
+const stkBg=(cs,rs)=>{const m=BG_RE.exec(cs||'')||BG_RE.exec(rs||'');if(!m)return cs;const c=m[1].trim();return(cs||'')+`background-color:var(--card);background-image:linear-gradient(${c},${c});`};
+function parenCell(v,pw,nw){const m=PAREN_RE.exec(String(v));if(!m)return null;let[,px,ar,num]=m;const col=ar=='▲'?'#16a34a':ar=='▼'?'#dc2626':'#64748b';if(ar=='▬')ar='=';
+  const unit=num.endsWith('%')?'%':'';if(unit)num=num.slice(0,-1);
+  return`<span class="ca"><span class="rv" style="min-width:${pw}ch">${esc(px)}</span><span style="color:${col};font-weight:700;display:inline-flex;align-items:baseline;gap:.12em;margin-left:.4em"><span>(</span><span class="ar">${ar}</span><span class="rv" style="min-width:${nw}ch">${esc(num)}</span><span>${unit})</span></span></span>`}
+/* cols : noms ; rows : tableaux de textes ; o.cell(col,val)->css ; o.row[i]->css ; o.sticky : nom de colonne figée */
+function peaTable(cols,rows,o={}){
+  const parsed={},numW={},hasAr={},parenW={};
+  cols.forEach((c,ci)=>{const vals=rows.map(r=>String(r[ci]));let w=0,ar=false,st=false;const pl=vals.map(t=>{
+      const m=(t.includes('€')||t.includes('%')||'▲▼▬='.includes(t.slice(0,1)))?CELL_RE.exec(t):null;
+      if(m&&(m[1]||m[3])&&!t.trimEnd().endsWith(')')){w=Math.max(w,m[2].length);ar=ar||!!m[1];st=true;return[m[1]||'',m[2],m[3]||'']}return null});
+    if(st){parsed[ci]=pl;numW[ci]=w;hasAr[ci]=ar}
+    const ms=vals.map(t=>PAREN_RE.exec(t)).filter(Boolean);if(ms.length)parenW[ci]=[Math.max(...ms.map(m=>m[1].length)),Math.max(...ms.map(m=>m[3].replace(/%$/,'').length))]});
+  const head=cols.map(c=>`<th${c==o.sticky?' class="stk"':''}>${esc(c)}</th>`).join('');
+  const body=rows.map((r,i)=>{const rs=(o.row&&o.row[i])||'';
+    return`<tr${rs?` style="${rs}"`:''}>`+r.map((v,ci)=>{const c=cols[ci];let cs=(o.cell&&o.cell(c,v))||'';
+      if(String(v).startsWith('= ')&&!cs.includes('font-weight'))cs+='font-weight:700;';
+      const p=parsed[ci]?parsed[ci][i]:null;let inner;
+      if(p){inner='<span class="ca">'+(hasAr[ci]?`<span class="ar">${p[0]}</span>`:'')+`<span class="rv" style="min-width:${numW[ci]}ch">${esc(p[1])}</span>`+(p[2]?`<span class="un">${p[2]}</span>`:'')+'</span>'}
+      else inner=(parenW[ci]?parenCell(v,...parenW[ci]):null)||esc(String(v));
+      const stk=c==o.sticky;if(stk)cs=stkBg(cs,rs);
+      return`<td${stk?' class="stk"':''}${cs?` style="${cs}"`:''}>${inner}</td>`}).join('')+'</tr>'}).join('');
+  const h=Math.min(o.maxH||640,34+30*rows.length+14);
+  return`<div class="pea-tbl-wrap" style="max-height:${h}px"><table class="pea-tbl"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`}
+/* tri au clic sur un en-tête (même logique de clé que le Streamlit) */
+const tblKey=s=>{s=(s||'').trim();let m=s.match(/^(\d{2})[-\/](\d{2})[-\/](\d{4})$/);if(m)return+(m[3]+m[2]+m[1]);m=s.match(/^(\d{2})\/(\d{4})$/);if(m)return+(m[2]+m[1]);
+  const c=s.replace(/[\u00a0\u202f\s€%▲▼▬=]/g,'').replace('\u2212','-').replace(',','.');if(/^[+\-]?\d+(\.\d+)?$/.test(c))return parseFloat(c);
+  const l=s.match(/^(\d+)\s*\(/);if(l)return parseFloat(l[1]);return s=='-'||s==''?null:s.toLowerCase()};
+document.addEventListener('click',e=>{const th=e.target.closest&&e.target.closest('.pea-tbl thead th');if(!th||th.classList.contains('ix'))return;
+  const t=th.closest('table'),hr=t.tHead.rows[0],i=[...hr.cells].indexOf(th),d=(t._last===i&&t._dir==1)?-1:1;t._dir=d;t._last=i;
+  [...hr.cells].forEach(x=>x.classList.remove('s-asc','s-desc'));th.classList.add(d==1?'s-asc':'s-desc');
+  const tb=t.tBodies[0],rows=[...tb.rows],keys=rows.map(r=>tblKey(r.cells[i].textContent)),idx=rows.map((_,k)=>k);
+  idx.sort((a,b)=>{const x=keys[a],y=keys[b];if(x===null&&y===null)return a-b;if(x===null)return 1;if(y===null)return-1;
+    if(typeof x=='number'&&typeof y=='number')return(x-y)*d||(a-b);return String(x).localeCompare(String(y),'fr')*d||(a-b)});
+  idx.forEach(k=>tb.appendChild(rows[k]))});
+
+/* ===== Watchlist : « 📚 Fondamentaux & analystes » (port de _fondamentaux_fragment) ===== */
+const FOND_SRC='Watchlist';   /* comme le Streamlit : source fixée sur la watchlist ; 'Portefeuille' affiche aussi « Valorisation pondérée » */
+const FUND_TTL=6*3600e3;
+const fmtPerfS=v=>v>0?'▲ +'+nf(2).format(v)+'%':v<0?'▼ '+nf(2).format(v)+'%':'▬ 0,00%';
+const perfCell=v=>{const s=String(v);return s.startsWith('▲')?'color:#16a34a;font-weight:700;':s.startsWith('▼')?'color:#dc2626;font-weight:700;':'color:#64748b;font-weight:700;'};
+async function fundFetch(tks){if(!S.url||S.fbusy)return;S.fbusy=true;S.fmsg='';S.fTry=tks.join(',')+'|'+Date.now();draw();
+  try{const j=await(await fetch(S.url+(S.url.includes('?')?'&':'?')+'f='+encodeURIComponent(tks.join(',')))).json();let n=0;
+    for(const k in j)if(j[k]&&typeof j[k]=='object'&&!j[k].error){j[k]._at=Date.now();S.wl.f[k]=j[k];n++}
+    LS.s('wlf',S.wl.f);S.fmsg=n?'':'old'}
+  catch(e){S.fmsg='old'}
+  S.fbusy=false;draw()}
+function fondEnsure(tks){const stale=tks.filter(t=>!S.wl.f[t]||Date.now()-(S.wl.f[t]._at||0)>FUND_TTL);
+  if(!stale.length||S.fbusy||!S.url)return;const k=stale.join(',');if(S.fTry&&S.fTry.split('|')[0]==k&&Date.now()-+S.fTry.split('|')[1]<3e5)return;setTimeout(()=>fundFetch(stale),0)}
+function fondX(){
+  const W=S.cfg.watchlist||[],univ=FOND_SRC=='Portefeuille'?R.pos.filter(p=>p.open).map(p=>({nom:p.nom,tk:p.tk,val:p.val})):W.filter(i=>i.ticker).map(i=>({nom:i.nom||i.ticker,tk:i.ticker,val:null}));
+  let h='<hr style="margin:18px 0 12px 0;border:0;border-top:1px solid var(--line)"><h3 style="font-size:1.4rem;font-weight:600;padding:.5rem 0 .25rem;margin:0">📚 Fondamentaux & analystes</h3>';
+  if(!univ.length)return h+'<div class="info">Aucune valeur à analyser pour le moment.</div>';
+  const tks=[...new Set(univ.map(u=>u.tk))].sort();fondEnsure(tks);
+  if(S.fbusy&&!tks.some(t=>S.wl.f[t]))return h+'<div class="spin">Chargement des données fondamentales...</div>';
+  const ok=univ.filter(u=>S.wl.f[u.tk]).map(u=>({...u,d:S.wl.f[u.tk]}));
+  if(!ok.length)return h+'<div class="warn">Données indisponibles pour le moment (Yahoo Finance ne répond pas). Réessayez dans quelques minutes.</div>'+(S.fmsg=='old'?'<div class="cap">Si le message persiste : colle la dernière version de script_google.gs dans Apps Script puis redéploie-la.</div>':'');
+  const fr=(x,d=1)=>nf(d).format(x),exp=(t,b)=>`<details class="exp" open><summary>${t}</summary><div class="in">${b}</div></details>`;
+  let o='';
+  if(FOND_SRC=='Portefeuille'){
+    const tot=ok.reduce((s,u)=>s+(u.val||0),0),pond=k=>{let n=0,d=0;ok.forEach(u=>{const x=u.d[k];if(u.val&&x&&x>0){n+=u.val;d+=u.val/x}});return[d>0?n/d:null,n]};let cov=0;
+    const c3=[['PER pondéré','per'],['P/B pondéré','pb'],['PEG pondéré','peg']].map(([l,k])=>{const[v,c]=pond(k);cov=Math.max(cov,c);return`<div class="mtr"><div class="ml">${l}</div><div class="mv">${v!=null?fr(v,1):'N/A'}</div></div>`}).join('');
+    o+=exp('📐 Valorisation pondérée du portefeuille',`<div class="c3m">${c3}</div>`+(tot>0?`<div class="cap">Calculés sur ${(cov/tot*100).toFixed(0)} % de la valeur du portefeuille (ETF et valeurs sans donnée exclus).</div>`:''))}
+  /* 26. Qualité financière par ligne */
+  const NIV=['background-color:rgba(239,68,68,.14);color:#b91c1c;font-weight:700;','background-color:rgba(245,158,11,.16);color:#92400e;font-weight:700;','background-color:rgba(34,197,94,.16);color:#15803d;font-weight:700;'];
+  const rq=ok.filter(u=>!(u.d.marge==null&&u.d.roe==null&&u.d.dn==null)).map(u=>[u.nom,u.d.marge!=null?(u.d.marge*100).toFixed(1).replace('.',',')+' %':'—',u.d.roe!=null?(u.d.roe*100).toFixed(1).replace('.',',')+' %':'—',u.d.dn!=null?fr(u.d.dn,1)+'x':'—']);
+  const qCols=['Nom','Marge nette','ROE','Dette nette / EBITDA'];
+  const qStyle=(c,v)=>{const t=String(v);if(t=='—'||t=='')return'color:#94a3b8;';const x=parseFloat(t.replace(/[x% \u00a0\u202f]/g,'').replace(',','.'));if(isNaN(x))return'';
+    if(c=='Marge nette')return NIV[x>=15?2:x>=5?1:0];if(c=='ROE')return NIV[x>=15?2:x>=8?1:0];if(c.startsWith('Dette'))return NIV[x<=1.5?2:x<=3?1:0];return''};
+  o+=exp('🏦 Qualité financière par ligne',rq.length?peaTable(qCols,rq,{cell:qStyle,sticky:'Nom'}):'<div class="info">Aucune donnée de qualité financière disponible (ETF, ou Yahoo sans information).</div>');
+  /* 25 + 28. Objectifs et recommandations des analystes */
+  const RECO={strong_buy:'Achat fort',buy:'Achat',hold:'Neutre',underperform:'Vente',sell:'Vente',strong_sell:'Vente forte'};
+  const ra=ok.filter(u=>u.d.cible).map(u=>{const px=(S.wl.px[u.tk]&&S.wl.px[u.tk].p)||(S.prices[u.tk]&&S.prices[u.tk].p)||u.d.prix,ec=px?(u.d.cible/px-1)*100:null,nb=u.d.nb?Math.trunc(u.d.nb):null;
+    return{ec:ec==null?-1e9:ec,r:[u.nom,px?fE(px):'—',fE(u.d.cible),ec!=null?fmtPerfS(ec):'—',RECO[u.d.rk]||'—',nb?String(nb):'—']}}).sort((a,b)=>b.ec-a.ec);
+  const AV={'Achat fort':'background-color:rgba(34,197,94,.22);color:#15803d;font-weight:700;','Achat':'background-color:rgba(34,197,94,.14);color:#15803d;font-weight:700;','Neutre':'background-color:rgba(148,163,184,.20);color:#475569;font-weight:700;','Vente':'background-color:rgba(239,68,68,.14);color:#b91c1c;font-weight:700;','Vente forte':'background-color:rgba(239,68,68,.22);color:#b91c1c;font-weight:700;'};
+  o+=exp('🎯 Objectifs et recommandations des analystes',ra.length?peaTable(['Nom','Cours','Objectif moyen',"Écart à l'objectif",'Avis','Analystes'],ra.map(x=>x.r),{cell:(c,v)=>c=="Écart à l'objectif"?perfCell(v):c=='Avis'?(AV[String(v)]||''):'',sticky:'Nom'}):'<div class="info">Pas d\'objectif d\'analystes disponible pour ces valeurs.</div>');
+  /* 27. Prochaines publications de résultats */
+  const auj=new Date(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()),re=ok.filter(u=>u.d.earn).map(u=>[u.d.earn,u.nom]).sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:a[1]<b[1]?-1:1);
+  const dans=ds=>{const j=Math.round((new Date(ds+'T00:00:00')-auj)/864e5);return j==0?"Aujourd'hui":j==1?'Demain':'Dans '+j+' j'};
+  const eSt=(c,v)=>{if(c!='Échéance')return'';const t=String(v),j=t=="Aujourd'hui"?0:t=='Demain'?1:parseInt(t.split(' ')[1]);
+    return j<=7?'background-color:rgba(245,158,11,.20);color:#92400e;font-weight:700;':j<=30?'background-color:rgba(59,130,246,.14);color:#1d4ed8;font-weight:700;':''};
+  o+=exp('📅 Prochaines publications de résultats',re.length?peaTable(['Nom','Date','Échéance'],re.map(([d,n])=>[n,fD(d),dans(d)]),{cell:eSt,sticky:'Nom'}):'<div class="info">Aucune date de publication annoncée pour ces valeurs.</div>');
+  return h+o}
 
 /* ===== Composants communs repris du Streamlit : cartes, infobulles, cartographie mensuelle ===== */
 const TIPS=[];
@@ -1120,8 +1203,6 @@ document.addEventListener('click',e=>{
   const we=e.target.closest('[data-wled]');if(we){const W=S.cfg.watchlist||[],i=+we.dataset.wled,it=W[i];if(!it)return;const x=prompt('Zone d’achat (€) pour '+it.nom+' (vide pour l’effacer)',it.zone_achat||'');
     if(x===null)return;const z=n2(x);cfgSave({watchlist:W.map((a,j)=>j==i?{...a,zone_achat:z>0?z:null}:a)}).then(()=>draw());return}
   if(e.target.closest('#wlref')){S.wlAt=0;wlFetch(true);return}
-  const ws=e.target.closest('[data-wlsrc]');if(ws){S.wlsrc=ws.dataset.wlsrc;draw();return}
-  if(e.target.closest('#fundgo')){const t=($('#view').dataset.ft||'').split(',').filter(String);if(t.length)fundFetch(t);return}
   const wx=e.target.closest('[data-wldis]');if(wx){S.wlDis.add(wx.dataset.wldis);draw();return}
   const h=e.target.closest('th[data-k]');if(h){const k=h.dataset.k;S.sort={k,d:S.sort.k==k?-S.sort.d:-1};draw()}
 });
