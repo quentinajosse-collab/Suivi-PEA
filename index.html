@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#1f4d7a">
 <title>Tableau de bord PEA</title>
 <style>
-:root{--bg:#f3f5f7;--card:#fff;--ink:#14202b;--mute:#66788a;--line:#e1e6ea;--up:#0d7a4e;--dn:#c23b32;--acc:#1f4d7a;--alt:#f6f8fa}
-@media(prefers-color-scheme:dark){:root{--bg:#0e141a;--card:#161e26;--ink:#e8eef3;--mute:#8d9cab;--line:#26313b;--up:#3ccf91;--dn:#ff6b62;--acc:#6aa8e6;--alt:#1a232c}}
+:root{--bg:#f3f5f7;--card:#fff;--ink:#14202b;--mute:#66788a;--line:#e1e6ea;--up:#0d7a4e;--dn:#c23b32;--acc:#1f4d7a;--alt:#f6f8fa;--acc2:#0f766e}
+@media(prefers-color-scheme:dark){:root{--bg:#0e141a;--card:#161e26;--ink:#e8eef3;--mute:#8d9cab;--line:#26313b;--up:#3ccf91;--dn:#ff6b62;--acc:#6aa8e6;--alt:#1a232c;--acc2:#5eead4}}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
@@ -51,6 +51,58 @@ tbody tr[data-i]{cursor:pointer}h3{font-size:14px;margin:14px 0 0}.bar{display:f
 .cvl{position:relative;height:300px}
 .hm td,.hm th{padding:6px 4px;text-align:center;font-size:12px;white-space:nowrap}.hm td:first-child,.hm th:first-child{text-align:left;font-weight:600}
 .gj{height:14px;border-radius:99px;background:var(--line);overflow:hidden;margin:8px 0}.gj i{display:block;height:100%;background:var(--acc)}
+.pc{background:var(--card);border:1px solid var(--line);border-left:6px solid #0d9488;border-radius:10px;padding:14px 18px;text-align:left}
+.pc .pk{font-size:.72rem;color:var(--mute);font-weight:700;letter-spacing:.04em}
+.pc .pv{font-size:1.55rem;font-weight:800;margin-top:3px}
+.info{background:#e8f1fb;color:#1f4d7a;border-radius:8px;padding:12px 14px;font-size:14px}
+@media(prefers-color-scheme:dark){.info{background:#1b2c3f;color:#9cc4ee}}
+#xtip{position:absolute;z-index:60;pointer-events:none;background:#0f172a;color:#fff;border-radius:6px;padding:8px 10px;font-size:13px;line-height:1.45;opacity:0;transition:opacity .1s;max-width:min(320px,90vw);left:0;top:0}
+
+input[type=radio],input[type=checkbox]{width:auto;margin:0}
+.exp{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-top:14px}
+.exp>summary{cursor:pointer;padding:12px 14px;font-size:1rem;list-style:none}
+.exp>summary::-webkit-details-marker{display:none}
+.exp>summary::after{content:"⌃";float:right;color:var(--mute);font-size:.9rem}
+.exp:not([open])>summary::after{content:"⌄"}
+.exp .in{display:flex;flex-direction:column;gap:1rem;padding:6px 14px 18px}
+.exp .in>*{margin:0}.exp .in h3{font-size:1.4rem;font-weight:600;padding:.5rem 0 .25rem}
+.pea-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px;margin-top:6px}
+.pea-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 8px;text-align:center;cursor:pointer;outline:none;box-shadow:0 1px 2px rgba(0,0,0,.03);-webkit-tap-highlight-color:transparent}
+.pea-card .k{font-size:.72rem;color:var(--mute);text-transform:uppercase;font-weight:700;letter-spacing:.04em}
+.pea-card .v{font-size:1.05rem;font-weight:700;color:var(--ink);margin-top:2px}
+.pea-tip{display:none;position:absolute;bottom:calc(100% + 8px);left:0;z-index:50;background:#0f172a;color:#fff;border-radius:8px;padding:8px 12px;font-size:.78rem;line-height:1.5;text-align:left;white-space:nowrap;box-shadow:0 6px 18px rgba(15,23,42,.3);pointer-events:none;text-transform:none;letter-spacing:0;font-weight:400}
+.pea-card:hover .pea-tip,.pea-card:focus .pea-tip{display:block}
+@media(min-width:641px){.pea-card:last-child .pea-tip{left:auto;right:0}}
+@media(max-width:640px){.pea-cards{grid-template-columns:repeat(3,1fr);gap:8px}.pea-card:nth-child(3n+2) .pea-tip{left:50%;transform:translateX(-50%)}.pea-card:nth-child(3n) .pea-tip{left:auto;right:0}}
+.hm2{width:100%}.hm2g{display:grid;grid-template-columns:40px repeat(12,minmax(0,1fr));gap:2px;align-items:center;margin-top:28px}.hm2g.cp{margin-top:18px}
+.hm2g .xl{font-size:9px;text-align:center;color:var(--mute);margin-top:-20px;height:18px}.hm2g.cp .xl{margin-top:-14px}
+.hm2g .yl{font-size:11px;text-align:right;padding-right:6px}
+.hm2g .hc{height:32px;line-height:32px;text-align:center;font-size:10px;cursor:pointer}
+.hm2cb{position:relative;width:90%;margin:14px auto 26px}.hm2cb.cp{margin-top:6px}.hm2cb i{display:block;height:10px}
+.hm2cb span{position:absolute;top:13px;font-size:10px;transform:translateX(-50%);color:var(--mute)}
+.pea-duo{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 4px}
+.pea-duo-item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px;text-align:center}
+.pea-duo-item .k{font-size:.66rem;color:var(--mute);text-transform:uppercase;font-weight:700;letter-spacing:.04em}
+.pea-duo-item .v{font-size:1.3rem;font-weight:800;color:var(--ink);line-height:1.25}
+.pea-duo-item .s{font-size:.68rem;color:var(--mute)}
+.pea-duo-item.hl{background:#f0f9ff;border-color:#7dd3fc}.pea-duo-item.hl .v{font-size:1.6rem;color:#0284c7}
+.pea-duo.tri{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.pea-duo.tri .pea-duo-item{padding:8px 4px;min-width:0}
+.pea-duo.tri .pea-duo-item .k{font-size:min(.62rem,2.4vw);letter-spacing:0;line-height:1.2}
+.pea-duo.tri .pea-duo-item .v{font-size:min(1.1rem,4.2vw);white-space:nowrap}
+@media(max-width:640px){.pea-duo-item .v{font-size:1.15rem}.pea-duo-item.hl .v{font-size:1.4rem}}
+#sim{max-width:520px;width:calc(100% - 16px);max-height:92vh;overflow:auto;padding:16px}
+#sim .ft{font-size:.72rem;font-weight:700;color:var(--mute);text-transform:uppercase;margin:10px 0 4px}
+.c2{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}.c3{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem}.c3 .sbtn{font-size:.78rem;padding:8px 3px}
+.rad{display:flex;flex-wrap:wrap;gap:.3rem 1rem;align-items:center}.rad label,label.ck{display:flex;align-items:center;gap:6px;margin:4px 0;color:var(--ink);font-size:14px}
+.bx{border:1px solid var(--line);border-radius:12px;padding:4px 12px 12px;margin-top:12px}
+hr.sh{border:0;border-top:1px solid var(--line);margin:10px 0}
+.sbtn{width:100%;margin:8px 0;padding:9px 12px;border-radius:8px;font-size:14px}
+.sbtn.primary{background:var(--acc);color:#fff;border-color:var(--acc)}
+.sbtn.exb{background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;border:0;font-weight:800;font-size:.95rem;border-radius:12px;padding:11px 14px;box-shadow:0 2px 8px rgba(37,99,235,.3)}
+.warn{background:rgba(255,227,18,.14);color:#7a5b00;border-radius:8px;padding:12px 14px;font-size:14px;margin:8px 0}
+.err{background:rgba(255,43,43,.1);color:#9b2c2c;border-radius:8px;padding:12px 14px;font-size:14px;margin:8px 0}
+@media(prefers-color-scheme:dark){.warn{color:#f5d76e}.err{color:#ff9b9b}}
+.cap{font-size:.8rem;color:var(--mute);margin:6px 0}.rq{border-radius:10px}.rq.req{border:2px solid #ef4444;padding:1px;margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -61,7 +113,7 @@ tbody tr[data-i]{cursor:pointer}h3{font-size:14px;margin:14px 0 0}.bar{display:f
     <div class="big" id="tot">–</div>
     <div class="sub" id="sub"></div><div class="sub" id="st"></div>
   </div>
-  <div class="bar" style="margin:0"><button id="add">+ Opération</button><button id="cfg">Réglages</button></div>
+  <div class="bar" style="margin:0"><button id="simb">🧪 Simulation</button><button id="add">+ Opération</button><button id="cfg">Réglages</button></div>
 </header>
 <nav id="tabs" role="tablist"></nav>
 <div id="view"></div>
@@ -114,6 +166,7 @@ tbody tr[data-i]{cursor:pointer}h3{font-size:14px;margin:14px 0 0}.bar{display:f
   </form>
 </dialog>
 
+<dialog id="sim"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px"><h2 style="margin:0;font-size:1.2rem">🧪 Simulation nouvelle opération</h2><button type="button" id="sim_x">✕</button></div><div id="sTop"></div><div id="sB"></div><div id="sC"></div><div id="sD"></div></dialog>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 const $=s=>document.querySelector(s);
@@ -522,15 +575,422 @@ function appX(v){
   chart('c4',{type:'line',data:{labels:mv.map(t=>t.d.toLocaleDateString('fr-FR',{month:'2-digit',year:'2-digit'})),datasets:ds},options:{maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},plugins:{legend:{display:false},tooltip:{callbacks:{label:x=>' '+fE(x.parsed.y,0)}}},scales:{y:{beginAtZero:true,grid:{color:css('--line')}},x:{grid:{display:false},ticks:{maxTicksLimit:5}}}}});
   bars('c9',ys.map(String),ys.map(y=>sy(ap,y)),'#06b6d4');if(rt.length)bars('c10',ys.map(String),ys.map(y=>sy(rt,y)),'#f87171')}
 
-/* Dividendes & Cartographie */
+/* Infobulle HTML commune aux graphiques (fond sombre, comme Plotly) */
+function tipEl(){let e=document.getElementById('xtip');if(!e){e=document.createElement('div');e.id='xtip';document.body.appendChild(e)}return e}
+const extTip=fn=>({enabled:false,external:({chart,tooltip:t})=>{const e=tipEl();
+  if(t.opacity===0||!t.dataPoints||!t.dataPoints.length){e.style.opacity=0;return}
+  e.innerHTML=fn(t.dataPoints[0].dataIndex);const r=chart.canvas.getBoundingClientRect(),w=e.offsetWidth,h=e.offsetHeight;
+  let x=r.left+scrollX+t.caretX-w/2,y=r.top+scrollY+t.caretY-h-12;
+  x=Math.max(scrollX+4,Math.min(x,scrollX+innerWidth-w-4));if(y<scrollY+4)y=r.top+scrollY+t.caretY+16;
+  e.style.transform=`translate(${x}px,${y}px)`;e.style.opacity=1}});
+const PAL=['#8fb0ff','#f2c5e8','#c8d9ff','#c8b8f5','#f2b6ae','#dda899','#f4d9b0','#c5dfc5','#6fb3ad'];
+const palCol=i=>i<PAL.length?PAL[i]:`hsl(${(i*47)%360},45%,72%)`;
+const MOIS=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const MABR=['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Aoû','Sep','Oct','Nov','Déc'];
+
+/* Calendrier des dividendes à venir : même estimation que app_perso.py
+   (périodicité moyenne, croissance annuelle bornée, échéances sur les 12 prochains mois civils) */
+function divCal(){
+  const now=new Date(),held=new Set(R.pos.filter(p=>p.open).map(p=>p.tk)),dv=S.tx.filter(t=>t.type=='DIVIDENDE');
+  if(!dv.length||!R.pos.length)return{empty:1};
+  const nm={};S.tx.forEach(t=>{if(t.type!='APPORT'&&t.type!='RETRAIT')nm[t.tk]=t.nom});
+  const by={};dv.forEach(t=>(by[t.tk]=by[t.tk]||[]).push(t));
+  const hor=new Date(now.getFullYear(),now.getMonth()+12,0,now.getHours(),now.getMinutes(),now.getSeconds());
+  const mean=a=>a.reduce((s,x)=>s+x,0)/a.length,prev=[],occ=[];
+  for(const tk in by){if(!held.has(tk))continue;
+    const g=by[tk].slice().sort((a,b)=>a.d-b.d);let iv;
+    if(g.length==1)iv=365.25;else{const x=[];for(let i=1;i<g.length;i++)x.push(Math.floor((g[i].d-g[i-1].d)/864e5));iv=mean(x);if(iv<20)continue}
+    const nets=g.map(t=>t.p-t.c-t.ret),last=g[g.length-1].d,lastAmt=nets[nets.length-1],ym={};
+    g.forEach((t,i)=>{const y=t.d.getFullYear();(ym[y]=ym[y]||[]).push(nets[i])});
+    const ys=Object.keys(ym).map(Number).sort((a,b)=>a-b);let gr=0;
+    if(ys.length>=2&&mean(ym[ys[0]])>0){const n=ys[ys.length-1]-ys[0];if(n>0){const q=Math.pow(mean(ym[ys[ys.length-1]])/mean(ym[ys[0]]),1/n)-1;if(isFinite(q))gr=Math.max(-.5,Math.min(q,1))}}
+    const proj=d=>lastAmt*Math.pow(1+gr,Math.max(0,Math.floor((d-last)/864e5)/365.25));
+    let nd=new Date(+last+iv*864e5),k=0;while(nd<now&&k<50){nd=new Date(+nd+iv*864e5);k++}
+    prev.push({tk,nd,m:proj(nd)});
+    let od=nd;k=0;while(od<=hor&&k<50){occ.push({n:nm[tk]||tk,d:od,m:proj(od)});od=new Date(+od+iv*864e5);k++}}
+  if(!prev.length)return{none:1};
+  const lim=new Date(+now+365*864e5),total=prev.filter(x=>x.nd<=lim).reduce((s,x)=>s+x.m,0);
+  const mo=Array.from({length:12},(_,i)=>new Date(now.getFullYear(),now.getMonth()+i,1)),agg={};
+  occ.forEach(o=>{const k=o.d.getFullYear()+'-'+o.d.getMonth();(agg[k]=agg[k]||{})[o.n]=(agg[k][o.n]||0)+o.m});
+  return{total,mo,agg,names:[...new Set(occ.map(o=>o.n))].sort(),has:occ.length>0}}
+function chartDivCal(C){
+  const lab=C.mo.map(d=>MABR[d.getMonth()]+' '+d.getFullYear()),key=d=>d.getFullYear()+'-'+d.getMonth();
+  const tot=C.mo.map(d=>Object.values(C.agg[key(d)]||{}).reduce((a,b)=>a+b,0));
+  const ds=C.names.map((n,i)=>({label:n,data:C.mo.map(d=>(C.agg[key(d)]||{})[n]||0),backgroundColor:palCol(i),borderColor:css('--card'),borderWidth:1.5,barPercentage:.65,categoryPercentage:1}));
+  const fT=t=>t<=0?'':t>=10?nf(0).format(t)+' €':nf(1).format(t)+' €';
+  const tip=i=>{const d=C.mo[i],a=C.agg[key(d)]||{},ent=Object.entries(a).sort((x,y)=>y[1]-x[1]);
+    return`<b>${MOIS[d.getMonth()]} ${d.getFullYear()}</b><br><span style="color:#2dd4bf"><b>Total : ${fE(tot[i])}</b></span>`+(ent.length?ent.map(([n,m])=>`<br>${n} : ${fE(m)}`).join(''):'<br>Aucun versement attendu')};
+  const lbl={id:'totm',afterDatasetsDraw(c){const{ctx,scales:{x,y}}=c;ctx.save();ctx.font='600 11px system-ui,sans-serif';ctx.fillStyle=css('--acc2');ctx.textAlign='center';
+    tot.forEach((t,i)=>{if(t>0)ctx.fillText(fT(t),x.getPixelForValue(i),y.getPixelForValue(t)-6)});ctx.restore()}};
+  chart('c11',{type:'bar',data:{labels:lab,datasets:ds},plugins:[lbl],options:{maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},layout:{padding:{top:14}},
+    plugins:{legend:{position:'top',align:'start',labels:{boxWidth:12,boxHeight:12,font:{size:11}}},tooltip:extTip(tip)},
+    scales:{x:{stacked:true,grid:{display:false},ticks:{maxRotation:45,minRotation:C.mo.length>8?45:0}},
+      y:{stacked:true,beginAtZero:true,max:Math.max(...tot,1)*1.2,grid:{color:css('--line'),borderDash:[2,3]},ticks:{callback:v=>nf(0).format(v)+' €'}}}}})}
+
+/* ===== Composants communs repris du Streamlit : cartes, infobulles, cartographie mensuelle ===== */
+const TIPS=[];
+function showTip(el,html){const e=tipEl();e.innerHTML=html;const r=el.getBoundingClientRect(),w=e.offsetWidth,h=e.offsetHeight;
+  let x=r.left+scrollX+r.width/2-w/2,y=r.top+scrollY-h-8;
+  x=Math.max(scrollX+4,Math.min(x,scrollX+innerWidth-w-4));if(y<scrollY+4)y=r.bottom+scrollY+8;
+  e.style.transform=`translate(${x}px,${y}px)`;e.style.opacity=1}
+const hideTip=()=>{const e=document.getElementById('xtip');if(e)e.style.opacity=0};
+document.addEventListener('mouseover',e=>{const c=e.target.closest&&e.target.closest('[data-ti]');if(c)showTip(c,TIPS[c.dataset.ti])});
+document.addEventListener('mouseout',e=>{if(e.target.closest&&e.target.closest('[data-ti]'))hideTip()});
+document.addEventListener('click',e=>{const c=e.target.closest&&e.target.closest('[data-ti]');if(c)showTip(c,TIPS[c.dataset.ti]);else hideTip()});
+
+/* Infobulle d'une carte (titre, total, détail de la composition) */
+function peaTip(titre,totalTxt,lines,col){
+  return`<div class="pea-tip"><b style="color:${col}">${esc(titre)}</b><div>Total : <b>${esc(totalTxt)}</b></div>${lines.map(l=>`<div>${esc(l)}</div>`).join('')}</div>`}
+/* render_total_card */
+function totalCard(label,m,col,lines){
+  return`<div class="pea-card" tabindex="0" style="border-left:6px solid ${col};padding:14px 18px;text-align:left;margin-bottom:4px"><div class="k">${label}</div><div style="font-size:1.55rem;font-weight:800;color:var(--ink);margin-top:3px">${fE(m)}</div>${lines&&lines.length?peaTip('Total général',fE(m),lines,col):''}</div>`}
+/* render_yearly_amounts : un total par année, la plus récente d'abord */
+function yearCards(years,col){
+  return`<div class="pea-cards">${years.sort((a,b)=>b.y-a.y).map(o=>`<div class="pea-card" tabindex="0" style="border-left:4px solid ${col}"><div class="k">${o.y}</div><div class="v">${fE(o.m)}</div>${o.lines&&o.lines.length?peaTip(o.y,fE(o.m),o.lines,col):''}</div>`).join('')}</div>`}
+
+/* build_calendar_heatmap : une ligne par année (la plus récente en haut), un mois par colonne, dégradé blanc -> couleur d'accent,
+   légende horizontale dessous, aucun mois futur ni antérieur à l'ouverture. rows = [{d:Date,v:nombre,lines:[...]?}] */
+const hexRGB=c=>[1,3,5].map(i=>parseInt(c.slice(i,i+2),16));
+const lerpC=(c0,c1,t)=>{const a=hexRGB(c0),b=hexRGB(c1);return'rgb('+a.map((x,i)=>Math.round(x+(b[i]-x)*t)).join(',')+')'};
+function fCell(v,zero='-'){if(Math.abs(v)<.05)return zero;if(v>=1000)return(v/1000).toFixed(1).replace('.',',')+'k';if(v>=10)return v.toFixed(0);return v.toFixed(1).replace('.',',')}
+function heat(rows,o){
+  if(!rows.length)return'<div class="info">Aucune donnée à afficher pour le moment.</div>';
+  const pct=o.unit=='pct',cs=o.cs,acc=cs[cs.length-1],today=new Date();
+  const fV=pct?x=>nf(2).format(x)+' %':fE,cell=pct?(x,z='-')=>Math.abs(x)<.005?z:nf(2).format(x):fCell,tick=pct?x=>nf(2).format(x)+' %':x=>fCell(x,'0');
+  const MC=['Jan','Fév','Mar','Avr','Mai','Jui','Jul','Aoû','Sep','Oct','Nov','Déc'],MH=['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+  const sum={},src={};rows.forEach(r=>{const k=r.d.getFullYear()+'-'+r.d.getMonth();sum[k]=(sum[k]||0)+r.v;(src[k]=src[k]||[]).push(r)});
+  let fy,fm;if(o.open){fy=o.open.getFullYear();fm=o.open.getMonth()+1}else{fy=Math.min(...rows.map(r=>r.d.getFullYear()));fm=1}
+  const years=[];for(let y=today.getFullYear();y>=fy;y--)years.push(y);
+  const Z=years.map(y=>{const mn=y==fy?fm:1,mx=y==today.getFullYear()?today.getMonth()+1:12;
+    return Array.from({length:12},(_,m)=>(m+1>=mn&&m+1<=mx)?(sum[y+'-'+m]||0):null)});
+  let zmax=Math.max(0,...Z.flat().filter(v=>v!=null));if(zmax<=0)zmax=1;
+  let h=`<div class="hm2"><div class="hm2g${o.compact||pct?' cp':''}"><div></div>${MC.map(m=>`<div class="xl">${m}</div>`).join('')}`;
+  years.forEach((y,yi)=>{h+=`<div class="yl">${y}</div>`;
+    Z[yi].forEach((v,m)=>{if(v==null){h+='<div></div>';return}
+      let tip=`<b>${MH[m]} ${y}</b><br><span style="color:${acc}"><b>${pct?'Rendement':'Total'} : ${fV(v)}</b></span>`;
+      if(o.kind&&v!=0){const L=o.kind(src[y+'-'+m]||[]);if(L.length)tip+='<br>'+L.map(esc).join('<br>')}
+      h+=`<div class="hc" data-ti="${TIPS.push(tip)-1}" style="background:${lerpC(cs[0],acc,v/zmax)};color:${v/zmax>.55?'#fff':'#0f172a'}">${cell(v)}</div>`})});
+  h+=`</div><div class="hm2cb${o.compact||pct?' cp':''}"><i style="background:linear-gradient(90deg,${cs[0]},${acc})"></i><span style="left:0">${tick(0)}</span><span style="left:50%">${tick(zmax/2)}</span><span style="left:100%">${tick(zmax)}</span></div></div>`;
+  return h}
+
+/* Capital investi moyen par mois (coût d'achat des lignes détenues, jour de semaine par jour de semaine),
+   utilisé pour le rendement mensuel des dividendes = dividendes nets du mois ÷ capital investi moyen du mois */
+function invMonthly(){
+  const by={};S.tx.forEach(t=>{if(t.type!='APPORT'&&t.type!='RETRAIT')(by[t.tk]=by[t.tk]||[]).push(t)});
+  const ev=[];
+  for(const tk in by){
+    const key=t=>{const d=new Date(t.d);if(t.type=='SPLIT')d.setHours(0,0,0,0);return d.getTime()};
+    const g=by[tk].slice().sort((a,b)=>key(a)-key(b));let sh=0,inv=0;
+    for(const t of g){
+      if(t.type=='ACHAT'){sh+=t.q;inv+=t.q*t.p+t.f}
+      else if(t.type=='VENTE'){if(sh>0){const pru=inv/sh;sh-=t.q;inv=sh*pru}}
+      else if(t.type=='SPLIT'){if(sh>0)sh=Math.trunc(sh*t.q+1e-9)}
+      else if(t.type=='DIVIDENDE'&&t.remb>0)inv=Math.max(0,inv-t.remb);
+      ev.push({k:new Date(t.d.getFullYear(),t.d.getMonth(),t.d.getDate()).getTime(),tk,inv})}}
+  ev.sort((a,b)=>a.k-b.k);
+  const cur={},out={};let tot=0,e=0;const first=S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d),end=new Date();
+  for(let d=new Date(first.getFullYear(),first.getMonth(),first.getDate());d<=end;d.setDate(d.getDate()+1)){
+    while(e<ev.length&&ev[e].k<=d.getTime()){const x=ev[e++];tot+=x.inv-(cur[x.tk]||0);cur[x.tk]=x.inv}
+    const w=d.getDay();if(w==0||w==6)continue;
+    const k=d.getFullYear()+'-'+d.getMonth(),o=out[k]||(out[k]={s:0,n:0});o.s+=tot;o.n++}
+  const r={};for(const k in out)r[k]=out[k].s/out[k].n;return r}
+
+/* Dividendes & Cartographie — port de tab_dividends (app_perso.py) */
+function drawDivCal(){
+  const C=divCal();let h='<hr style="margin:-22px 0 18px 0;border:0;border-top:1px solid var(--line)"><h3>📅 Calendrier des dividendes à venir</h3>';
+  if(C.empty)return h+'<div class="info">Pas encore assez d’historique de dividendes pour estimer un calendrier.</div>';
+  if(C.none)return h+'<div class="info">Historique trop court (il faut au moins 2 versements passés) sur une position encore détenue : aucune estimation fiable disponible pour le moment.</div>';
+  h+=totalCard('💰 Total estimé des dividendes à venir (12 prochains mois)',C.total,'#0d9488',[]);
+  if(C.has)h+='<div style="height:18px"></div><p><b>📆 Dividendes attendus sur les 12 prochains mois, par mois</b></p><div class="cv" style="height:360px"><canvas id="c11"></canvas></div>';
+  setTimeout(()=>{if(C.has)chartDivCal(C)},0);return h}
 function divX(v){
-  const dv=S.tx.filter(t=>t.type=='DIVIDENDE'),net=t=>t.p-t.ret-t.c+t.arr,y={};dv.forEach(t=>{const k=t.d.getFullYear();y[k]=(y[k]||0)+net(t)});const ys=Object.keys(y).sort();
-  const g={};dv.forEach(t=>{const a=t.d.getFullYear(),i=t.d.getMonth();(g[a]=g[a]||Array.from({length:12},()=>({s:0,n:[]})))[i].s+=net(t);g[a][i].n.push(t.nom)});
-  const gr=Object.keys(g).sort().map(a=>({y:a,m:g[a].map(c=>c.s||null),tt:g[a].map(c=>[...new Set(c.n)].join(', ')),t:g[a].reduce((p,c)=>p+c.s,0)}));
-  v.innerHTML=`<section><h2>💶 Dividendes nets par année</h2><div class="cv"><canvas id="c3"></canvas></div></section>
-    <section><h2>🗓️ Cartographie mensuelle des dividendes</h2>${gr.length?hgrid(gr,x=>nf(0).format(x),3,x=>nf(0).format(x))+'<p class="hint">Dividendes nets reçus, en €. Touche une case pour voir les lignes.</p>':'<p class="hint">Aucun dividende enregistré.</p>'}</section>
-    <section><h2>Par ligne</h2>${table([{k:'nom',h:'Valeur',f:x=>x},{k:'div',h:'Dividendes nets',f:x=>fE(x)}],R.pos.filter(p=>p.div>0),1)}</section>`;
-  bars('c3',ys,ys.map(k=>y[k]),css('--acc'))}
+  const now=new Date(),rows=[];
+  S.tx.forEach(t=>{
+    if(t.type=='DIVIDENDE')rows.push({d:t.d,v:t.p-t.c-t.ret+t.arr,s:'Dividende'});
+    else if(t.type=='SPLIT'&&t.rompu>0){const d=t.dr||t.d;if(d<=now)rows.push({d,v:t.rompu,s:'Rompu'})}});
+  const open=S.tx.length?S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d):null;
+  const lines=rs=>{const a=rs.filter(r=>r.s=='Dividende').reduce((s,r)=>s+r.v,0),b=rs.filter(r=>r.s=='Rompu').reduce((s,r)=>s+r.v,0),L=[];
+    if(a>1e-4)L.push('Dividende : '+fE(a));if(b>1e-4)L.push('Rompu : '+fE(b));return L};
+  let h='<details class="exp" open><summary>💶 Section Dividendes & Cartographie</summary><div class="in">';
+  if(rows.length){
+    const tot=rows.reduce((s,r)=>s+r.v,0),ys={};rows.forEach(r=>(ys[r.d.getFullYear()]=ys[r.d.getFullYear()]||[]).push(r));
+    h+=totalCard('Total Général perçu net (Div. + Rompus)',tot,'#0d9488',lines(rows));
+    h+='<div style="height:18px"></div><p><b>Détail net par année :</b></p>';
+    h+=yearCards(Object.keys(ys).map(y=>({y:+y,m:ys[y].reduce((s,r)=>s+r.v,0),lines:lines(ys[y])})),'#0d9488');
+    h+='<div style="height:1em"></div><p><b>Cartographie des dividendes mensuels :</b></p>';
+    h+=heat(rows,{cs:['#f0fdfa','#0d9488'],open,kind:lines,compact:true});
+    h+='<p style="margin:-26px 0 0 0;font-weight:700">Cartographie des rendements mensuels :</p>';
+    const im=invMonthly(),sm={};rows.forEach(r=>{const k=r.d.getFullYear()+'-'+r.d.getMonth();sm[k]=(sm[k]||0)+r.v});
+    const rr=[];for(const k in sm){const inv=im[k]||0;if(inv>0){const[y,m]=k.split('-').map(Number);rr.push({d:new Date(y,m,1),v:sm[k]/inv*100})}}
+    h+=rr.length?heat(rr,{cs:['#f0fdfa','#0f766e'],open,unit:'pct'}):'<div class="info">Pas encore de rendement mensuel à afficher.</div>';
+  }else h+='<div class="info">Aucun dividende ni rompu perçu pour le moment.</div>';
+  h+=drawDivCal()+'</div></details>';
+  v.innerHTML=h}
+
+/* ===== Simulation nouvelle opération — port de dialog_simulation_operation (app_perso.py) ===== */
+const fg=v=>isFinite(v)?String(parseFloat(Number(v).toPrecision(6))):'0';
+const fPD=v=>{if(!isFinite(v))return'N/A';const s=v.toFixed(4);return nf(s.endsWith('00')?2:s.endsWith('0')?3:4).format(v)+' €'};
+const fx2=v=>(isFinite(v)?v:0).toFixed(2).replace('.',',');
+const GRN='#16a34a',RED='#dc2626',GRY='#64748b',NEW='➕ Nouvelle valeur...';
+const dEur=d=>[d>.005?'▲ +'+fE(d):d<-.005?'▼ '+fE(d):'▬ '+fE(0),d>.005?GRN:d<-.005?RED:GRY];
+const dPrix=d=>[d>5e-5?'▲ +'+fPD(d):d<-5e-5?'▼ '+fPD(d):'▬ '+fPD(0),d>5e-5?GRN:d<-5e-5?RED:GRY];
+const dPct=d=>[d>.005?'▲ +'+nf(2).format(d)+' %':d<-.005?'▼ '+nf(2).format(d)+' %':'▬ 0,00 %',d>.005?GRN:d<-.005?RED:GRY];
+const sg=v=>(v>.005?'+':'')+fE(v),pctT=v=>(v>.005?'+':'')+nf(2).format(v)+' %';
+const SM={type:'Achat',choice:NEW,qte:'',prix:'',pxKey:'',ttf:false,exo:false,neu:false,rc:0.5,rt:0.4,
+  av:{saisie:'montant',prix:'',montant:'',qte:'',ttf:false,exo:false,mode:null,qv:'',exoV:false,gEur:0,gPct:0,last:'pct',capPrev:null,cap:0,pv:''},
+  sp:{f:'2',r:''}};
+let REC=null;const rec=x=>{if(REC)REC.push(x)};
+const COLR=(c,a)=>c+a;
+
+/* --- briques d'affichage (mêmes styles que le Streamlit) --- */
+function sStep(num,titre,c,sub=''){rec(['step',num,titre,c]);
+  return`<div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:18px 0 8px 0;padding:9px 12px;background:linear-gradient(90deg,${c}26,${c}0d);border-left:6px solid ${c};border-radius:12px"><span style="background:${c};color:#fff;border-radius:999px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;flex:none">${num}</span><span style="font-weight:800;font-size:1.05rem;color:var(--ink)">${titre}</span>${sub?`<span style="font-size:.78rem;color:var(--mute);font-weight:500;margin-left:6px">${sub}</span>`:''}</div>`}
+function sTicket(titre,qte,prix,c,note=''){rec(['ticket',titre,qte,prix,c]);
+  const k='font-size:.66rem;color:var(--mute);text-transform:uppercase;font-weight:700;letter-spacing:.04em',v=`font-size:min(1.7rem,7vw);font-weight:800;color:${c};line-height:1.2;margin-top:2px`;
+  return`<div style="margin:8px 0;border:2px solid ${c};border-radius:14px;background:${c}10;overflow:hidden"><div style="background:${c};color:#fff;padding:6px 12px;font-size:min(.78rem,3.2vw);font-weight:800;letter-spacing:.04em;text-transform:uppercase;text-align:center">📝 ${titre}</div><div style="display:grid;grid-template-columns:1fr 1.6fr;gap:8px;padding:10px 8px;text-align:center"><div><div style="${k}">Quantité</div><div style="${v}">${qte}</div></div><div><div style="${k}">Prix limite / action</div><div style="${v}">${prix}</div></div></div>${note?`<div style="padding:0 12px 10px 12px;text-align:center;font-size:.76rem;color:var(--mute)">${note}</div>`:''}</div>`}
+function sDuo(items){rec(['cards',items.map(i=>[i[0],i[1],i[2],i[4]||GRY,i[3]])]);
+  return`<div class="pea-duo${items.length==3?' tri':''}">`+items.map(([k,v,s,hl,col])=>`<div class="pea-duo-item${hl?' hl':''}"${col?` style="background:${col}14;border:1px solid ${col}55;border-top:3px solid ${col}"`:''}><div class="k">${k}</div><div class="v"${col?` style="color:${col}"`:''}>${v}</div>${s?`<div class="s">${s}</div>`:''}</div>`).join('')+'</div>'}
+function sGain(items){rec(['cards',items.map(([l,v,c])=>[l,v,'',c,false])]);
+  const bg={[GRN]:['#f0fdf4','#86efac'],[RED]:['#fef2f2','#fca5a5']};
+  return'<div class="pea-duo">'+items.map(([l,v,c])=>{const[b,d]=bg[c]||['#f8fafc','#e2e8f0'];return`<div class="pea-duo-item" style="background:${b};border:1px solid ${d};border-top:3px solid ${c}"><div class="k">${l}</div><div class="v" style="color:${c}">${v}</div></div>`}).join('')+'</div>'}
+function sBA(items){
+  return'<div style="display:flex;flex-wrap:wrap;gap:10px">'+items.map(([l,av,ap,d,c])=>{const a=/^#/.test(c)?c:'#94a3b8',pill=a.length==7?a+'1a':'#f1f5f9';
+    return`<div style="background:${a}12;border:1px solid ${a}55;border-top:4px solid ${a};border-radius:12px;padding:12px 14px;flex:1 1 150px;min-width:0;box-shadow:0 1px 3px rgba(15,23,42,.06)"><div style="font-size:.7rem;color:var(--mute);text-transform:uppercase;font-weight:800;letter-spacing:.05em;margin-bottom:10px">${l}</div><div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap"><div><div style="font-size:.6rem;color:#94a3b8;font-weight:700;text-transform:uppercase">Avant</div><div style="font-size:.9rem;color:var(--mute);font-weight:600">${av}</div></div><div style="color:#94a3b8;font-weight:800;font-size:1.1rem;padding-bottom:1px">→</div><div><div style="font-size:.6rem;color:#94a3b8;font-weight:700;text-transform:uppercase">Après</div><div style="font-size:1.2rem;font-weight:800;color:${a.length==7&&a!='#94a3b8'?a:'var(--ink)'};line-height:1.15">${ap}</div></div></div><div style="display:inline-block;margin-top:10px;padding:2px 10px;border-radius:999px;background:${pill};font-size:.76rem;font-weight:800;color:${a}">${d}</div></div>`}).join('')+'</div>'}
+const ph=(ic,t)=>`<div style="padding:20px;background:var(--alt);border:1px dashed var(--line);border-radius:12px;text-align:center;color:var(--mute)"><div style="font-size:1.4rem">${ic}</div><div style="font-size:.88rem;font-weight:600;margin-top:6px">${t}</div></div>`;
+const fld=(t)=>`<div class="ft">${t}</div>`;
+const sInp=(path,val,ph,id,extra='')=>`<input type="text" inputmode="decimal" autocomplete="off" id="${id}" data-s="${path}" placeholder="${ph||''}" value="${esc(val)}" ${extra}>`;
+const ckb=(path,on,t)=>`<label class="ck"><input type="checkbox" data-s="${path}" ${on?'checked':''}><span>${t}</span></label>`;
+const setP=(p,v)=>{const a=p.split('.');let o=SM;while(a.length>1)o=o[a.shift()];o[a[0]]=v};
+const simPos=()=>SM.choice&&SM.choice!==NEW?R.pos.find(p=>p.nom==SM.choice)||null:null;
+const defPx=p=>p&&p.px>0?String(p.px):'';
+
+/* --- partie saisie (reconstruite seulement quand la structure change) --- */
+function simIn(){
+  const T=SM.type,names=[...new Set(R.pos.map(p=>p.nom))].sort(),held=[...new Set(R.pos.filter(p=>p.open).map(p=>p.nom))].sort();
+  REC=null;
+  let h=`<div class="c2"><div><label for="s_rc">💳 Commission courtier (%)</label><input id="s_rc" data-r="rc" inputmode="decimal" value="${fx2(SM.rc)}"></div><div><label for="s_rt">🏛️ Taux TTF (%)</label><input id="s_rt" data-r="rt" inputmode="decimal" value="${fx2(SM.rt)}"></div></div><hr class="sh">`;
+  h+=`<div class="ft" style="margin-top:0">Type d'opération</div><div class="rad">${['Achat','Vente','Achat/Vente','Split'].map(t=>`<label><input type="radio" name="s_t" value="${t}" data-s="type" ${T==t?'checked':''}>${t}</label>`).join('')}</div>`;
+  const sel=(opts)=>`<label for="s_ch">Valeur concernée</label><select id="s_ch" data-s="choice">${opts.map(o=>`<option ${o==SM.choice?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  if(T=='Achat'){const o=[NEW,...names];if(!o.includes(SM.choice))SM.choice=NEW;h+=sel(o)}
+  else if(T=='Vente'||T=='Split'){
+    if(!held.length)h+='<div class="info" style="margin-top:12px">Aucune position en portefeuille pour lancer cette simulation.</div>';
+    else{if(!held.includes(SM.choice))SM.choice=held[0];h+=sel(held)}}
+  const pos=simPos();
+  if(T=='Achat'||T=='Vente'){
+    const ach=T=='Achat',key=T+'|'+SM.choice;if(SM.pxKey!==key){SM.prix=defPx(pos);SM.pxKey=key}
+    h+=sStep(1,ach?'Achat':'Vente',ach?'#1d4ed8':'#7c3aed');
+    h+=fld(pos?`Quantité (Nombre détenu dans le portefeuille : ${fg(pos.sh)})`:'Quantité')+`<div class="rq" data-req="qte">${sInp('qte',SM.qte,'0','s_q')}</div>`;
+    const pb=ach?"Prix d'achat (€)":'Prix de vente (€)';
+    h+=fld(pos?`${pb} (PRU actuel : ${fPD(pos.pru)})`:pb)+`<div class="rq" data-req="prix">${sInp('prix',SM.prix,'0,0000','s_p')}</div>`;
+    if(ach)h+=ckb('ttf',SM.ttf,'☑️ Éligible TTF (taxe sur les transactions financières)');
+    h+=ckb('exo',SM.exo,'🚫 Exonération des commissions courtier')}
+  else if(T=='Achat/Vente'){const a=SM.av,q=a.saisie=='qte';
+    h+=`<div class="bx">${sStep(1,'Achat','#1d4ed8','Que voulez-vous simuler ?')}<div class="rad"><span style="color:var(--mute)">Je renseigne :</span>${[['montant','💶 Un montant à investir'],['qte',"🔢 Un nombre d'actions"]].map(([v,l])=>`<label><input type="radio" name="s_sa" value="${v}" data-s="av.saisie" ${a.saisie==v?'checked':''}>${l}</label>`).join('')}</div>
+      <div class="c2"><div><label for="s_ap">Prix d'une action (€)</label>${sInp('av.prix',a.prix,'Ex : 12,50','s_ap')}</div><div>${q?`<label for="s_aq">Nombre d'actions</label>${sInp('av.qte',a.qte,'Ex : 40','s_aq')}`:`<label for="s_am">Montant à investir (€)</label>${sInp('av.montant',a.montant,'Ex : 500','s_am')}`}</div></div>
+      <div class="c2">${ckb('av.ttf',a.ttf,'☑️ Éligible TTF (achat)')}${ckb('av.exo',a.exo,'🚫 Sans commission (achat)')}</div></div>`}
+  else if(T=='Split'){
+    if(held.length&&pos)h+=sStep(1,'Split','#d97706','Choisissez le facteur')+`<label for="s_sf">Facteur de split (ex : 2 pour un split 2-pour-1, 0,5 pour un regroupement 1-pour-2)</label>${sInp('sp.f',SM.sp.f,'','s_sf')}<label for="s_sr">Rompu versé en cash (€) — optionnel</label>${sInp('sp.r',SM.sp.r,'0','s_sr')}`;
+    else if(held.length)h+='<div class="info" style="margin-top:12px">Choisissez une valeur détenue pour simuler un split.</div>'}
+  $('#sTop').innerHTML=h;SM._ck='';$('#sC').innerHTML='';simOut()}
+
+/* --- Achat / Vente simple --- */
+function simAV(){
+  const T=SM.type,ach=T=='Achat',pos=simPos(),nom=pos?pos.nom:(ach?'Nouvelle valeur':'');
+  const q=n2(SM.qte),p=n2(SM.prix),tc=SM.rc/100,mb=r2(q*p),exo=SM.exo,elig=ach&&SM.ttf;
+  const com=exo?0:r2(mb*tc),ttf=elig?r2(mb*SM.rt/100):0,frais=r2(com+ttf),tot=ach?r2(mb+frais):r2(mb-frais);
+  const det=[];if(com>0)det.push('commission '+fE(com));else if(exo)det.push('commission exonérée');if(ttf>0)det.push('TTF '+fE(ttf));
+  const detS=det.length?det.join(' + '):'aucun frais',net=q>0?tot/q:0;let h='';
+  if(q>0&&p>0){const c=ach?'#1d4ed8':'#7c3aed';
+    h+=sStep(2,ach?"Ordre d'achat":"Ordre de vente",c)+sTicket(ach?"À saisir dans l'ordre d'achat":"À saisir dans l'ordre de vente",fg(q),fPD(p),c);
+    h+=sDuo([[ach?'Total payé':'Total perçu',fE(tot),ach?'frais inclus':'frais déduits',true,ach?'#d97706':GRN],['Frais',fE(frais),detS,false,GRY],['Prix net / action',fPD(net),ach?'frais compris':'frais déduits',false,'#0891b2']])}
+  h+='<hr class="sh" style="margin:14px 0">';
+  if(!nom||q<=0||p<=0)return h+ph('🧪','Renseignez une valeur, une quantité et un prix pour lancer la simulation');
+  const qA=pos?pos.sh:0,invA=pos?pos.inv:0,pruA=pos?pos.pru:0,vpA=pos?pos.val:0,cashA=R.cash,mop=q*p;let gr=null,cashP,qP,invP,pruP,cost=0;
+  if(ach){if(mop+frais>cashA)h+=`<div class="warn">⚠️ Ce montant (${fE(mop+frais)}) dépasse la poche espèces disponible (${fE(cashA)}) — la simulation suppose malgré tout que le versement est disponible.</div>`;
+    cashP=cashA-mop-frais;qP=qA+q;invP=invA+mop+frais;pruP=qP>1e-4?invP/qP:0}
+  else{if(q>qA)h+=`<div class="err">⚠️ Vous ne détenez que ${fg(qA)} unité(s) de ${esc(nom)} — impossible de simuler une vente de ${fg(q)}.</div>`;
+    const qe=Math.min(q,qA);cost=qe*pruA;gr=mop-frais-cost;cashP=cashA+mop-frais;qP=Math.max(0,qA-q);invP=qP*pruA;pruP=pruA}
+  const vtA=R.valeur+cashA,vpP=qP*p,vtP=vtA-frais,glA=vpA-invA,glP=vpP-invP,pwA=vtA>0?vpA/vtA*100:0,pwP=vtP>0?vpP/vtP*100:0;
+  let n=3;
+  if(!ach&&pos&&q>0&&Math.min(q,qA)>0&&pruA>0){
+    h+=`<button class="sbtn${SM.neu?' primary':''}" data-a="neu" title="Affiche le prix de vente à saisir dans l'ordre pour ne rien perdre par rapport au PRU net de la position.">⚖️ Revendre en neutre : quel prix saisir ?</button>`;
+    if(SM.neu){const qn=Math.min(q,qA),tx=exo?0:tc,cout=r2(qn*pruA);
+      if(tx>=1)h+='<div class="warn">⚠️ Taux de commission de 100% invalide pour le calcul du prix de vente.</div>';
+      else{let pn=Math.ceil(Number((cout/(1-tx)/qn*10000).toFixed(6)))/10000;
+        for(let i=0;i<500;i++){const m=r2(qn*pn);if(r2(m-r2(m*tx))>=cout-1e-9)break;pn=Math.round((pn+.0001)*1e4)/1e4}
+        const cours=pos.px,ec=cours>0?(pn/cours-1)*100:0,ecT=(ec>.005?'+':'')+nf(2).format(ec)+' %',col=ec<=0?GRN:'#d97706';
+        h+=sStep(3,'Revente neutre','#0891b2')+sTicket('À saisir pour revendre en neutre',fg(qn),fPD(pn),'#0891b2');
+        h+=sDuo([['PRU net',fPD(pruA),"coût d'achat par action",false,'#0891b2'],['Cours actuel',fPD(cours),'',false,GRY],['Écart avec le cours',ecT,ec<=0?'déjà en gain':'hausse à attendre',true,col]]);n=4}}}
+  h+=sStep(n,'Impact sur le portefeuille','#0f766e');
+  if(gr!==null){const c=gr>=0?GRN:RED,gp=cost>0?gr/cost*100:0;
+    h+=sDuo([['Plus-value réalisée',fE(gr),'sur cette vente',true,c],['Performance',(gp>.005?'▲':gp<-.005?'▼':'▬')+' '+(gp>=0?'+':'')+nf(2).format(gp)+' %',"sur le coût d'achat des titres vendus",false,c]])}
+  const[dC,cC]=dEur(cashP-cashA),dq=qP-qA,dqc=dq>0?GRN:dq<0?RED:GRY,dqs=`${dq>1e-9?'▲':dq<-1e-9?'▼':'▬'} ${dq>0?'+':''}${fg(dq)} titre(s)`;
+  const[dP,cP]=dPrix(pruP-pruA),[dV,cV]=dEur(vpP-vpA),[dG,cG]=dEur(glP-glA),[dW,cW]=dPct(pwP-pwA);
+  const l1=[['💰 Poche espèces',fE(cashA),fE(cashP),dC,cC],['📦 Quantité détenue',fg(qA),fg(qP),dqs,dqc]];
+  if(ach)l1.push(['🎯 PRU net',fPD(pruA),fPD(pruP),dP,cP]);
+  h+=sBA(l1)+'<div style="height:10px"></div>'+sBA([['📊 Valeur de la ligne',fE(vpA),fE(vpP),dV,cV],['💹 Gain latent sur la ligne',fE(glA),fE(glP),dG,cG],['⚖️ Poids dans le portefeuille',nf(2).format(pwA)+' %',nf(2).format(pwP)+' %',dW,cW]]);
+  if(ach||q<=qA+1e-9)h+=`<hr class="sh" style="margin:14px 0"><div class="cap">La simulation vous semble cohérente ? Transférez-la vers une vraie ${ach?"opération d'achat":'opération de vente'} : quantité, prix, commission${ach?' et TTF':''} seront déjà renseignés, il ne restera qu'à saisir la date et l'heure.</div><button class="sbtn primary" data-a="transfer">➡️ Transférer vers une vraie ${ach?"opération d'achat":'opération de vente'}</button>`;
+  return h}
+
+/* --- Achat/Vente : aller-retour achat puis revente --- */
+function simRT(){
+  const a=SM.av,pa=n2(a.prix),tc=a.exo?0:SM.rc/100,tt=a.ttf?SM.rt/100:0,byQ=a.saisie=='qte',mont=n2(a.montant),qs=Math.floor(n2(a.qte));
+  rec(['step',1,'Achat','#1d4ed8']);
+  rec(['inputs',[["Prix d'une action",pa?fPD(pa):'-'],byQ?["Nombre d'actions",String(qs||0)]:['Montant à investir',mont?fE(mont):'-'],['Commission courtier',a.exo?'exonérée':fg(SM.rc).replace('.',',')+' %'],['TTF',a.ttf?fg(SM.rt).replace('.',',')+' %':'non applicable']]]);
+  let q=0;if(byQ)q=qs;else if(pa>0&&mont>0){q=Math.floor(mont/(pa*(1+tc+tt)));
+    while(q>0){const mb=r2(q*pa),c=a.exo?0:r2(mb*tc),t=a.ttf?r2(mb*tt):0;if(r2(mb+c+t)<=mont+1e-9)break;q--}}
+  if(!pa||q<1)return{B:ph('💱',"Renseignez un prix d'achat et un montant à investir (ou un nombre d'actions) pour lancer la simulation"),C:null,D:''};
+  const mb=r2(q*pa),com=a.exo?0:r2(mb*tc),ttf=a.ttf?r2(mb*tt):0,frais=r2(com+ttf),cap=r2(mb+frais),net=cap/q;
+  const det=[];if(com>0)det.push('commission '+fE(com));else if(a.exo)det.push('commission exonérée');if(ttf>0)det.push('TTF '+fE(ttf));
+  const B=sStep(2,"Ordre d'achat",'#1d4ed8')+sTicket("À saisir dans l'ordre d'achat",fg(q),fPD(pa),'#1d4ed8',"Le prix limite est le prix affiché de l'action, hors frais : les frais s'ajoutent ensuite.")
+    +sDuo([['Total débité',fE(cap),'frais inclus',true,'#d97706'],["Frais d'achat",fE(frais),det.length?det.join(' + '):'aucun frais',false,GRY],['Coût réel / action',fPD(net),'frais compris',false,'#0891b2']]);
+  const mode=a.mode;let C='<div class="c3sp"></div>'+sStep(3,'Revente','#7c3aed','Que voulez-vous savoir ?')
+    +`<div class="c3">${[['objectif','🎯 Prix pour un gain visé','Objectif de gain à la revente : prix de vente nécessaire pour atteindre un gain visé.'],['prix','💹 Gain à un prix donné','Gain si je vends à un prix donné.'],['neutre','⚖️ Prix pour ne rien perdre',"Prix pour revendre neutre : prix de vente à partir duquel on ne perd rien (frais d'achat et de vente couverts)."]].map(([m,l,t])=>`<button class="sbtn${mode==m?' primary':''}" style="margin:0" data-a="avmode" data-m="${m}" title="${esc(t)}">${l}</button>`).join('')}</div>`;
+  let D='';
+  if(mode==null){C+='<div class="cap">Touchez l\'une des trois questions ci-dessus : le simulateur calcule la réponse juste en dessous.</div>'}
+  else{
+    const tcv=a.exoV?0:SM.rc/100,qvs=Math.floor(n2(a.qv)),qv=qvs?Math.min(qvs,q):q;
+    C+=`<div class="c2"><div><label for="s_qv">Nombre d'actions à vendre</label>${sInp('av.qv',a.qv,'Toutes ('+fg(q)+')','s_qv')}</div><div style="padding-top:1.7rem">${ckb('av.exoV',a.exoV,'🚫 Sans commission (vente)')}</div></div>`;
+    if(qvs>q)D+=`<div class="cap">Vous ne pouvez pas vendre plus que les ${fg(q)} actions achetées : calcul sur ${fg(q)}.</div>`;
+    const capB=r2(cap*qv/q),mbB=r2(mb*qv/q);a.cap=capB;rec(['inputs',[['Actions à vendre',`${fg(qv)} sur ${fg(q)}`]]]);
+    const warn100='<div class="warn">⚠️ Taux de commission de 100% invalide pour le calcul du prix de vente.</div>';
+    if(mode=='objectif'){
+      if(a.capPrev==null)a.capPrev=capB;
+      if(Math.abs(capB-a.capPrev)>1e-9){if(a.last=='eur'){if(capB>0)a.gPct=r2(a.gEur/capB*100)}else{if(capB>0)a.gEur=r2(a.gPct/100*capB)}a.capPrev=capB}
+      C+=`<div class="c2"><div><label for="s_ge" title="Le gain net souhaité (après commission de revente), en euros. Modifiez ce champ ou celui de droite : les deux restent synchronisés.">Gain visé (€), tous frais payés</label><input id="s_ge" data-s="av.gEur" inputmode="decimal" value="${fx2(a.gEur)}"></div><div><label for="s_gp" title="Le même gain souhaité, exprimé en pourcentage du coût d'achat des actions vendues (frais inclus).">Gain visé (%)</label><input id="s_gp" data-s="av.gPct" inputmode="decimal" value="${fx2(a.gPct)}"></div></div>`;
+      const g=a.gEur;rec(['inputs',[['Gain visé',(g>.005?'+':'')+fE(g)]]]);
+      if(Math.abs(1-tcv)<1e-9)D+=warn100;
+      else{const cible=g+capB,pb=cible/qv,mr=cible/(1-tcv),pn=mr/qv;
+        D+=sStep(4,'Ordre de vente','#7c3aed')+sTicket("À saisir dans l'ordre de vente",fg(qv),fPD(pn),'#7c3aed');
+        D+=sDuo([['Gain net visé',(g>.005?'+':'')+fE(g),'après tous les frais',true,g>=0?GRN:RED],['Montant total de vente',fE(mr),'avant commission de vente',false,'#7c3aed'],['Prix sans commission de vente',fPD(pb),'à titre indicatif',false,'#0891b2']])}}
+    else if(mode=='neutre'){
+      if(Math.abs(1-tcv)<1e-9)D+=warn100;
+      else{const pb=capB/qv;let pn=Math.ceil(Number((capB/(1-tcv)/qv*10000).toFixed(6)))/10000;
+        for(let i=0;i<500;i++){const m=r2(qv*pn),c=r2(m*tcv);if(r2(m-c)>=capB-1e-9)break;pn=Math.round((pn+.0001)*1e4)/1e4}
+        const mt=r2(qv*pn),hs=pa>0?(pn/pa-1)*100:0,hT=(hs>.005?'+':'')+nf(2).format(hs)+' %';
+        D+=sStep(4,'Ordre de vente','#7c3aed')+sTicket("À saisir dans l'ordre de vente",fg(qv),fPD(pn),'#7c3aed');
+        D+=sDuo([['Hausse nécessaire',hT,"par rapport au prix d'achat",true,'#d97706'],['Montant total de vente',fE(mt),'avant commission de vente',false,'#7c3aed'],['Prix sans commission de vente',fPD(pb),'à titre indicatif',false,'#0891b2']])}}
+    else if(mode=='prix'){
+      C+=`<label for="s_pv">Prix de vente d'une action (€)</label>${sInp('av.pv',a.pv,'Ex : 14,00','s_pv')}`;
+      const pv=n2(a.pv);
+      if(pv>0){rec(['inputs',[["Prix de vente d'une action",fPD(pv)]]]);
+        const mv=r2(qv*pv),cv=r2(mv*tcv),rc=r2(mv-cv),gb=r2(mv-mbB),gn=r2(rc-capB),gp=capB>0?gn/capB*100:0,gbp=mbB>0?gb/mbB*100:0;
+        const col=x=>x>.005?GRN:x<-.005?RED:GRY;
+        D+=sStep(4,'Résultat','#7c3aed','Ce que vous gagnez (ou perdez) vraiment')+sGain([['Gain net en €',sg(gn),col(gn)],['Gain net en %',pctT(gp),col(gn)]]);
+        D+='<div class="cap">Gain net = après les frais d\'achat ET de vente. Le gain brut ci-dessous les ignore (à titre indicatif).</div>';
+        D+=sGain([['Gain brut en €',sg(gb),col(gb)],['Gain brut en %',pctT(gbp),col(gbp)]]);
+        rec(['strip','Montant total vendu',fE(mv),'#7c3aed']);
+        D+=`<div style="margin-top:8px;padding:10px 14px;background:linear-gradient(135deg,#f5f3ff,#ede9fe);border:1px solid #c4b5fd;border-left:4px solid #7c3aed;border-radius:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-size:.7rem;color:#6d28d9;text-transform:uppercase;font-weight:800;letter-spacing:.05em">💰 Montant total vendu</span><span style="font-size:1.25rem;font-weight:800;color:#5b21b6">${fE(mv)}</span></div>`}}}
+  D+='<div style="height:6px"></div><button class="sbtn exb" data-a="export">📤 Exporter en image</button>';
+  return{B,C,D,ck:mode||'-',q}}
+
+/* --- Split --- */
+function simSplit(){
+  const pos=simPos();if(!pos)return'';
+  const f=n2(SM.sp.f),rp=n2(SM.sp.r),qA=pos.sh,pruA=pos.pru,invA=pos.inv,pxA=pos.px,cashA=R.cash;
+  const qP=qA*f,invP=Math.max(invA-rp,0),pruP=qP>1e-4?invP/qP:0,pxP=f>0?pxA/f:pxA,cashP=cashA+rp;
+  const[dC,cC]=dEur(cashP-cashA),dq=qP-qA,dqc=dq>0?GRN:dq<0?RED:GRY,dqs=`${dq>1e-9?'▲':dq<-1e-9?'▼':'▬'} ${dq>0?'+':''}${fg(dq)} titre(s)`,[dP,cP]=dPrix(pruP-pruA);
+  return'<hr class="sh" style="margin:14px 0">'+sStep(2,'Impact sur le portefeuille','#0f766e')
+    +sBA([['💰 Poche espèces',fE(cashA),fE(cashP),dC,cC],['📦 Quantité détenue',fg(qA),fg(qP),dqs,dqc],['🎯 PRU net',fPD(pruA),fPD(pruP),dP,cP]])
+    +sDuo([['Cours théorique après split',fE(pxP),`contre ${fE(pxA)} avant`,true,'#d97706'],['Facteur','× '+fg(f),f<1?'regroupement':'split',false,'#0891b2']])}
+
+function simOut(){
+  const T=SM.type;REC=T=='Achat/Vente'?[]:null;let B='',C=null,D='';
+  if(T=='Achat'||T=='Vente'){B=R.pos.length||T=='Achat'?simAV():''}
+  else if(T=='Achat/Vente'){const r=simRT();B=r.B;C=r.C;D=r.D;SM._ckn=r.ck;SM._qt=r.q}
+  else B=simSplit();
+  $('#sB').innerHTML=B;$('#sD').innerHTML=D;SM.rec=REC;REC=null;
+  if(C==null){$('#sC').innerHTML='';SM._ck=''}
+  else if(SM._ck!==SM._ckn){$('#sC').innerHTML=C;SM._ck=SM._ckn}
+  else{const q=$('#s_qv');if(q)q.placeholder='Toutes ('+fg(SM._qt)+')'}
+  if(T=='Achat/Vente'&&SM.av.mode=='objectif'&&C!=null){const e=$('#s_ge'),p=$('#s_gp');
+    if(e&&document.activeElement!==e)e.value=fx2(SM.av.gEur);if(p&&document.activeElement!==p)p.value=fx2(SM.av.gPct)}
+  document.querySelectorAll('#sim [data-req]').forEach(w=>{const i=w.querySelector('input');w.classList.toggle('req',!i.value.trim())})}
+
+/* --- événements --- */
+function simStruct(){simIn()}
+document.addEventListener('DOMContentLoaded',()=>{
+  const d=$('#sim');
+  d.addEventListener('input',e=>{const t=e.target;
+    if(t.dataset.r){SM[t.dataset.r]=n2(t.value);return simOut()}
+    const p=t.dataset.s;if(!p||t.type=='checkbox'||t.type=='radio'||t.tagName=='SELECT')return;
+    if(p=='av.gEur'){const a=SM.av;a.gEur=n2(t.value);a.last='eur';if(a.cap>0){a.gPct=r2(a.gEur/a.cap*100)}a.capPrev=a.cap;return simOut()}
+    if(p=='av.gPct'){const a=SM.av;a.gPct=n2(t.value);a.last='pct';if(a.cap>0){a.gEur=r2(a.gPct/100*a.cap)}a.capPrev=a.cap;return simOut()}
+    setP(p,t.value);simOut()});
+  d.addEventListener('change',e=>{const t=e.target;
+    if(t.dataset.r){const k=t.dataset.r;t.value=fx2(SM[k]);cfgSave(k=='rc'?{frais_courtier_pct:SM.rc}:{taux_ttf_pct:SM.rt});return}
+    const p=t.dataset.s;if(!p)return;
+    if(t.type=='checkbox'){setP(p,t.checked);return simOut()}
+    if(p=='type'||p=='choice'||p=='av.saisie'){setP(p,t.value);if(p=='type')SM.choice=t.value=='Achat'?NEW:'';SM.neu=false;return simIn()}});
+  d.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+    if(a=='neu'){SM.neu=!SM.neu;simOut()}
+    else if(a=='avmode'){SM.av.mode=b.dataset.m;simOut();setTimeout(()=>{const i=$('#s_ge')||$('#s_pv')||$('#s_qv');},0)}
+    else if(a=='transfer')simTransfer();
+    else if(a=='export')simExport()});
+  $('#simb').onclick=simOpen;$('#sim_x').onclick=()=>d.close()});
+async function simOpen(){
+  if(!R||!S.tx.length){alert('Importe d’abord tes transactions.');return}
+  if(connected()&&!S.cfgOk)await cfgLoad();
+  SM.rc=n2(cg('frais_courtier_pct',0.5));SM.rt=n2(cg('taux_ttf_pct',0.4));SM.neu=false;simIn();$('#sim').showModal()}
+function simTransfer(){
+  const ach=SM.type=='Achat',pos=simPos(),q=n2(SM.qte),p=n2(SM.prix),mb=r2(q*p),com=SM.exo?0:r2(mb*SM.rc/100),ttf=ach&&SM.ttf?r2(mb*SM.rt/100):0;
+  $('#sim').close();openOp(null);
+  $('#o_type').value=ach?'ACHAT':'VENTE';$('#o_d').value='';$('#o_nom').value='';$('#o_tk').value='';
+  const valid=ach?S.raw.some(x=>pos&&x.Nom==pos.nom):!!pos;
+  if(pos&&valid){$('#o_nom').value=pos.nom;$('#o_tk').value=pos.tk}
+  $('#o_q').value=q;$('#o_p').value=p;$('#o_c').value=com;$('#o_t').value=ach&&ttf>0?ttf:'';fields()}
+
+/* --- export en image (même mise en page que _sim_export_png) --- */
+const cleanT=t=>String(t).replace(/[\u202f\u00a0]/g,' ').replace(/[\u{1F000}-\u{1FFFF}\u2600-\u27BF\uFE0F\u200d]/gu,'').trim();
+function simPNG(rec,titre='Simulation achat / revente'){
+  const W=1000,M=40,GAP=20,INNER=W-2*M,ink='rgb(15,23,42)',grey='rgb(100,116,139)',FF='Manrope,Inter,system-ui,sans-serif';
+  const mix=(c,a)=>{const[r,g,b]=hexRGB(c);return`rgb(${Math.floor(255-(255-r)*a)},${Math.floor(255-(255-g)*a)},${Math.floor(255-(255-b)*a)})`};
+  const fnt=(s,b)=>`${b?800:500} ${s}px ${FF}`;
+  const rr=(x,y,w,h,r,fill,stroke,lw)=>{ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+    if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke()}};
+  const tx=(t,x,y,f,col,al='left',bl='top')=>{ctx.font=f;ctx.fillStyle=col;ctx.textAlign=al;ctx.textBaseline=bl;ctx.fillText(t,x,y)};
+  const tw=(t,f)=>{ctx.font=f;return ctx.measureText(t).width};
+  const wrap=(t,f,mw)=>{const L=[];let c='';cleanT(t).split(/\s+/).forEach(w=>{const tr=(c+' '+w).trim();if(tw(tr,f)<=mw||!c)c=tr;else{L.push(c);c=w}});if(c)L.push(c);return L.length?L:['']};
+  const fit=(t,s,mw,b=true)=>{t=cleanT(t);while(s>16&&tw(t,fnt(s,b))>mw)s-=2;return fnt(s,b)};
+  let ctx=document.createElement('canvas').getContext('2d');
+  const draw=()=>{let y=M,cur='#2563eb';
+    tx(titre,M,y,fnt(42,true),ink);y+=56;tx('Simulation du '+new Date().toLocaleDateString('fr-FR'),M,y,fnt(22,false),grey);y+=50;
+    for(const it of rec){const k=it[0];
+      if(k=='step'){const[,num,ttl,col]=it;cur=col;const tint=mix(col,.13);y+=8;const h=72;
+        rr(M,y,INNER,h,18,tint);rr(M,y,36,h,18,col);ctx.fillStyle=tint;ctx.fillRect(M+10,y,30,h);
+        const cx=M+56,cy=y+h/2;ctx.beginPath();ctx.arc(cx,cy,25,0,7);ctx.fillStyle=col;ctx.fill();tx(String(num),cx,cy,fnt(28,true),'#fff','center','middle');
+        tx(cleanT(ttl),cx+46,cy,fnt(36,true),ink,'left','middle');y+=h+16}
+      else if(k=='inputs'){const col=cur,rows=[];for(let i=0;i<it[1].length;i+=2)rows.push(it[1].slice(i,i+2));const ch=92;
+        for(const row of rows){const cw=row.length==1?INNER:(INNER-GAP)/2;
+          row.forEach(([lab,val],ci)=>{const x0=M+ci*(cw+GAP);rr(x0,y,cw,ch,16,mix(col,.07),mix(col,.3),2);rr(x0,y,30,ch,16,col);ctx.fillStyle=mix(col,.07);ctx.fillRect(x0+10,y,24,ch);
+            tx(cleanT(lab).toUpperCase(),x0+30,y+16,fnt(17,true),grey);tx(cleanT(val),x0+30,y+44,fit(val,32,cw-60),ink)});y+=ch+14}y+=6}
+      else if(k=='ticket'){const[,ttl,qte,prix,col]=it,h=60+24+22+64+26;
+        rr(M,y,INNER,h,24,mix(col,.07),col,4);rr(M,y,INNER,60,24,col);ctx.fillStyle=col;ctx.fillRect(M,y+36,INNER,24);
+        tx(cleanT(ttl).toUpperCase(),W/2,y+30,fnt(23,true),'#fff','center','middle');
+        const c1=INNER*.38;[['Quantité',qte,M+c1/2,c1-30],['Prix limite / action',prix,M+c1+(INNER-c1)/2,INNER-c1-30]].forEach(([lab,val,cx,mw])=>{
+          tx(lab.toUpperCase(),cx,y+96,fnt(19,true),grey,'center','middle');tx(cleanT(val),cx,y+152,fit(val,60,mw),col,'center','middle')});y+=h+GAP}
+      else if(k=='cards'){const items=it[1],n=items.length,cw=(INNER-GAP*(n-1))/n,vs=n<=2?46:34,lf=fnt(n>2?17:18,true),sf=fnt(17,false);
+        const ll=items.map(i=>wrap(i[0].toUpperCase(),lf,cw-24)),sl=items.map(i=>i[2]?wrap(i[2],sf,cw-24):[]);
+        const nl=Math.max(...ll.map(x=>x.length)),ns=Math.max(...sl.map(x=>x.length)),h=18+nl*23+8+vs+14+(ns?ns*22+8:0)+14;
+        items.forEach(([lab,val,sub,col],i)=>{const x0=M+i*(cw+GAP);rr(x0,y,cw,h,18,mix(col,.08),mix(col,.35),2);rr(x0+2,y,cw-4,8,4,col);
+          let yy=y+22;ll[i].forEach(l=>{tx(l,x0+cw/2,yy,lf,grey,'center','top');yy+=23});
+          yy=y+18+nl*23+8;tx(cleanT(val),x0+cw/2,yy+vs/2,fit(val,vs,cw-24),col,'center','middle');yy+=vs+14;
+          sl[i].forEach(l=>{tx(l,x0+cw/2,yy,sf,grey,'center','top');yy+=22})});y+=h+GAP}
+      else if(k=='strip'){const[,lab,val,col]=it,h=84;rr(M,y,INNER,h,18,mix(col,.08),mix(col,.4),2);
+        tx(cleanT(lab).toUpperCase(),M+28,y+h/2,fnt(22,true),col,'left','middle');tx(cleanT(val),W-M-28,y+h/2,fit(val,42,INNER*.5),col,'right','middle');y+=h+GAP}}
+    return y+M-GAP};
+  const H=Math.ceil(draw())+10;const cv=document.createElement('canvas');cv.width=W;cv.height=H;ctx=cv.getContext('2d');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);draw();return cv}
+async function simExport(){
+  if(!SM.rec||!SM.rec.length)return;
+  const cv=simPNG(SM.rec),name='simulation_'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'.png';
+  const bl=await new Promise(r=>cv.toBlob(r,'image/png'));
+  try{const f=new File([bl],name,{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Simulation achat / revente'});return}}
+  catch(e){if(e&&e.name=='AbortError')return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=name;document.body.appendChild(a);a.click();a.remove()}
+
+
 
 /* Classements */
 function drawCla(v){
@@ -582,7 +1042,7 @@ function table(cols,rows,sk){
   return`<div class="tw"><table><thead><tr>${cols.map(c=>`<th ${sk?`data-k="${c.k}"`:''}>${c.h}${sk&&s.k==c.k?(s.d>0?' ↑':' ↓'):''}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr${r.i!=null?` data-i="${r.i}"`:''}>${cols.map(c=>`<td class="${c.c?cl(r[c.k]):''}">${c.f(r[c.k],r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}
 const sgn=(v,d=2)=>`${ar(v)} ${fS(v,d)}`;
 
-function draw(){
+function draw(){TIPS.length=0;
   const v=$('#view');
   $('#tabs').innerHTML=TABS.map(([k,l])=>`<button role="tab" data-t="${k}" aria-selected="${k==S.tab}">${l}</button>`).join('');
   if(!S.tx.length){$('#tot').textContent='–';$('#sub').textContent='';
