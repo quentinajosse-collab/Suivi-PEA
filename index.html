@@ -256,6 +256,13 @@ button{border-radius:10px;font-weight:600;transition:all .15s ease-in-out}
 #wldlg{max-width:640px;width:calc(100% - 16px);max-height:92vh;overflow:auto;padding:16px}
 #wldlg .ft{font-size:.72rem;font-weight:700;color:var(--mute);text-transform:uppercase;margin:10px 0 4px}
 #wldlg input:disabled{opacity:.5;cursor:not-allowed}
+.pea-duo-item .k{background:none;border:0;border-radius:0;padding:0}
+.nl{font-size:14px;margin:0 0 4px;color:var(--ink);display:flex;align-items:center;gap:6px}
+.sm2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.opl{font-size:.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin:10px 0 8px}
+#op .err{background:rgba(255,43,43,.1);color:#7d353b;border-radius:.5rem;padding:12px 14px;font-size:.9rem;margin-top:10px}
+#op select{width:100%}
+#toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:99999;background:#fff;color:#14202b;border:1px solid #e2e8f0;border-radius:.5rem;padding:12px 18px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:.92rem;max-width:90vw}
 </style>
 </head>
 <body>
@@ -308,31 +315,24 @@ button{border-radius:10px;font-weight:600;transition:all .15s ease-in-out}
   </form>
 </dialog>
 
-<dialog id="op">
-  <form id="opf" method="dialog">
-    <h2 id="opt">Nouvelle opération</h2>
-    <label for="o_type">Type</label>
-    <select id="o_type"><option value="ACHAT">Achat</option><option value="VENTE">Vente</option><option value="DIVIDENDE">Dividende</option><option value="APPORT">Apport</option><option value="RETRAIT">Retrait</option><option value="SPLIT">Split</option></select>
-    <label for="o_d">Date et heure</label><input type="datetime-local" step="1" id="o_d" required>
-    <div data-f="nom"><label for="o_nom">Valeur</label><input id="o_nom" list="dl_nom" autocomplete="off"><datalist id="dl_nom"></datalist>
-    <label for="o_tk">Ticker</label><input id="o_tk" autocomplete="off"></div>
-    <label for="o_q" id="l_q">Quantité</label><input type="number" step="any" inputmode="decimal" id="o_q" required>
-    <div data-f="p"><label for="o_p" id="l_p">Prix unitaire (€)</label><input type="number" step="any" inputmode="decimal" id="o_p"></div>
-    <div data-f="fr"><label for="o_c">Commission (€)</label><input type="number" step="any" inputmode="decimal" id="o_c"><label for="o_t">TTF (€)</label><input type="number" step="any" inputmode="decimal" id="o_t"></div>
-    <div data-f="dv"><label for="o_r">Retenue à la source (€)</label><input type="number" step="any" inputmode="decimal" id="o_r"><label for="o_b">Remboursement de capital (€)</label><input type="number" step="any" inputmode="decimal" id="o_b"></div>
-    <div data-f="sp"><label for="o_ro">Rompu versé (€)</label><input type="number" step="any" inputmode="decimal" id="o_ro"><label for="o_dr">Date de versement du rompu</label><input type="datetime-local" step="1" id="o_dr"></div>
-    <div style="display:flex;gap:8px;margin-top:16px;justify-content:space-between;flex-wrap:wrap">
-      <button type="button" id="o_del" hidden>Supprimer</button>
-      <span style="flex:1"></span><button type="button" id="o_no">Annuler</button><button value="ok" id="o_ok">Enregistrer</button>
-    </div>
-  </form>
-</dialog>
+<dialog id="op"><form id="opf" method="dialog"></form></dialog>
 
+<dialog id="welcome"><form id="welf" method="dialog" autocomplete="off">
+  <h2 style="margin:0 0 8px;font-size:1.2rem">👋 Bienvenue sur votre Tableau de Bord PEA</h2>
+  <p style="margin:0 0 12px">Avant d'afficher votre dashboard, quelques informations rapides :</p>
+  <label for="wel_nom">Quel est votre nom ?</label>
+  <input id="wel_nom" type="text" placeholder="Ex : Marie" style="width:100%;margin:4px 0 10px">
+  <label for="wel_br">Quel est votre courtier ?</label>
+  <input id="wel_br" type="text" placeholder="Ex : Boursorama, Trade Republic..." style="width:100%;margin:4px 0 10px">
+  <div id="wel_err" class="warn" hidden style="margin-bottom:10px">Merci de renseigner votre nom pour continuer.</div>
+  <button type="submit" id="wel_ok" class="sbtn primary" style="width:100%">Valider</button>
+</form></dialog>
 <dialog id="wldlg"></dialog>
 <dialog id="sim"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px"><h2 style="margin:0;font-size:1.2rem">🧪 Simulation nouvelle opération</h2><button type="button" id="sim_x">✕</button></div><div id="sTop"></div><div id="sB"></div><div id="sC"></div><div id="sD"></div></dialog>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 const $=s=>document.querySelector(s);
+function toast(m){let e=document.getElementById('toast');if(!e){e=document.createElement('div');e.id='toast';document.body.appendChild(e)}e.textContent=m;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',4000)}
 const nf=(d)=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d});
 const fE=(v,d=2)=>isFinite(v)?nf(d).format(v)+' €':'–';
 const fP=v=>isFinite(v)?(v<0?'−':'+')+nf(2).format(Math.abs(v))+' %':'–';
@@ -388,7 +388,10 @@ function compute(tx,prices){
     }
   }
   let cash=0;
-  tx.map(t=>({t,k:t.type=='SPLIT'?t.dr:t.d})).sort((a,b)=>a.k-b.k).forEach(({t})=>{
+  /* Comme la poche espèces du Streamlit (dernière ligne de l'historique, qui s'arrête à aujourd'hui) : une opération datée d'un jour à venir
+     (ex. rompu de split dont la date de versement n'est pas encore passée) n'est pas encore comptée dans le cash. */
+  const eod=new Date(now.getFullYear(),now.getMonth(),now.getDate(),23,59,59,999);
+  tx.map(t=>({t,k:t.type=='SPLIT'?t.dr:t.d})).filter(x=>x.k<=eod).sort((a,b)=>a.k-b.k).forEach(({t})=>{
     if(t.type=='APPORT')cash=r2(cash+t.q);
     else if(t.type=='RETRAIT')cash=r2(cash-t.q);
     else if(t.type=='ACHAT')cash=r2(cash-r2(t.q*t.p+t.f));
@@ -396,14 +399,17 @@ function compute(tx,prices){
     else if(t.type=='DIVIDENDE')cash=r2(cash+t.p-t.ret-t.c+t.remb+t.arr);
     else if(t.type=='SPLIT'&&t.rompu>0)cash=r2(cash+t.rompu);
   });
+  /* net_divs_total du Streamlit (Vue d'ensemble) : Prix - Commission - Retenue sur chaque DIVIDENDE (sans l'arrondi courtier)
+     + rompus de SPLIT déjà versés ; différent de la somme par ligne (qui, elle, inclut l'arrondi) */
+  let divNet=0;tx.forEach(t=>{if(t.type=='DIVIDENDE')divNet+=t.p-t.c-t.ret;else if(t.type=='SPLIT'&&t.rompu>0&&t.dr<=now)divNet+=t.rompu});
   const apports=tx.reduce((s,t)=>s+(t.type=='APPORT'?t.q:t.type=='RETRAIT'?-t.q:0),0);
   const valeur=pos.reduce((s,p)=>s+p.val,0),day=pos.reduce((s,p)=>s+p.day,0);
-  return{pos,cash,apports,valeur,total:valeur+cash,gain:valeur+cash-apports,divTot,fees,real,day,
+  return{pos,cash,apports,valeur,total:valeur+cash,gain:valeur+cash-apports,divTot,divNet,fees,real,day,
     anyLive:pos.some(p=>p.open&&p.live)};
 }
 
 /* ---------- État ---------- */
-let S={raw:[],synced:false,editing:null,tx:[],prices:LS.g('prices')||{},url:LS.g('url')||'',tab:'ov',sort:{k:'val',d:-1}},R=null,CH={};
+let S={raw:[],synced:false,editing:null,tx:[],prices:LS.g('prices')||{},url:LS.g('url')||'',tab:'ov'},R=null,CH={};
 const COLS=['Nom','Type','Rompu','Ticker','Quantité','TTF (€)','Date_Heure','Date_Rompus','Arrondi_Courtier','Commission (€)','Frais Totaux (€)','Prix Unitaire (€)','Remboursement_Capital','Retenue_Source_Etrangere'];
 const TXT=['Nom','Type','Ticker','Date_Heure','Date_Rompus'];
 function toRaw(o){const r={};COLS.forEach(k=>r[k]=TXT.includes(k)?(o[k]||null):(parseFloat(o[k])||0));if(!r.Date_Rompus)r.Date_Rompus=r.Date_Heure;return r}
@@ -432,29 +438,115 @@ async function save(){LS.s('raw',S.raw);if(!connected())return;
   catch(e){st('Échec de l’enregistrement en ligne : '+e.message)}}
 /* ---------- Saisie d'opérations ---------- */
 const $v=id=>$(id).value,nn=id=>parseFloat($v(id))||0;
-function fields(){const t=$v('#o_type'),a=t=='ACHAT'||t=='VENTE',ap=t=='APPORT'||t=='RETRAIT',sp=t=='SPLIT';
-  const show=(k,b)=>document.querySelector(`#op [data-f=${k}]`).hidden=!b;
-  show('nom',!ap);show('p',!ap&&!sp);show('fr',a);show('dv',t=='DIVIDENDE');show('sp',sp);
-  $('#l_q').textContent=ap?'Montant (€)':sp?'Ratio (× nombre de titres)':t=='DIVIDENDE'?'Titres détenus':'Quantité';
-  $('#l_p').textContent=t=='DIVIDENDE'?'Montant du dividende (€)':'Prix unitaire (€)'}
+/* ===== Fenêtre « 📝 Nouvelle opération » — port de dialog_saisie_operation (app_perso.py) ===== */
+const OPL={ACHAT:'🛒  Achat',APPORT:'💰  Apport',RETRAIT:'💸  Retrait',VENTE:'📤  Vente',DIVIDENDE:'💶  Dividende',SPLIT:'🔀  Split/Regroupement'},OPNEW='➕ Ajouter un nouveau nom...',
+  OPMSG="⚠️ Impossible d'enregistrer l'opération : tous les champs obligatoires (encadrés en rouge) ne sont pas renseignés.";
 const dtl=s=>s?String(s).replace(' ','T'):'';
+const opHeld=n=>R&&R.pos.find(p=>p.nom==n);
+const opOwned=()=>R?R.pos.filter(p=>p.open).map(p=>p.nom).sort():[];
+const opAll=()=>[...new Set(S.raw.map(x=>x.Nom).filter(n=>n&&n!='Compte Courant'))].sort();
+const opTkOf=(n,ach)=>{if(!ach){const h=opHeld(n);if(h&&h.tk)return h.tk}const m=[...S.raw].reverse().find(x=>x.Nom==n&&x.Ticker&&x.Ticker!='APPORT'&&x.Ticker!='RETRAIT');return m?m.Ticker:''};
+const opLab=(t,h,id)=>`<div class="opl"${id?` id="${id}"`:''}>${t}${h?` <span title="${h.replace(/"/g,'&quot;')}" style="cursor:help;font-size:.85em;color:#64748b">ℹ️</span>`:''}</div>`;
+const opW=(id,inner)=>`<div class="rq" data-rq="${id}">${inner}</div>`;
+const RB_HELP="À renseigner uniquement si une partie de la distribution reçue n'est pas un dividende mais un remboursement de capital (ex. Schneider Electric). Ce montant est ajouté au cash perçu et vient réduire le PRU de la ligne, sans être compté comme un gain.";
+const AR_HELP="À renseigner lorsque le courtier applique un arrondi tel que Montant brut perçu − Retenue à la source ne tombe pas exactement sur le montant net réellement crédité sur le compte (petit écart de quelques centimes constaté sur le relevé). Indiquez ici l'écart, avec son signe, entre le montant net attendu (calculé) et le montant net réellement reçu : par exemple -0,01 si 0,01 € de moins que prévu a été crédité. Cette valeur est ajoutée au calcul pour retomber exactement sur le bon montant partout où il est utilisé (total des dividendes reçus, cash disponible...).";
+function buildOp(){
+  const num=(id,ph,step,dec,min)=>numIn(`id="${id}"`,'',ph,step,dec,min);
+  $('#opf').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px"><h2 id="opt" style="margin:0;font-size:1.2rem;font-weight:800;letter-spacing:-.02em">📝 Nouvelle opération</h2><button type="button" id="o_no" aria-label="Fermer">✕</button></div>
+  <div class="cap" id="o_cap">Sélectionnez un type d'opération pour afficher le formulaire correspondant.</div>
+  <select id="o_type"><option value="" selected disabled hidden>Choisissez un type d'opération...</option>${['ACHAT','APPORT','RETRAIT','VENTE','DIVIDENDE','SPLIT'].map(t=>`<option value="${t}">${OPL[t]}</option>`).join('')}</select>
+  <div id="o_body" hidden>
+    <div data-g="sel">${opLab("Nom de l'action / ETF")}${opW('o_sel','<select id="o_sel"></select>')}</div>
+    <div data-g="nom">${opLab("Nom de l'action / ETF",null,'l_nom')}${opW('o_nom','<input id="o_nom" list="dl_nom" autocomplete="off" placeholder="Choisissez une action existante ou tapez un nouveau nom..."><datalist id="dl_nom"></datalist>')}</div>
+    <div data-g="tk">${opLab('Ticker')}${opW('o_tk','<input id="o_tk" autocomplete="off" autocapitalize="characters">')}</div>
+    <div data-g="q">${opLab('Quantité',null,'l_q')}${opW('o_q',num('o_q','0',1,0,1))}</div>
+    <div data-g="p">${opLab('Prix unitaire (€)',null,'l_p')}${opW('o_p',num('o_p','0,0000',0.0001,4,0))}</div>
+    <div data-g="c">${opLab('Commission (€)')}${opW('o_c',num('o_c','0,00',0.01,2,0))}</div>
+    <div data-g="t">${opLab('TTF (€) — optionnel')}${num('o_t','0,00',0.01,2,0)}</div>
+    <div data-g="r">${opLab('Retenue à la source (€) — optionnel')}${num('o_r','0,00',0.01,2,0)}</div>
+    <div data-g="b">${opLab('Remboursement de capital inclus (€) — optionnel',RB_HELP)}${num('o_b','0,00',0.01,2,0)}</div>
+    <div data-g="ar">${opLab('Arrondi du courtier (€) — optionnel',AR_HELP)}${num('o_ar','0,00',0.01,2,null)}</div>
+    <div data-g="ro">${opLab('Rompu versé en cash (€) — optionnel')}${num('o_ro','0,000',0.001,3,0)}</div>
+    <div data-g="dr">${opLab('Date de versement des rompus, si différente de la date du split — optionnel')}${opW('o_dr','<input type="date" id="o_dr">')}</div>
+    <div class="opl" style="margin-top:14px">🗓️ Date de l'opération</div>
+    <div class="c2"><div>${'<div data-g="dl">'+opLab('Date')+'</div>'}${opW('o_dd','<input type="date" id="o_dd">')}</div>
+      <div data-g="hh">${opLab('Heure')}${opW('o_hh','<input type="time" step="1" id="o_hh">')}</div></div>
+  </div>
+  <div id="o_err"></div>
+  <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px"><button type="submit" value="ok" id="o_ok" class="sbtn primary" style="width:100%" hidden>💾  Enregistrer l'opération</button><button type="button" id="o_del" hidden>Supprimer</button></div>`}
+const gShow=(k,b)=>{const e=document.querySelector(`#op [data-g=${k}]`);if(e)e.hidden=!b};
+const oEmpty=id=>{const e=$('#'+id);return !e||String(e.value).trim()===''};
+/* champs encadrés en rouge tant qu'ils sont vides ; blk = bloque l'enregistrement (champs « suivis » de _req_field) */
+function opReq(){const t=$v('#o_type');if(!t)return[];const a=t=='ACHAT',v=t=='VENTE',ap=t=='APPORT'||t=='RETRAIT',dv=t=='DIVIDENDE',sp=t=='SPLIT',L=[],add=(id,blk=true)=>L.push({id,blk});
+  const sel=$v('#o_sel'),nw=sel==OPNEW;
+  if(a){add('o_nom');if(!oEmpty('o_nom'))add('o_tk');add('o_q');add('o_p');add('o_c')}
+  else if(v||dv||sp){add('o_sel');
+    if(nw){add('o_nom');add('o_tk');if(dv||sp)add('o_q')}
+    else if(sel){add('o_tk');if(dv)add('o_q',false);if(sp)add('o_q')}
+    else if(dv||sp)add('o_q');
+    if(v){add('o_q');add('o_p');add('o_c')}
+    if(dv)add('o_p');
+    if(sp&&n0('#o_ro')>0&&oEmpty('o_dr'))add('o_dr',false)}
+  else if(ap)add('o_q');
+  add('o_dd');if(a||v)add('o_hh');return L}
+const n0=id=>parseFloat($(id).value)||0;
+function opFrames(){const L=opReq(),ids=new Set(L.map(x=>x.id));
+  document.querySelectorAll('#op .rq[data-rq]').forEach(w=>{const id=w.dataset.rq;w.classList.toggle('req',ids.has(id)&&oEmpty(id))})}
+function fields(){const t=$v('#o_type'),has=!!t;$('#o_body').hidden=!has;$('#o_ok').hidden=!has;
+  if(!has){$('#o_err').innerHTML='';return}
+  const a=t=='ACHAT',v=t=='VENTE',ap=t=='APPORT'||t=='RETRAIT',dv=t=='DIVIDENDE',sp=t=='SPLIT',sel=$v('#o_sel'),nw=sel==OPNEW,pick=!!sel&&!nw;
+  gShow('sel',v||dv||sp);gShow('nom',a||((v||dv||sp)&&nw));
+  gShow('tk',a?!oEmpty('o_nom'):(v||dv||sp)&&(nw||pick));
+  gShow('q',true);gShow('p',v||a||dv);gShow('c',a||v);gShow('t',a);gShow('r',dv);gShow('b',dv);gShow('ar',dv);gShow('ro',sp);gShow('dr',sp);
+  gShow('dl',a||v);gShow('hh',a||v);
+  $('#l_nom').firstChild.textContent=a?"Nom de l'action / ETF":"Nom de l'action / ETF";
+  $('#l_q').firstChild.textContent=ap?'Montant (€)':sp?'Facteur de Split/Regroupement':'Quantité';
+  $('#l_p').firstChild.textContent=dv?'Montant brut perçu (€)':'Prix unitaire (€)';
+  const q=$('#o_q'),qn=q.parentElement;
+  if(ap){q.min=0;q.placeholder='0';qn.querySelectorAll('button').forEach((b,i)=>b.dataset.fs=(i?'':'-')+'10');qn.querySelectorAll('button').forEach(b=>b.dataset.dec=2)}
+  else if(sp){q.min=0.0001;q.placeholder='0';qn.querySelectorAll('button').forEach((b,i)=>b.dataset.fs=(i?'':'-')+'0.01');qn.querySelectorAll('button').forEach(b=>b.dataset.dec=4)}
+  else if(dv){q.min=0;q.placeholder='0';qn.querySelectorAll('button').forEach((b,i)=>b.dataset.fs=(i?'':'-')+'1');qn.querySelectorAll('button').forEach(b=>b.dataset.dec=0)}
+  else{q.min=1;q.placeholder='0';qn.querySelectorAll('button').forEach((b,i)=>b.dataset.fs=(i?'':'-')+'1');qn.querySelectorAll('button').forEach(b=>b.dataset.dec=0)}
+  const ph=$('#o_sel').dataset.ph;$('#o_sel').options.length&&0;opFrames()}
+function opSelFill(t,keep){const o=$('#o_sel'),cur=keep!=null?keep:o.value,names=opOwned();
+  o.innerHTML=`<option value="" disabled hidden>Choisissez une action possédée ou ajoutez-en une nouvelle...</option>`+[OPNEW,...names].map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  o.value=[OPNEW,...names].includes(cur)?cur:''}
+function opNameChanged(){const t=$v('#o_type'),a=t=='ACHAT',nm=a?$('#o_nom').value.trim():$v('#o_sel');
+  if(!nm||nm==OPNEW){if(!a)$('#o_tk').value='';fields();return}
+  const known=a?opAll().includes(nm):true;
+  if(a){$('#o_tk').value=known?opTkOf(nm,true):$('#o_tk').value}else $('#o_tk').value=opTkOf(nm,false);
+  const h=opHeld(nm);
+  if(t=='DIVIDENDE')$('#o_q').value=h?(Math.round(h.sh*1e6)/1e6):1;
+  if(t=='SPLIT')$('#o_q').value=h?(Math.round(h.sh*1e6)/1e6):1.1;
+  fields()}
+function opClear(){['o_nom','o_tk','o_q','o_p','o_c','o_t','o_r','o_b','o_ar','o_ro','o_dr','o_dd','o_hh'].forEach(i=>{$('#'+i).value=''});opSelFill(null,'')}
 function openOp(i){S.editing=i==null?null:i;const r=i==null?null:S.raw[i];
-  $('#opt').textContent=r?'Modifier l’opération':'Nouvelle opération';$('#o_del').hidden=!r;
-  const names=[...new Set(S.raw.map(x=>x.Nom).filter(n=>n&&n!='Compte Courant'))].sort();$('#dl_nom').innerHTML=names.map(n=>`<option value="${n.replace(/"/g,'&quot;')}">`).join('');
-  const g=k=>r&&r[k]!=null?r[k]:'';const z=k=>r&&r[k]?r[k]:'';
-  $('#o_type').value=r?r.Type:'ACHAT';$('#o_d').value=r?dtl(r.Date_Heure):new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,19);
-  $('#o_nom').value=g('Nom');$('#o_tk').value=g('Ticker');$('#o_q').value=g('Quantité');$('#o_p').value=g('Prix Unitaire (€)');
-  $('#o_c').value=z('Commission (€)');$('#o_t').value=z('TTF (€)');$('#o_r').value=z('Retenue_Source_Etrangere');$('#o_b').value=z('Remboursement_Capital');
-  $('#o_ro').value=z('Rompu');$('#o_dr').value=r?dtl(r.Date_Rompus):'';fields();$('#op').showModal()}
-function readOp(){const t=$v('#o_type'),a=t=='ACHAT'||t=='VENTE',ap=t=='APPORT'||t=='RETRAIT',sp=t=='SPLIT',dv=t=='DIVIDENDE';
-  const d=$v('#o_d'),dh=d.replace('T',' ')+(d.length==16?':00':'');
-  if(!d||(!ap&&(!$v('#o_nom').trim()||!$v('#o_tk').trim())))return null;
+  $('#opt').textContent=r?'✏️ Modifier l’opération':'📝 Nouvelle opération';$('#o_del').hidden=!r;
+  $('#dl_nom').innerHTML=opAll().map(n=>`<option value="${n.replace(/"/g,'&quot;')}">`).join('');
+  opClear();$('#o_err').innerHTML='';
+  if(!r){$('#o_type').value='';fields();$('#op').showModal();return}
+  $('#o_type').value=r.Type;const t=r.Type,a=t=='ACHAT',ap=t=='APPORT'||t=='RETRAIT';
+  const z=k=>r[k]?r[k]:'',g=k=>r[k]!=null?r[k]:'';
+  if(!ap){if(a)$('#o_nom').value=g('Nom');else{const own=opOwned();opSelFill(t,own.includes(r.Nom)?r.Nom:OPNEW);if(!own.includes(r.Nom))$('#o_nom').value=g('Nom')}$('#o_tk').value=g('Ticker')}
+  $('#o_q').value=g('Quantité');$('#o_p').value=ap||t=='SPLIT'?'':g('Prix Unitaire (€)');
+  $('#o_c').value=z('Commission (€)');$('#o_t').value=z('TTF (€)');$('#o_r').value=z('Retenue_Source_Etrangere');$('#o_b').value=z('Remboursement_Capital');$('#o_ar').value=z('Arrondi_Courtier');
+  $('#o_ro').value=z('Rompu');$('#o_dd').value=r.Date_Heure?String(r.Date_Heure).slice(0,10):'';$('#o_hh').value=r.Date_Heure&&(t=='ACHAT'||t=='VENTE')?String(r.Date_Heure).slice(11,19):'';
+  const dr=r.Date_Rompus?String(r.Date_Rompus).slice(0,10):'';$('#o_dr').value=t=='SPLIT'&&dr&&dr!=String(r.Date_Heure).slice(0,10)?dr:'';
+  fields();$('#op').showModal()}
+const opDT=(d,h)=>d+' '+(h?(h.length==5?h+':00':h):'00:00:00');
+function readOp(){const t=$v('#o_type');
+  if(!t){$('#o_err').innerHTML='<div class="err">⚠️ Choisissez un type d’opération.</div>';return null}
+  if(opReq().some(x=>x.blk&&oEmpty(x.id))){opFrames();$('#o_err').innerHTML=`<div class="err">${OPMSG}</div>`;return null}
+  $('#o_err').innerHTML='';
+  const a=t=='ACHAT',v=t=='VENTE',ap=t=='APPORT'||t=='RETRAIT',sp=t=='SPLIT',dv=t=='DIVIDENDE',sel=$v('#o_sel');
+  const nom=ap?'Compte Courant':(a||sel==OPNEW)?$v('#o_nom').trim():sel,tk=ap?t:$v('#o_tk').trim().toUpperCase();
+  const dd=$v('#o_dd')||dstr(new Date()),dh=opDT(dd,(a||v)?($v('#o_hh')||'12:00:00'):'');
   const r={};COLS.forEach(k=>r[k]=TXT.includes(k)?null:0);
-  Object.assign(r,{Type:t,Date_Heure:dh,Nom:ap?'Compte Courant':$v('#o_nom').trim(),Ticker:ap?'APPORT':$v('#o_tk').trim().toUpperCase(),'Quantité':nn('#o_q'),
-    'Prix Unitaire (€)':ap?1:sp?0:nn('#o_p'),Date_Rompus:dh});
+  Object.assign(r,{Type:t,Date_Heure:dh,Nom:nom,Ticker:tk,'Quantité':nn('#o_q'),'Prix Unitaire (€)':ap?1:sp?0:nn('#o_p'),Date_Rompus:dh});
   if(a){r['Commission (€)']=nn('#o_c');r['TTF (€)']=nn('#o_t');r['Frais Totaux (€)']=Number((nn('#o_c')+nn('#o_t')).toFixed(6))}
-  if(dv){r.Retenue_Source_Etrangere=nn('#o_r');r['Frais Totaux (€)']=nn('#o_r');r.Remboursement_Capital=nn('#o_b')}
-  if(sp){r.Rompu=nn('#o_ro');if($v('#o_dr')){const x=$v('#o_dr');r.Date_Rompus=x.replace('T',' ')+(x.length==16?':00':'')}}
+  if(v){r['Commission (€)']=nn('#o_c');r['TTF (€)']=0;r['Frais Totaux (€)']=Number(nn('#o_c').toFixed(6))}
+  if(dv){r.Retenue_Source_Etrangere=nn('#o_r');r['Frais Totaux (€)']=nn('#o_r');r.Remboursement_Capital=nn('#o_b');r.Arrondi_Courtier=nn('#o_ar')}
+  if(sp){r.Rompu=nn('#o_ro');if($v('#o_dr'))r.Date_Rompus=opDT($v('#o_dr'),'')}
   return r}
 async function commit(){rebuild();draw();await save()}
 async function refreshPrices(){
@@ -466,25 +558,26 @@ async function refreshPrices(){
 }
 
 /* ---------- Performance : historique des cours + courbe vs indices ---------- */
-const IDX=[['^FCHI','CAC 40'],['^GSPC','S&P 500'],['CW8.PA','MSCI World']],IC={'^FCHI':'#e0902f','^GSPC':'#8e6ad8','CW8.PA':'#2aa6a0'};
+const IDX=[['^FCHI','CAC 40'],['^GSPC','S&P 500'],['CW8.PA','MSCI World']];
+const esc=x=>String(x??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const pad=n=>String(n).padStart(2,'0'),dstr=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const la=a=>a[a.length-1],fD=s=>s?s.split('-').reverse().join('/'):'–';
 S.cfg=LS.g('cfg')||{};S.cfgOk=false;S.cfgBusy=false;S.wl={px:LS.g('wlpx')||{},h:LS.g('wlh')||{},f:LS.g('wlf')||{}};S.wlDis=new Set();S.wlAt=0;S.wlHAt=LS.g('wlhAt')||0;S.wlBusy=false;S.wlTry=null;
 /* Réglages : même table app_storage, clé « config » (comme config_pea.json côté Streamlit) */
 const cg=(k,d)=>S.cfg[k]!=null?S.cfg[k]:d;
 const n2=x=>{const v=parseFloat(String(x==null?'':x).replace(/[\s\u00a0\u202f]/g,'').replace(',','.'));return isFinite(v)?v:0};
-async function cfgLoad(){if(S.cfgOk||S.cfgBusy)return;if(!connected()){S.cfgOk=true;return}
+async function cfgLoad(){if(S.cfgOk||S.cfgBusy)return;if(!connected()){S.cfgOk=true;welcomeCheck();return}
   S.cfgBusy=true;
   try{const c=await raw(`/rest/v1/app_storage?select=value&key=eq.config&user_id=eq.${SB.s.uid}`,{},await ensure());
     S.cfgOk=true;if(c.length&&c[0].value&&typeof c[0].value=='object'){S.cfg=c[0].value;LS.s('cfg',S.cfg);S.wlAt=0;S.cfgBusy=false;draw()}}
   catch(e){S.cfgOk=false}
-  S.cfgBusy=false}
+  S.cfgBusy=false;welcomeCheck()}
 async function cfgSave(patch){S.cfg={...S.cfg,...patch};LS.s('cfg',S.cfg);if(!connected())return;
   if(!S.cfgOk)return st('Réglages enregistrés sur cet appareil seulement : la lecture en ligne a échoué, écriture bloquée par sécurité');
   try{await raw('/rest/v1/app_storage?on_conflict=user_id,key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
     body:JSON.stringify({user_id:SB.s.uid,key:'config',value:S.cfg})},await ensure())}
   catch(e){st('Échec de l’enregistrement des réglages : '+e.message)}}
-S.hist=LS.g('hist')||{};S.pf=Object.assign({d1:'',d2:'',mode:'pct',idx:['^FCHI','CW8.PA']},LS.g('pf')||{});S.hbusy=false;S.hmsg='';S.htry=null;
+S.hist=LS.g('hist')||{};S.hbusy=false;S.hmsg='';S.htry=null;
 const histTickers=()=>[...new Set(S.raw.filter(r=>r.Ticker&&r.Ticker!='APPORT').map(r=>r.Ticker))];
 async function ensureHist(){
   if(S.hbusy||!S.url||!S.tx.length)return;
@@ -526,20 +619,6 @@ function perfCalc(){
     let v=cash,av=0,ci=0;for(const k in sh)if(Math.abs(sh[k])>1e-9&&PX[k]){av+=sh[k]*PX[k][i];ci+=iv[k]||0}v+=av;
     V.push(v);F.push(f);RC.push(rl);DC.push(dvc);AV.push(av);CI.push(ci)}
   return{D,V,F,IX,RC,DC,AV,CI}}
-function perfRange(C,d1,d2){
-  const{D,V,F,IX}=C,b=V.findIndex(v=>v>.01);if(b<0)return null;
-  let i1=b,i2=D.length-1;
-  if(d1){let j=-1;D.forEach((x,i)=>{if(x<=d1)j=i});if(j>i1)i1=j}
-  if(d2){let j=-1;D.forEach((x,i)=>{if(x<=d2)j=i});if(j>=0)i2=j}
-  if(i2<=i1)return null;
-  const idxs=S.pf.idx.filter(k=>IX[k]&&IX[k][i1]!=null),units={},ix={},lab=[],pf=[],val=[],paid=[];
-  idxs.forEach(k=>{units[k]=V[i1]/IX[k][i1];ix[k]={p:[],v:[]}});
-  let tw=1,cum=0;
-  for(let i=i1;i<=i2;i++){
-    if(i>i1){if(V[i-1]>.01)tw*=(V[i]-F[i])/V[i-1];cum+=F[i];idxs.forEach(k=>{units[k]+=F[i]/IX[k][i]})}
-    lab.push(D[i]);pf.push((tw-1)*100);val.push(V[i]);paid.push(V[i1]+cum);
-    idxs.forEach(k=>{ix[k].p.push((IX[k][i]/IX[k][i1]-1)*100);ix[k].v.push(units[k]*IX[k][i])})}
-  return{lab,pf,val,paid,ix,idxs,start:V[i1],end:V[i2],flows:cum,gain:V[i2]-V[i1]-cum,twr:(tw-1)*100,from:D[i1],to:D[i2]}}
 /* ===== Performances & Indices : reprise de l'onglet 6 du Streamlit ===== */
 const INDS=[['CAC 40','^FCHI','#e11d48',"Indice phare de la bourse de Paris (40 plus grandes capitalisations françaises)."],['MSCI World','URTH','#9333ea',"Indice boursier mondial de référence (actions des pays développés)."],
   ['S&P 500','^GSPC','#d97706',"Indice américain regroupant les 500 plus grandes entreprises cotées aux USA."],['Stoxx 600','^STOXX','#059669',"Indice paneuropéen représentant 600 grandes, moyennes et petites capitalisations."],
@@ -576,7 +655,7 @@ function drawPerf(v){
   setTimeout(ensureIdx,0);
   const{D,V,F,RC,DC,AV,CI}=C,A=[];let cu=0;for(let i=0;i<D.length;i++){cu+=F[i];A.push(cu)}
   const op=R.pos.filter(p=>p.open),inv=op.reduce((x,p)=>x+p.inv,0),cost=R.pos.reduce((x,p)=>x+p.ach,0),basePG=R.apports>0?R.apports:(cost>0?cost:inv),
-    pg=basePG>0?((R.valeur-inv)+R.real+R.divTot)/basePG*100:0;
+    pg=basePG>0?((R.valeur-inv)+R.real+R.divNet)/basePG*100:0;
   const Dc=[];V.forEach((x,i)=>{if(x>0)Dc.push(i)});
   if(!Dc.length){v.innerHTML=exp2('pg','📈 Graphique de Performance Comparée (%)','<div class="warn">Aucune donnée disponible pour la période sélectionnée sur le graphique.</div>');return}
   const minG=D[Dc[0]],maxG=D[Dc[Dc.length-1]],today=dstr(new Date()),pMax=maxG>today?maxG:today;
@@ -659,14 +738,6 @@ function drawPerf(v){
 
 const getC=()=>{if(!Object.keys(S.hist).length)return null;try{return perfCalc()}catch(e){return null}};
 const needHist=()=>`<p class="hint">${S.hbusy?'Chargement de l’historique des cours…':'Historique des cours indisponible : vérifie l’adresse du script Google dans Réglages.'}</p>`;
-const MY=k=>MN[+k.slice(5)-1]+' '+k.slice(0,4);
-function periods(C,kf){const{D,V,F}=C,b=V.findIndex(x=>x>.01),m={},o=[];
-  for(let i=b+1;i<D.length;i++)if(V[i-1]>.01){const k=kf(D[i]),a=m[k]||(m[k]={k,f:1,e:0,val:0,o:o.length}),j=a.o;if(!m[k].in){m[k].in=1;o.push(m[k])}a.f*=(V[i]-F[i])/V[i-1];a.e+=V[i]-V[i-1]-F[i];a.val=V[i]}
-  return o.map(a=>({k:a.k,pct:(a.f-1)*100,eur:a.e,val:a.val}))}
-function bw(title,arr,lab){
-  const mk=by=>{const s2=[...arr].sort((a,b)=>b[by]-a[by]),n=Math.min(5,Math.floor(s2.length/2)||s2.length),rows=[...s2.slice(0,n),...s2.slice(-n).reverse()].filter((x,i,a)=>a.indexOf(x)==i);
-    return table([{k:'k',h:'Période',f:lab},{k:'eur',h:'Gain',c:1,f:x=>sgn(x)},{k:'pct',h:'Perf.',c:1,f:x=>fP(x)}],rows,0)};
-  return`<section><h2>${title}</h2><p class="hint" style="margin:0 0 6px">En € : les 5 meilleurs puis les 5 pires</p>${mk('eur')}<p class="hint" style="margin:12px 0 6px">En % : les 5 meilleurs puis les 5 pires</p>${mk('pct')}</section>`}
 function sales(){const by={},out=[];S.tx.forEach(t=>{if(t.type!='APPORT'&&t.type!='RETRAIT')(by[t.tk]=by[t.tk]||[]).push(t)});
   const key=t=>{const d=new Date(t.d);if(t.type=='SPLIT')d.setHours(0,0,0,0);return d.getTime()};
   for(const tk in by){let sh=0,inv=0;by[tk].sort((a,b)=>key(a)-key(b)).forEach(t=>{
@@ -675,10 +746,6 @@ function sales(){const by={},out=[];S.tx.forEach(t=>{if(t.type!='APPORT'&&t.type
     else if(t.type=='SPLIT'){if(sh>0)sh=Math.trunc(sh*t.q+1e-9)}
     else if(t.type=='DIVIDENDE'&&t.remb>0)inv=Math.max(0,inv-t.remb)})}
   return out}
-const mapRows=(items,val)=>{const y={};items.forEach(t=>{const a=t.d.getFullYear(),i=t.d.getMonth();(y[a]=y[a]||Array(12).fill(0))[i]+=val(t)});
-  return Object.keys(y).sort().map(a=>({y:a,m:y[a].map(x=>x||null),t:y[a].reduce((p,x)=>p+x,0)}))};
-function bars(id,lab,data,col){chart(id,{type:'bar',data:{labels:lab,datasets:[{data,backgroundColor:col,borderRadius:4}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fE(c.parsed.y)}}},scales:{y:{grid:{color:css('--line')}},x:{grid:{display:false}}}}})}
-
 /* ===== Vue d'ensemble & Objectif : reprise exacte de l'onglet 1 du Streamlit (app_perso.py) ===== */
 const OMT={"Performance Globale":"% = gains cumulés (plus-values latentes + actées + dividendes) ÷ total des apports nets.",
 "Performance YTD":"% = gain depuis le 1er janvier (latent + actée + dividendes) ÷ valeur du portefeuille au 31 décembre précédent.",
@@ -744,8 +811,8 @@ function ovHistX(inv){const C=getC();if(!C)return null;const{D,V,F}=C,n=D.length
   if(n>=3){let idx=1,pk=1,mn=0,lastdd=0;for(let i=1;i<n;i++){const p=V[i-1],r=p>0?(V[i]-p-F[i])/p:0;idx*=1+r;pk=Math.max(pk,idx);const d=(idx/pk-1)*100;if(d<mn)mn=d;lastdd=d}dd=mn;cur=lastdd}
   return{y:per(y+'-01-01'),m:per(y+'-'+pad(m+1)+'-01'),j:per(dstr(yest),true),dd,cur}}
 function ovX(v){
-  const op=R.pos.filter(p=>p.open),inv=op.reduce((s,p)=>s+p.inv,0),val=R.valeur,pnl=val-inv,real=R.real,dv=R.divTot,tg=pnl+real+dv,ap=R.apports,tot=R.total,fees=R.fees;
-  const base=ap>0?ap:inv,pg=base>0?tg/base*100:0;
+  const op=R.pos.filter(p=>p.open),inv=op.reduce((s,p)=>s+p.inv,0),val=R.valeur,pnl=val-inv,real=R.real,dv=R.divNet,tg=pnl+real+dv,ap=R.apports,tot=R.total,fees=R.fees,cst=R.pos.reduce((x,p)=>x+p.ach,0);
+  const base=ap>0?ap:(cst>0?cst:inv),pg=base>0?tg/base*100:0;
   const f0=S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d),ans=Math.max(Math.floor((new Date()-f0)/864e5)/365.25,0);
   const pam=(ans>=.25&&1+pg/100>0)?(Math.pow(1+pg/100,1/ans)-1)*100:null,gam=ans>=.25?tg/ans:null;
   const H=ovHistX(inv);
@@ -830,7 +897,6 @@ const flecheStyle=(set)=>(c,v)=>set.includes(c)?perfCell(v):'';
 S.txf={per:"Tout l'historique",d1:'',d2:'',acts:[],types:[],min:'',max:''};
 S.mg={sel:'',act:'Modifier',f:null};S.exc=new Set();
 const PERIODES=["Mois en cours","3 derniers mois","6 derniers mois","12 derniers mois","Année en cours","3 dernières années","5 dernières années","10 dernières années","Tout l'historique"];
-const OPL={ACHAT:'🛒  Achat',APPORT:'💰  Apport',RETRAIT:'💸  Retrait',VENTE:'📤  Vente',DIVIDENDE:'💶  Dividende',SPLIT:'🔀  Split/Regroupement'};
 const midnight=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate());
 function subM(d,n){const r=new Date(d.getFullYear(),d.getMonth()-n,1),l=new Date(r.getFullYear(),r.getMonth()+1,0).getDate();r.setDate(Math.min(d.getDate(),l));return r}
 function periodeDebut(l){const t=midnight(new Date());
@@ -1651,9 +1717,9 @@ async function simOpen(){
 function simTransfer(){
   const ach=SM.type=='Achat',pos=simPos(),q=n2(SM.qte),p=n2(SM.prix),mb=r2(q*p),com=SM.exo?0:r2(mb*SM.rc/100),ttf=ach&&SM.ttf?r2(mb*SM.rt/100):0;
   $('#sim').close();openOp(null);
-  $('#o_type').value=ach?'ACHAT':'VENTE';$('#o_d').value='';$('#o_nom').value='';$('#o_tk').value='';
+  $('#o_type').value=ach?'ACHAT':'VENTE';opSelFill('x','');fields();
   const valid=ach?S.raw.some(x=>pos&&x.Nom==pos.nom):!!pos;
-  if(pos&&valid){$('#o_nom').value=pos.nom;$('#o_tk').value=pos.tk}
+  if(pos&&valid){if(ach)$('#o_nom').value=pos.nom;else $('#o_sel').value=pos.nom;fields();$('#o_tk').value=pos.tk}
   $('#o_q').value=q;$('#o_p').value=p;$('#o_c').value=com;$('#o_t').value=ach&&ttf>0?ttf:'';fields()}
 
 /* --- export en image (même mise en page que _sim_export_png) --- */
@@ -1898,18 +1964,92 @@ function drawFra(v){
   }else h+='<div class="info">Aucun frais enregistré pour le moment.</div>';
   v.innerHTML=h+'</div></details>'}
 
+
+/* ===== Onglet Simulateurs — port de _render_sim_epargne + _render_sim_retrait (app_perso.py) ===== */
+S.sim=S.sim||{};
+const SIM_V=(k,d)=>S.sim[k]!==undefined?S.sim[k]:d;
+const clampN=(x,a,b)=>Math.min(Math.max(x,a),b);
+function snum(k,lab,val,step,min,max,dec,help,ph){return`<div><div class="nl">${lab}${help?helpI(help):''}</div><div class="nin"><input type="number" inputmode="decimal" data-sim="${k}" value="${val===''?'':(+val).toFixed(dec)}" placeholder="${esc(ph||'')}" step="${step}" min="${min}"${max!=null?` max="${max}"`:''}><button type="button" data-step="-${step}" aria-label="Diminuer">−</button><button type="button" data-step="${step}" aria-label="Augmenter">+</button></div></div>`}
+function colorCard(label,value,color,big){return`<div style="background:${color}14;border:1px solid ${color}55;border-radius:12px;padding:8px 4px;text-align:center;min-width:0;display:flex;flex-direction:column;justify-content:center;"><div style="font-size:min(${big?'0.74rem':'0.68rem'},${big?'2.9vw':'2.6vw'});color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:0.03em;line-height:1.25;">${label}</div><div style="font-size:min(${big?'1.3rem':'1.1rem'},${big?'5vw':'4vw'});font-weight:800;color:${color};margin-top:3px;line-height:1.25;">${value}</div></div>`}
+const colorCardsRow=cs=>`<div style="display:grid;gap:6px;margin-top:8px;grid-template-columns:repeat(${Math.max(cs.length,1)},minmax(0,1fr));">${cs.join('')}</div>`;
+function progressBar(pct,grad,glow,texte){const c=Math.max(0,Math.min(+pct,100));
+  return`<div style="background:#e2e8f0;border-radius:999px;height:34px;overflow:hidden;position:relative;box-shadow:inset 0 2px 5px rgba(0,0,0,0.10);"><div style="width:${c}%;height:100%;background:${grad};border-radius:999px;transition:width 0.6s ease-in-out;position:relative;box-shadow:0 0 14px ${glow}66;"><div style="position:absolute;inset:0;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,0.40) 0%,rgba(255,255,255,0.05) 45%,rgba(255,255,255,0) 60%);"></div></div><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 8px;text-align:center;font-size:0.88rem;font-weight:800;color:#0f172a;text-shadow:0 1px 3px rgba(255,255,255,0.75);">${texte}</div></div>`}
+const anLabel=k=>{const a=new Date().getFullYear()+k;return k==0?`Aujourd'hui (${a})`:(k<2?`${k} an`:`${k} ans`)+` (${a})`};
+const siFmt=v=>{if(v===0)return'0';const a=Math.abs(v),u=a>=1e9?[1e9,'G']:a>=1e6?[1e6,'M']:a>=1e3?[1e3,'k']:[1,''],x=v/u[0];return(Math.abs(x)<10?x.toFixed(1):String(Math.round(x)))+u[1]};
+function simPerfGlob(){const op=R.pos.filter(p=>p.open),inv=op.reduce((x,p)=>x+p.inv,0),cost=R.pos.reduce((x,p)=>x+p.ach,0),base=R.apports>0?R.apports:(cost>0?cost:inv);
+  return base>0?((R.valeur-inv)+R.real+R.divNet)/base*100:0}
+function simAnc(){const o=S.tx.length?S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d):null,an=o?Math.max((Date.now()-o)/864e5/365.25,0):0,pg=simPerfGlob();
+  return an>=0.25&&1+pg/100>0?[an,Math.pow(1+pg/100,1/an)-1]:[an,0]}
+const simMoy=()=>{const an=simAnc()[0],ann=an>=0.08?R.apports/an:R.apports;return ann/12};
+function simApDef(){const c=S.cfg;if(c.apport_mensuel_projection!=null)return Math.max(0,Math.trunc(+c.apport_mensuel_projection));
+  if(c.apport_annuel_projection!=null)return Math.max(0,Math.round(+c.apport_annuel_projection/12));return Math.max(0,Math.round(simMoy()/10)*10)}
+const fdate=d=>`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+function chartSim(n,verses,interets){
+  const cats=[...Array(n+1).keys()].map(anLabel),tk=new Set([1,2,3].map(i=>Math.max(1,Math.round(n*i/3))));
+  const ds=(lab,data,bd,w,bg,fill)=>({label:lab,data,borderColor:bd,borderWidth:w,backgroundColor:bg,fill,pointRadius:0,pointHoverRadius:0,tension:0});
+  chart('c12',{type:'line',data:{labels:cats,datasets:[ds('Versements',verses,'#6366f1',1.5,'rgba(99,102,241,0.30)','origin'),ds('Intérêts',interets.map(x=>Math.max(x,0)),'#10b981',2.2,'rgba(16,185,129,0.30)','-1')]},
+    options:{maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},layout:{padding:{top:6,right:4}},
+      plugins:{legend:{display:false},tooltip:extTip(i=>`<b>${cats[i]}</b><br><span style="color:#a5b4fc;">●</span> <span style="color:#a5b4fc;">Versements cumulés : <b>${pEur(verses[i])}</b></span><br><span style="color:#6ee7b7;">●</span> <span style="color:#6ee7b7;">Intérêts cumulés : <b>${pEur(Math.max(interets[i],0))}</b></span>`)},
+      scales:{x:{grid:{display:false},ticks:{autoSkip:false,maxRotation:0,minRotation:0,font:{size:10},callback:(v,i)=>tk.has(i)?cats[i]:''}},
+        y:{stacked:true,beginAtZero:true,grid:{color:'#e2e8f0',borderDash:[1,3]},border:{display:false},ticks:{maxTicksLimit:5,callback:v=>siFmt(v)+' €'}}}}})}
+function drawSim(v){
+  const [an,pAnn]=simAnc(),moy=simMoy(),defPerf=pAnn>0?Math.round(pAnn*10000)/100:7.0,cPS=+cg('taux_prelevements_sociaux',18.6);
+  const pf0=Math.max(0,SIM_V('d',Math.max(Math.round(R.total),0))),ap=Math.max(0,Math.round(SIM_V('ap',simApDef()))),
+    n=Math.round(clampN(SIM_V('n',+cg('horizon_projection_annees',10)),1,50)),pa=clampN(SIM_V('pa',+cg('perf_annuelle_projection',defPerf)),-50,100),
+    imp=clampN(SIM_V('imp',cPS),0,100),infl=clampN(SIM_V('infl',2.0),0,20),ret=clampN(SIM_V('ret',4.0),0,20);
+  const apTot=R.apports,PL=PLAFOND,inv=ap*12,r=pa/100,f=1+infl/100;
+  const vals=[pf0],verses=[Math.min(Math.max(apTot,0),pf0)];let apCur=apTot;
+  for(let k=1;k<=n;k++){const place=Math.max(PL-apCur,0),apA=Math.min(inv,place);vals.push(vals[vals.length-1]*(1+r)+apA);apCur+=apA;verses.push(verses[verses.length-1]+apA)}
+  const reelles=vals.map((x,k)=>x/Math.pow(f,k)),vb=vals[n],vr=reelles[n],interR=reelles.map((x,i)=>Math.max(x-verses[i],0));
+  const ancFin=an+n,tauxImp=imp+(ancFin>=5?0:12.8),gains=Math.max(vb-verses[n],0),vNet=vb-gains*tauxImp/100;
+  const revBrut=vr*ret/100/12,revNet=(vNet/Math.pow(f,n))*ret/100/12,apFin=Math.min(apCur,PL);
+  const reste=PL-apTot;let aAvant=null,datePl;
+  if(reste<=0)datePl='Déjà atteint';else if(inv>0){aAvant=reste/inv;datePl=fdate(new Date(Date.now()+aAvant*365.25*864e5))}else datePl='Jamais (aucun apport prévu)';
+  const arrow=pAnn>0.005?'▲':pAnn<-0.005?'▼':'▬',fiable=an>=1?'':' ⚠️ historique court, peu fiable';
+  const H1='Utilisée pour faire croître le portefeuille d\'une année sur l\'autre.';
+  let e=`<div class="sbox"><div class="sm2">
+    ${snum('d','Portefeuille actuel (€)',pf0,1000,0,null,0)}
+    ${snum('ap','Apport prévu par mois (€)',ap,10,0,null,0,"Ajouté chaque mois (cumulé et versé en fin d'année dans la simulation), en plus de la croissance du portefeuille.")}
+    ${snum('n','Nombre d\'années',n,1,1,50,0)}
+    ${snum('pa','Performance annuelle retenue (%)',pa,0.5,-50,100,2,H1)}
+    ${snum('imp','Imposition des gains (%)',imp,0.1,0,100,1,"Par défaut : le taux de prélèvements sociaux réglé dans l'application, appliqué aux gains au moment du retrait. Si le PEA a moins de 5 ans à ce moment-là (ancienneté actuelle + nombre d'années), 12,8 % d'impôt sur le revenu sont ajoutés automatiquement.")}
+    ${snum('infl','Inflation (%)',infl,0.1,0,20,1,"La valeur finale et le revenu passif sont exprimés en euros d'aujourd'hui (pouvoir d'achat). Mettez 0 pour les voir sans inflation.")}
+    ${snum('ret','Taux de retrait (%)',ret,0.25,0,20,2,"Part du capital net retirée chaque année pour le revenu passif.")}
+    <div></div></div>
+    <div class="cap">Apports moyens depuis l'ouverture du PEA : <b>${pEur(moy)} / mois</b><br>Performance moyenne depuis l'ouverture : <b>${arrow} ${(pAnn*100>=0?'+':'')+pyN(pAnn*100,2)} % / an</b>.${fiable}</div></div>`;
+  e+=sDuo([['Valorisation',pEur(vr),'',true,'#0284c7']])+sDuo([['Revenu passif / mois',pEur(revBrut),'avant impôts',false],["Revenu passif / mois net d'impôts",pEur(revNet),'',true,'#16a34a']])
+    +sDuo([['Versements cumulés',pEur(verses[n]),'',false,'#6366f1'],['Intérêts',pEur(Math.max(vr-verses[n],0)),'',false,'#10b981']]);
+  e+='<div class="cv" style="height:260px"><canvas id="c12"></canvas></div>';
+  const pct=Math.min(Math.max(apFin/PL*100,0),100),grad=pct<90?'linear-gradient(90deg, #d97706, #fbbf24)':'linear-gradient(90deg, #dc2626, #f87171)';
+  e+=`<div style="margin-top:-12px;padding:12px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;"><div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px;margin-bottom:8px;"><div style="font-size:0.74rem;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:0.04em;">🏦 Plafond de versements PEA</div><div style="font-size:0.82rem;font-weight:700;color:#0f172a;">${pEur(apFin)} / ${pEur(PL)}</div></div><div style="background:#e2e8f0;border-radius:999px;height:12px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:${grad};border-radius:999px;"></div></div><div style="margin-top:8px;font-size:0.78rem;color:#475569;">📅 Date de plafonnement selon les valeurs saisies : <b style="color:#0f172a;">${datePl}</b></div></div>`;
+  if(aAvant!=null&&aAvant>=0&&aAvant<=n&&inv>0)e+=`<div class="cap">⚠️ Au rythme prévu, le plafond de versements du PEA (${pEur(PL)}) serait atteint avant la fin de l'horizon : les apports sont plafonnés à partir de cette échéance.</div>`;
+  e+='<div style="height:1.5rem;"></div>';
+
+  /* ---- Simulateur de retrait ---- */
+  const ps=clampN(SIM_V('ps',cPS),0,100),mt=SIM_V('mt',0),a5=SIM_V('a5',true);
+  let w=`<div class="sbox"><p><b>💰 Paramètres du retrait</b></p><div class="sm2">${snum('mt','Montant souhaité (€)',mt>0?mt:'',500,0,null,2,'','Entrez un montant...')}${snum('ps','Prélèvements sociaux (%)',ps,0.1,0,100,1,"Taux en vigueur au moment du retrait. Modifiable si la réglementation évolue : la valeur saisie est mémorisée automatiquement.")}</div>
+    <label class="ck"><input type="checkbox" data-sim="a5"${a5?' checked':''}><span>Le PEA a plus de 5 ans ${helpI("Un PEA de plus de 5 ans est exonéré d'impôt sur le revenu sur les plus-values (seuls les prélèvements sociaux restent dus).")}</span></label></div>`;
+  if(!a5)w+=`<div class="cap">⚠️ Avant 5 ans, un retrait (même partiel) clôture le PEA et l'ensemble des gains est imposé (12,8 % + prélèvements sociaux) : cette simulation ne calcule que la part de gain contenue dans le montant retiré.</div>`;
+  if(!(mt>0))w+=`<div style="padding:28px 20px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;text-align:center;color:#64748b;"><div style="font-size:1.6rem;">🧮</div><div style="font-size:0.92rem;font-weight:600;margin-top:6px;">Saisissez un montant de retrait pour voir la simulation</div><div style="font-size:0.8rem;margin-top:4px;">La répartition capital / plus-value, les taxes et le net perçu s'afficheront ici.</div></div>`;
+  else{
+    const vt=R.total,ratio=vt>0?Math.max(0,(vt-apTot)/vt):0,pv=mt*ratio,cap=mt-pv,mps=pv*(ps/100),mir=a5?0:pv*0.128,tax=mps+mir,net=mt-tax;
+    const capP=cap/mt*100,pvP=100-capP,netP=net/mt*100;
+    const [gc,nc]=netP>=90?['linear-gradient(90deg, #16a34a, #4ade80)','#16a34a']:netP>=80?['linear-gradient(90deg, #0284c7, #38bdf8)','#0284c7']:['linear-gradient(90deg, #d97706, #fbbf24)','#d97706'];
+    w+=`<div>`+colorCardsRow([colorCard('💵 Montant net perçu',pEur(net),nc,true),colorCard('Total fiscalité',pEur(tax),tax>0?'#dc2626':'#64748b',true)])
+      +'<div style="height:8px;"></div>'+progressBar(netP,gc,nc,`${pyN(netP,1)} % conservés après fiscalité`)
+      +colorCardsRow([colorCard('Montant demandé',pEur(mt),'#0284c7'),colorCard(`Dont capital (${pyN(capP,2)} %)`,pEur(cap),'#4f46e5'),colorCard(`Dont plus-value (${pyN(pvP,2)} %)`,pEur(pv),'#10b981')])
+      +colorCardsRow([colorCard(`Prélèvements sociaux (${pyN(ps,1)} %)`,pEur(mps),'#d97706'),...(a5?[]:[colorCard('Impôt sur le revenu (12,8 %)',pEur(mir),'#dc2626')])])
+      +'<div style="height:22px;"></div></div>'}
+  v.innerHTML=`<div class="stv"><h3>📈 Simulateur d'épargne &amp; de revenu passif</h3>${exp2('sim1','🔮 Valeur du portefeuille, valeur nette et revenu passif',e)}<h3>🧮 Simulateur de Retrait</h3>${exp2('sim2',"💸 Simulation d'un retrait",w)}</div>`;
+  setTimeout(()=>chartSim(n,verses,interR),0)}
+
 /* ---------- Affichage ---------- */
 const TABS=[['ov',"📊 Vue d'ensemble & Objectif"],['pos','📌 Positions & Transactions'],['app','💰 Apports'],['cla','🏆 Classements'],['sai','🗓️ Saisonnalité'],['perf','📈 Performances & Indices'],['his','📅 Historique'],['div','💶 Dividendes & Cartographie'],['fra','🔍 Frais'],['wl','👁️ Watchlist'],['sim','🧮 Simulateurs']];
-function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
 function chart(id,cfg){if(CH[id])CH[id].destroy();const el=document.getElementById(id);if(!el||!window.Chart)return;
   Chart.defaults.color='#334155';Chart.defaults.font.family='Manrope, Inter, sans-serif';CH[id]=new Chart(el,cfg)}
-function kpi(l,v,s,c){return`<div class="k"><span>${l}</span><b>${v}</b>${s?`<small class="${c||''}">${s}</small>`:''}</div>`}
-function table(cols,rows,sk){
-  const s=S.sort;if(sk){rows=[...rows].sort((a,b)=>(a[s.k]>b[s.k]?1:-1)*s.d)}
-  return`<div class="tw"><table><thead><tr>${cols.map(c=>`<th ${sk?`data-k="${c.k}"`:''}>${c.h}${sk&&s.k==c.k?(s.d>0?' ↑':' ↓'):''}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr${r.i!=null?` data-i="${r.i}"`:''}>${cols.map(c=>`<td class="${c.c?cl(r[c.k]):''}">${c.f(r[c.k],r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}
 const sgn=(v,d=2)=>`${ar(v)} ${fS(v,d)}`;
 
-function draw(){TIPS.length=0;
+function draw(){TIPS.length=0;setTimeout(welcomeCheck,0);
   const v=$('#view');
   $('#tabs').innerHTML=TABS.map(([k,l])=>`<button role="tab" data-t="${k}" aria-selected="${k==S.tab}">${l}</button>`).join('');
   if(!S.tx.length){$('#tot').textContent='–';$('#sub').textContent='';
@@ -1929,73 +2069,34 @@ function draw(){TIPS.length=0;
   else if(S.tab=='div')divX(v);
   else if(S.tab=='fra')drawFra(v);
   else if(S.tab=='perf')drawPerf(v);
-  else if(S.tab=='sim')(typeof drawSim=='function'?drawSim(v):v.innerHTML='<section><p class="hint">Onglet Simulateurs : à porter (onglet 11).</p></section>');
+  else if(S.tab=='sim')drawSim(v);
   else if(S.tab=='wl')drawWl(v);
-  else if(S.tab=='pos0'){
-    const cols=[{k:'nom',h:'Valeur',f:x=>x},{k:'sh',h:'Qté',f:x=>nf(x%1?4:0).format(x)},{k:'pru',h:'PRU',f:x=>fE(x,3)},
-      {k:'px',h:'Cours',f:x=>fE(x,3)},{k:'val',h:'Valeur',f:x=>fE(x)},{k:'lat',h:'Gain latent',c:1,f:(x,r)=>`${ar(x)} ${fS(x)}<br><small>${fP(r.latP)}</small>`},
-      {k:'div',h:'Dividendes',f:x=>fE(x)},{k:'rl',h:'Réalisé',c:1,f:x=>sgn(x)},{k:'perf',h:'Perf. totale',c:1,f:x=>`${ar(x)} ${fP(x)}`}];
-    v.innerHTML=`<section><h2>Positions détenues (${open.length})</h2>${table(cols,open,1)}</section>`+
-      (P.length>open.length?`<section><h2>Lignes soldées</h2>${table(cols.filter(c=>['nom','div','rl','perf'].includes(c.k)),P.filter(p=>!p.open),1)}</section>`:'');
-  }
-  else if(S.tab=='div0'){
-    const y={};S.tx.filter(t=>t.type=='DIVIDENDE').forEach(t=>{const k=t.d.getFullYear();y[k]=(y[k]||0)+t.p-t.ret-t.c+t.arr});
-    const ys=Object.keys(y).sort();
-    v.innerHTML=`<section><h2>Dividendes nets par année</h2><div class="cv"><canvas id="c3"></canvas></div></section>
-      <section><h2>Par ligne</h2>${table([{k:'nom',h:'Valeur',f:x=>x},{k:'div',h:'Dividendes nets',f:x=>fE(x)}],P.filter(p=>p.div>0),1)}</section>`;
-    chart('c3',{type:'bar',data:{labels:ys,datasets:[{data:ys.map(k=>y[k]),backgroundColor:css('--acc'),borderRadius:4}]},
-      options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fE(c.parsed.y)}}},scales:{y:{grid:{color:css('--line')}},x:{grid:{display:false}}}}});
-  }
-  else if(S.tab=='app0'){
-    let c=0;const a=S.tx.filter(t=>t.type=='APPORT'||t.type=='RETRAIT').sort((x,z)=>x.d-z.d).map(t=>{c+=t.type=='APPORT'?t.q:-t.q;return{x:t.d,y:c}});
-    v.innerHTML=`<section><h2>Évolution des apports cumulés</h2><div class="cv"><canvas id="c4"></canvas></div></section>
-      <div class="grid" style="margin-top:14px">${kpi('Total versé',fE(R.apports,0))}${kpi('Nombre de versements',String(a.length))}${kpi('Versement moyen',fE(a.length?R.apports/a.length:0,0))}</div>`;
-    chart('c4',{type:'line',data:{labels:a.map(p=>p.x.toLocaleDateString('fr-FR',{month:'short',year:'2-digit'})),datasets:[{data:a.map(p=>p.y),stepped:true,fill:true,borderColor:css('--acc'),borderWidth:2,pointRadius:0,
-      backgroundColor:ctx=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,css('--acc')+'55');g.addColorStop(1,css('--acc')+'00');return g}}]},
-      options:{maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fE(c.parsed.y,0)}}},scales:{y:{grid:{color:css('--line')}},x:{grid:{display:false},ticks:{maxTicksLimit:6}}}}});
-  }
-  else if(S.tab=='tx'){
-    const rows=[...S.tx].sort((a,b)=>b.d-a.d).map(t=>({...t,ds:t.d.toLocaleDateString('fr-FR'),mt:t.type=='ACHAT'?-(t.q*t.p+t.f):t.type=='VENTE'?t.q*t.p-t.f:t.type=='DIVIDENDE'?t.p-t.ret-t.c+t.arr:t.type=='APPORT'?t.q:t.type=='RETRAIT'?-t.q:0}));
-    v.innerHTML=`<section><h2>Historique (${rows.length} opérations)</h2>${table([{k:'ds',h:'Date',f:x=>x},{k:'type',h:'Type',f:x=>x.charAt(0)+x.slice(1).toLowerCase()},{k:'nom',h:'Valeur',f:x=>x},
-      {k:'q',h:'Qté',f:x=>nf(x%1?4:0).format(x)},{k:'f',h:'Frais',f:x=>fE(x)},{k:'mt',h:'Montant',c:1,f:x=>fS(x)}],rows,0)}</section>`;
-  }
 }
 
 /* ---------- Événements ---------- */
 document.addEventListener('click',e=>{
   const tr=e.target.closest('tr[data-i]');if(tr){openOp(+tr.dataset.i);return}
   const t=e.target.closest('[data-t]');if(t){S.tab=t.dataset.t;draw();return}
-  const q=e.target.closest('[data-q]');if(q){const n=new Date(),k=q.dataset.q;let d=null;
-    if(k=='1M')d=new Date(n.getFullYear(),n.getMonth()-1,n.getDate());else if(k=='3M')d=new Date(n.getFullYear(),n.getMonth()-3,n.getDate());
-    else if(k=='6M')d=new Date(n.getFullYear(),n.getMonth()-6,n.getDate());else if(k=='1A')d=new Date(n.getFullYear()-1,n.getMonth(),n.getDate());
-    else if(k=='YTD')d=new Date(n.getFullYear()-1,11,31);
-    S.pf.d1=d?dstr(d):'';S.pf.d2='';LS.s('pf',S.pf);draw();return}
-  const ix=e.target.closest('[data-ix]');if(ix){const k=ix.dataset.ix,a=S.pf.idx;S.pf.idx=a.includes(k)?a.filter(x=>x!=k):[...a,k];LS.s('pf',S.pf);draw();return}
-  const mo=e.target.closest('[data-m]');if(mo){S.pf.mode=mo.dataset.m;LS.s('pf',S.pf);draw();return}
   if(e.target.closest('#pfretry')){S.htry=null;S.hmsg='';ensureHist();return}
-  if(e.target.closest('#wladd')){const tk=$v('#wl_tk').trim().toUpperCase(),z=parseFloat($v('#wl_zone')),W=S.cfg.watchlist||[];
-    if(!tk)return alert('Le ticker est obligatoire.');if(W.some(i=>i.ticker==tk))return alert(tk+' est déjà dans la watchlist.');
-    cfgSave({watchlist:[...W,{nom:$v('#wl_nom').trim()||tk,ticker:tk,zone_achat:z>0?z:null}]}).then(()=>{S.wlAt=0;draw()});return}
-  const wd=e.target.closest('[data-wldel]');if(wd){const W=S.cfg.watchlist||[],it=W[+wd.dataset.wldel];if(it&&confirm('Retirer '+it.nom+' de la watchlist ?'))cfgSave({watchlist:W.filter((_,i)=>i!=+wd.dataset.wldel)}).then(()=>draw());return}
-  const we=e.target.closest('[data-wled]');if(we){const W=S.cfg.watchlist||[],i=+we.dataset.wled,it=W[i];if(!it)return;const x=prompt('Zone d’achat (€) pour '+it.nom+' (vide pour l’effacer)',it.zone_achat||'');
-    if(x===null)return;const z=n2(x);cfgSave({watchlist:W.map((a,j)=>j==i?{...a,zone_achat:z>0?z:null}:a)}).then(()=>draw());return}
-  if(e.target.closest('#wlref')){S.wlAt=0;wlFetch(true);return}
   const wx=e.target.closest('[data-wldis]');if(wx){S.wlDis.add(wx.dataset.wldis);draw();return}
-  const h=e.target.closest('th[data-k]');if(h){const k=h.dataset.k;S.sort={k,d:S.sort.k==k?-S.sort.d:-1};draw()}
 });
 $('#cfg').onclick=()=>{$('#url').value=S.url;const s=SB.s;$('#sbu').value=s.url||'';$('#sbk').value=s.key||'';$('#sbe').value=s.email||'';$('#sbst').textContent=connected()?'Connecté ('+(s.email||'')+')':'';$('#dlg').showModal()};
 $('#csv').onchange=async e=>{const f=e.target.files[0];if(!f)return;S.raw=parseCSV(await f.text()).map(toRaw);LS.s('raw',S.raw);rebuild();draw();refreshPrices();$('#dlg').close();
   if(connected()&&S.synced&&confirm('Envoyer ces données vers Supabase ? Cela remplace les transactions en ligne.'))save()};
-$('#add').onclick=()=>openOp(null);$('#o_type').onchange=fields;$('#o_no').onclick=()=>$('#op').close();
-$('#o_nom').onchange=()=>{const m=S.raw.find(x=>x.Nom==$v('#o_nom')&&x.Ticker&&x.Ticker!='APPORT');if(m)$('#o_tk').value=m.Ticker};
-$('#opf').onsubmit=async e=>{const r=readOp();if(!r){e.preventDefault();return alert('Date, valeur et ticker sont obligatoires.')}
-  if(S.editing!=null)S.raw[S.editing]=r;else S.raw.push(r);await commit()};
+buildOp();
+$('#add').onclick=()=>openOp(null);$('#o_no').onclick=()=>$('#op').close();
+$('#o_type').onchange=()=>{opClear();opSelFill($v('#o_type'),'');$('#o_err').innerHTML='';fields()};
+$('#o_sel').onchange=()=>{$('#o_nom').value='';$('#o_tk').value='';opNameChanged()};
+$('#o_nom').onchange=opNameChanged;
+$('#opf').addEventListener('input',()=>{opFrames();if($v('#o_type')=='ACHAT')gShow('tk',!oEmpty('o_nom'))});
+$('#opf').addEventListener('change',opFrames);
+$('#opf').onsubmit=async e=>{const r=readOp();if(!r){e.preventDefault();return}
+  if(S.editing!=null)S.raw[S.editing]=r;else S.raw.push(r);await commit();toast('✅ Opération enregistrée avec succès !')};
 $('#o_del').onclick=async()=>{if(confirm('Supprimer cette opération ?')){S.raw.splice(S.editing,1);$('#op').close();await commit()}};
 $('#exp').onclick=()=>{const q=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
   const csv='\uFEFF'+COLS.join(',')+'\n'+S.raw.map(r=>COLS.map(k=>q(r[k])).join(',')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='transactions_'+new Date().toISOString().slice(0,10)+'.csv';a.click()};
-const dl=(n,t,m)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:m}));a.download=n;a.click()},today=()=>new Date().toISOString().slice(0,10),
-  esc=x=>String(x??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dl=(n,t,m)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:m}));a.download=n;a.click()},today=()=>new Date().toISOString().slice(0,10);
 $('#expx').onclick=()=>{const tg=k=>k.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9_]+/g,'_').replace(/_+$/,'');
   dl('transactions_'+today()+'.xml','<?xml version="1.0" encoding="UTF-8"?>\n<transactions>\n'+S.raw.map(r=>'  <operation>\n'+COLS.map(k=>`    <${tg(k)}>${esc(r[k])}</${tg(k)}>`).join('\n')+'\n  </operation>').join('\n')+'\n</transactions>\n','application/xml')};
 $('#expp').onclick=()=>{const w=window.open('','_blank');if(!w)return alert('Autorise les fenêtres pop-up pour exporter en PDF.');
@@ -2012,17 +2113,22 @@ $('#sbok').onclick=async()=>{try{sess(await raw('/auth/v1/verify',{method:'POST'
   $('#sbcode').hidden=true;$('#sbst').textContent='Connecté ✓';await pull()}catch(e){$('#sbst').textContent='Code invalide ou expiré : '+e.message}};
 $('#sbout').onclick=()=>{SB.s={...SB.s,access:null,refresh:null,uid:null};S.synced=false;$('#sbst').textContent='Déconnecté.';st('')};
 $('#dlg').addEventListener('close',()=>{const u=$('#url').value.trim();if(u!==S.url){S.url=u;LS.s('url',u);refreshPrices()}});
-$('#reset').onclick=()=>{if(confirm('Effacer toutes les données de ce navigateur ?')){['csv','raw','prices','pricesAt','hist','histAt','histKey','pf','goal','cfg','wlh','wlf','wlpx','wlhAt'].forEach(k=>localStorage.removeItem(k));S.prices={};S.hist={};S.htry=null;load();draw();$('#dlg').close()}};
-document.addEventListener('change',e=>{const i=e.target.id;if(i=='go_o'||i=='go_t'||i=='go_m'||i=='go_r'){const x=e.target.value,n=parseFloat(String(x).replace(',','.'))||0;S.goal[{go_o:'obj',go_t:'to',go_m:'mens',go_r:'r'}[i]]=i=='go_t'?x:n;LS.s('goal',S.goal);draw()}
-  if(i=='pf1'||i=='pf2'){S.pf[i=='pf1'?'d1':'d2']=e.target.value;LS.s('pf',S.pf);draw()}});
+$('#reset').onclick=()=>{if(confirm('Effacer toutes les données de ce navigateur ?')){['csv','raw','prices','pricesAt','hist','histAt','histKey','cfg','wlh','wlf','wlpx','wlhAt'].forEach(k=>localStorage.removeItem(k));S.prices={};S.hist={};S.htry=null;load();draw();$('#dlg').close()}};
 document.addEventListener('change',e=>{const el=e.target,c=el.dataset&&el.dataset.cfg;
   if(c){cfgSave({[c]:el.type=='date'?el.value:c=='yearly_target'?Math.round(n2(el.value)):n2(el.value)}).then(()=>draw());return}
   const k=el.dataset&&el.dataset.sim;if(!k)return;
   const x=el.type=='checkbox'?el.checked:n2(el.value);S.sim[k]=x;
   const C={ap:'apport_mensuel_projection',n:'horizon_projection_annees',pa:'perf_annuelle_projection',ps:'taux_prelevements_sociaux'};
   if(C[k])cfgSave({[C[k]]:(k=='ap'||k=='n')?Math.round(x):x});draw()});
+/* ---------- Pop-up de premier lancement (reprise de _dialog_premier_lancement) ---------- */
+function welcomeCheck(){const d=$('#welcome');if(!d||d.open||!S.cfgOk||String(cg('user_name','')).trim())return;
+  $('#wel_err').hidden=true;d.showModal()}
+$('#welcome').addEventListener('cancel',e=>e.preventDefault());
+$('#welf').onsubmit=async e=>{e.preventDefault();const nm=$v('#wel_nom').trim();
+  if(!nm){$('#wel_err').hidden=false;return}
+  $('#welcome').close();await cfgSave({user_name:nm,broker:$v('#wel_br').trim()});ovHdr();draw()};
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',draw);
-load();draw();refreshPrices();pull();wlFetch();
+load();draw();refreshPrices();pull();wlFetch();cfgLoad();
 </script>
 </body>
 </html>
