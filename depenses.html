@@ -277,7 +277,7 @@ const PAL=["#0284c7","#7c3aed","#0d9488","#f97316","#dc2626","#ca8a04","#db2777"
 const SEC={depenses:["Depenses","Depense"],recurrentes:["Recurrentes","Recurrente"],salaires:["Salaires","Salaire"],prets:["Prets","Pret"],interessement:["Interessements","Interessement"],groupes:["Groupes","Groupe"]};
 const NUM=new Set(["montant","net","brut","impot","capital","taux","duree","assurance","premiere_reelle"]);
 const VER="26.6-a",KEY="depenses_v1",FKEY="depenses_fold";
-const TKEY="depenses_tab",TIDS=["home","ana","rec","cred","sal","tax","int","sante","data"];
+const MOD=new URLSearchParams(location.search).get("m")||"",MODT={dep:["home","ana","rec","data"],immo:["cred"],epargne:["int"],salaire:["sal","tax"],sante:["sante"]},TKEY="depenses_tab"+(MOD?"_"+MOD:""),TIDS=MODT[MOD]||["home","ana","rec","cred","sal","tax","int","sante","data"];
 let D=load(),tab=loadTab(),per="m:"+TODAY().slice(0,7),gran="jour",q="",sens="Dépense";
 let FOLD=(()=>{try{return JSON.parse(localStorage.getItem(FKEY))||{}}catch(e){return{}}})();
 function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.depenses)return r}catch(e){}return{version:1,depenses:[],recurrentes:[],salaires:[],prets:[]}}
@@ -287,7 +287,7 @@ function gsetpos(n,pos){const L=grpNames(),i=L.indexOf(n);if(i<0)return;L.splice
 function assignGroup(name,idxs,pos){const L=grpNames(),isNew=!L.includes(name);idxs.forEach(i=>{if(D.depenses[i])D.depenses[i].groupe=name});
  if(isNew){const p=Math.min(Math.max(parseInt(pos)||L.length+1,1),L.length+1);L.splice(p-1,0,name);D.groupes=L.map(nom=>({nom}))}save()}
 function save(){const GL=grpNames();D.sgroupes=(D.sgroupes||[]).map(x=>({nom:x.nom,groupes:(x.groupes||[]).filter(g=>GL.includes(g))}));try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){alert("Stockage impossible")}}
-function loadTab(){try{const t=localStorage.getItem(TKEY);return TIDS.includes(t)?t:"home"}catch(e){return"home"}}
+function loadTab(){try{const t=localStorage.getItem(TKEY);return TIDS.includes(t)?t:TIDS[0]}catch(e){return TIDS[0]}}
 function saveTab(){try{localStorage.setItem(TKEY,tab)}catch(e){}}
 function saveFold(){try{localStorage.setItem(FKEY,JSON.stringify(FOLD))}catch(e){}}
 const $=s=>document.querySelector(s);
@@ -830,7 +830,7 @@ function sortTables(){document.querySelectorAll("#app table.rc").forEach((tb,ti)
   th.onclick=()=>{const s=SORTS[key];SORTS[key]=s&&s.c===c?{c,d:-s.d}:{c,d:1};applySort(tb,key,ths);fitLists()}});
  applySort(tb,key,ths)})}
 function render(){hideTip();const t=TABS.find(x=>x[0]===tab);$("#app").innerHTML=t[3]();
- const nv=$("#nav"),sl=nv.scrollLeft;nv.innerHTML=TABS.map(x=>`<button data-t="${x[0]}" class="${x[0]===tab?"on":""}">${x[1]} ${x[2]}</button>`).join("");
+ const nv=$("#nav"),sl=nv.scrollLeft;nv.style.display=TIDS.length>1?"":"none";nv.innerHTML=TABS.filter(x=>TIDS.includes(x[0])).map(x=>`<button data-t="${x[0]}" class="${x[0]===tab?"on":""}">${x[1]} ${x[2]}</button>`).join("");
  const on=nv.querySelector(".on");if(on)nv.scrollLeft=on.offsetLeft-(nv.clientWidth-on.offsetWidth)/2;else nv.scrollLeft=sl;
  $("#sub").textContent="v"+VER+" · "+D.depenses.length+" opérations";bind();sortTables();$("#fab").style.display=["sante","tax","sal"].includes(tab)?"none":"";document.querySelectorAll(".sc[data-end]").forEach(e=>{e.scrollLeft=e.scrollWidth});fitLists()}
 function bind(){document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{if(b.dataset.t==="sal"&&tab!=="sal")salY=TODAY().slice(0,4);tab=b.dataset.t;saveTab();render();scrollTo(0,0)});
@@ -1082,6 +1082,10 @@ $("#frmR").onsubmit=e=>{const m=parseFloat($("#rMt").value);if(!(m>0)){e.prevent
  const r={libelle:$("#rLib").value.trim(),categorie:$("#rCat").value,montant:Math.round(m*100)/100,type:rType};
  {const gv=$("#rGrp").value;if(gv)r.groupe=gv}
  if(rIdx>=0)D.recurrentes[rIdx]=r;else D.recurrentes.push(r);save();render()};
+/* Sections de l'appli unifiée : ?m=dep | salaire | immo | epargne | sante */
+{const TT={dep:["💸","Dépenses"],salaire:["💼","Salaire"],immo:["🏡","Immobilier · Crédit"],epargne:["🎁","Épargne salariale"],sante:["🩺","Santé"]}[MOD];if(TT){document.querySelector("header h1").textContent=TT[0]+" "+TT[1];document.title=TT[1]}}
+/* Plusieurs sections partagent les mêmes données : on recharge si une autre section les modifie */
+addEventListener("storage",e=>{if(e.key===KEY){D=load();render()}});
 render();
 if("serviceWorker"in navigator){const had=!!navigator.serviceWorker.controller;let rl=0;
  /* Si une nouvelle version prend le relais d'une ancienne, la page se recharge toute seule une fois. */

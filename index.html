@@ -61,12 +61,14 @@ const LS={g(k){try{return JSON.parse(localStorage.getItem(k))}catch{return null}
 const eur=n=>(n||0).toLocaleString('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0});
 const MODS=[
  {id:'home',ic:'🏠',lb:'Général'},
- {id:'depenses',ic:'💸',lb:'Dépenses',src:'depenses.html'},
+ {id:'depenses',ic:'💸',lb:'Dépenses',src:'depenses.html?m=dep'},
+ {id:'salaire',ic:'💼',lb:'Salaire',src:'depenses.html?m=salaire'},
  {id:'pea',ic:'📈',lb:'PEA',src:'pea.html'},
  {id:'cto',ic:'🏦',lb:'CTO'},
- {id:'epargne',ic:'🎁',lb:'Épargne salariale'},
- {id:'immo',ic:'🏡',lb:'Immobilier'},
- {id:'crypto',ic:'₿',lb:'Crypto'}
+ {id:'epargne',ic:'🎁',lb:'Épargne salariale',src:'depenses.html?m=epargne'},
+ {id:'immo',ic:'🏡',lb:'Immobilier',src:'depenses.html?m=immo'},
+ {id:'crypto',ic:'₿',lb:'Crypto'},
+ {id:'sante',ic:'🩺',lb:'Santé',src:'depenses.html?m=sante'}
 ];
 let cur='home';
 const nav=$('#nav');
@@ -83,7 +85,7 @@ function go(id){
   if(id==='home')renderHome();
   else if(!m.src)$('#sn').textContent=m.ic+' '+m.lb;
   else if(!document.querySelector(`iframe[data-id="${id}"]`)){
-    const f=document.createElement('iframe');f.dataset.id=id;f.src=m.src;f.className='on';$('#stage').appendChild(f);
+    const f=document.createElement('iframe');f.dataset.id=id;if(m.src.startsWith('depenses'))f.dataset.dep=1;f.src=m.src;f.className='on';$('#stage').appendChild(f);
   }
 }
 addEventListener('hashchange',()=>go(location.hash.slice(1)));
@@ -95,19 +97,26 @@ function depMois(){
   (D.depenses||[]).forEach(o=>{if(!(o.date||'').startsWith(ym))return;const rev=o.sens?o.sens==='Revenu':REV.includes(o.categorie);rev?r+=o.montant:d+=o.montant});
   return{r,d,n:(D.depenses||[]).length};
 }
+function crdPrets(D){const T=new Date(),P=(D.prets||[]).filter(p=>p.date_debut&&p.capital);let crd=0;
+  P.forEach(p=>{const n=Math.round(p.duree)||240,i=p.taux/1200,k=Math.max(0,Math.min(n,(T.getFullYear()-+p.date_debut.slice(0,4))*12+T.getMonth()+1-+p.date_debut.slice(5,7)));
+    crd+=i>0?p.capital*(Math.pow(1+i,n)-Math.pow(1+i,k))/(Math.pow(1+i,n)-1):p.capital*(1-k/n)});
+  return{crd,n:P.length}}
 function renderHome(){
   $('#date').textContent=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  const p=LS.g('hub_pea'),dm=depMois();
+  const p=LS.g('hub_pea'),dm=depMois(),D=LS.g('depenses_v1')||{},ds=[...(D.salaires||[])].filter(s=>s.date).sort((x,y)=>x.date<y.date?1:-1)[0],
+    de={n:(D.interessement||[]).length,tot:(D.interessement||[]).reduce((s,x)=>s+(x.montant||0),0)},di=crdPrets(D);
   $('#tot').textContent=p?eur(p.total):'–';
   $('#totsub').textContent=p?'PEA mis à jour le '+new Date(p.t).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'Ouvre l’onglet PEA une fois pour afficher le total';
   const cl=v=>v>0?'up':v<0?'dn':'';
   const T=[
    ['depenses','💸','Dépenses (ce mois)',`<div class="v dn">−${eur(dm.d)}</div><div class="m">Revenus ${eur(dm.r)} · solde <span class="${cl(dm.r-dm.d)}">${eur(dm.r-dm.d)}</span></div>`],
+   ['salaire','💼','Salaire',ds?`<div class="v">${eur(ds.net)}</div><div class="m">Dernier net avant impôts · ${new Date(ds.date+'T12:00:00').toLocaleDateString('fr-FR',{month:'short',year:'numeric'})}</div>`:'<div class="m">Aucun salaire saisi</div>'],
    ['pea','📈','PEA',p?`<div class="v">${eur(p.total)}</div><div class="m">Gain <span class="${cl(p.gain)}">${eur(p.gain)}</span> · jour <span class="${cl(p.day)}">${eur(p.day)}</span></div>`:'<div class="m">Pas encore de données</div>'],
    ['cto','🏦','CTO','<div class="m">À venir</div>'],
-   ['epargne','🎁','Épargne salariale','<div class="m">À venir</div>'],
-   ['immo','🏡','Immobilier','<div class="m">À venir</div>'],
-   ['crypto','₿','Crypto','<div class="m">À venir</div>']];
+   ['epargne','🎁','Épargne salariale',de.n?`<div class="v">${eur(de.tot)}</div><div class="m">${de.n} versements (intéressement, participation…)</div>`:'<div class="m">Aucun versement saisi</div>'],
+   ['immo','🏡','Immobilier',di.n?`<div class="v">≈ ${eur(di.crd)}</div><div class="m">Capital restant dû · ${di.n} prêt${di.n>1?'s':''}</div>`:'<div class="m">Aucun prêt saisi</div>'],
+   ['crypto','₿','Crypto','<div class="m">À venir</div>'],
+   ['sante','🩺','Santé','<div class="m">Remboursements et suivi</div>']];
   $('#tiles').innerHTML=T.map(([id,ic,t,b])=>`<button class="t${b.includes('À venir')?' soon':''}" data-go="${id}"><h3>${ic} ${t}</h3>${b}</button>`).join('');
   $('#tiles').onclick=e=>{const b=e.target.closest('[data-go]');if(b)go(b.dataset.go)};
 }
@@ -143,7 +152,7 @@ async function sync(){
       await api('/rest/v1/app_storage?on_conflict=user_id,key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({user_id:uid,key:KEY,value:{t,data:loc||{}}})},tk);
       M={t,sync:t};LS.s('hub_dep',M)};
     const pull=()=>{localStorage.setItem(DK,JSON.stringify(rem.data));M={t:rt,sync:rt};LS.s('hub_dep',M);
-      const f=document.querySelector('iframe[data-id="depenses"]');if(f)f.contentWindow.location.reload()};
+      document.querySelectorAll('iframe[data-dep]').forEach(f=>f.contentWindow.location.reload())};
     if(!rem){if(hasLoc){if(!M.t)M.t=Date.now();await push()}}
     else if(M.sync===0&&hasLoc&&rt){ /* première synchro avec des données des deux côtés */
       if(confirm('Des dépenses existent sur cet appareil ET dans le cloud.\nOK = garder celles de cet appareil et écraser le cloud\nAnnuler = récupérer celles du cloud')){M.t=Date.now();await push()}else pull()}
