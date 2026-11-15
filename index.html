@@ -40,6 +40,8 @@ h1{font-size:1.25rem;margin:0 0 2px;letter-spacing:-.02em}
 .t .m{color:var(--mut);font-size:12px;margin-top:4px}
 .up{color:var(--up)}.dn{color:var(--dn)}
 .t.soon{opacity:.65}
+.sw{display:inline-flex;background:rgba(255,255,255,.18);border-radius:999px;padding:3px;margin-bottom:8px}.sw button{all:unset;cursor:pointer;padding:5px 16px;border-radius:999px;font-size:13px;font-weight:600}.sw button.on{background:#fff;color:#0284c7}
+.cf{display:block;margin-top:14px;font-size:13px;color:var(--mut)}.cf input{display:block;width:100%;margin-top:4px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--txt);font:inherit}
 #sy{margin-top:14px;color:var(--mut);font-size:12px}
 </style>
 </head>
@@ -48,8 +50,9 @@ h1{font-size:1.25rem;margin:0 0 2px;letter-spacing:-.02em}
 <div id="stage">
   <div id="home"><div class="w">
     <h1>Mon patrimoine</h1><div class="sub" id="date"></div>
-    <div class="hero"><small>Patrimoine suivi</small><div class="n" id="tot">–</div><small id="totsub"></small></div>
+    <div class="hero"><div class="sw" id="sw"><button data-m="brut">Brut</button><button data-m="net">Net</button></div><div class="n" id="tot">–</div><small id="totsub"></small></div>
     <div class="g" id="tiles"></div>
+    <label class="cf">🏡 Valeur estimée de mon bien immobilier (€)<input id="immo" type="number" inputmode="decimal" min="0" placeholder="0"></label>
     <div id="sy"></div>
   </div></div>
   <div id="soon"><div class="w"><h1 id="sn"></h1><p class="sub">Ce module n'est pas encore branché. Il apparaîtra ici avec le même fonctionnement hors connexion.</p></div></div>
@@ -64,7 +67,7 @@ const MODS=[
  {id:'depenses',ic:'💸',lb:'Dépenses',src:'depenses.html?m=dep'},
  {id:'salaire',ic:'💼',lb:'Salaire',src:'depenses.html?m=salaire'},
  {id:'pea',ic:'📈',lb:'PEA',src:'pea.html'},
- {id:'cto',ic:'🏦',lb:'CTO'},
+ {id:'cto',ic:'🏦',lb:'CTO',src:'cto.html'},
  {id:'epargne',ic:'🎁',lb:'Épargne salariale',src:'depenses.html?m=epargne'},
  {id:'immo',ic:'🏡',lb:'Immobilier',src:'depenses.html?m=immo'},
  {id:'crypto',ic:'₿',lb:'Crypto'},
@@ -101,23 +104,31 @@ function crdPrets(D){const T=new Date(),P=(D.prets||[]).filter(p=>p.date_debut&&
   P.forEach(p=>{const n=Math.round(p.duree)||240,i=p.taux/1200,k=Math.max(0,Math.min(n,(T.getFullYear()-+p.date_debut.slice(0,4))*12+T.getMonth()+1-+p.date_debut.slice(5,7)));
     crd+=i>0?p.capital*(Math.pow(1+i,n)-Math.pow(1+i,k))/(Math.pow(1+i,n)-1):p.capital*(1-k/n)});
   return{crd,n:P.length}}
+const CF={get v(){return LS.g('hub_cfg')||{mode:'brut',immo:0}},set v(x){LS.s('hub_cfg',x)}};
+function epargne(D){const L=(D.interessement||[]).filter(s=>s.date),P=s=>String(s.dest||'').startsWith('Placé'),tp=L.filter(P).reduce((a,s)=>a+(s.montant||0),0),tc=L.filter(s=>!P(s)).reduce((a,s)=>a+(s.montant||0),0),sv=D.solde_epargne,tr=(D.retraits_epargne||[]).reduce((a,r)=>a+(r.montant||0),0);
+  return{n:L.length,tp,tc,tr,cur:sv&&sv.valeur>=0?sv.valeur:Math.max(0,tp-tr)}}
 function renderHome(){
   $('#date').textContent=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const p=LS.g('hub_pea'),dm=depMois(),D=LS.g('depenses_v1')||{},ds=[...(D.salaires||[])].filter(s=>s.date).sort((x,y)=>x.date<y.date?1:-1)[0],
-    de={n:(D.interessement||[]).length,tot:(D.interessement||[]).reduce((s,x)=>s+(x.montant||0),0)},di=crdPrets(D);
-  $('#tot').textContent=p?eur(p.total):'–';
-  $('#totsub').textContent=p?'PEA mis à jour le '+new Date(p.t).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'Ouvre l’onglet PEA une fois pour afficher le total';
+    de=epargne(D),di=crdPrets(D),cf=CF.v;
+  const ct=LS.g('hub_cto'),brut=(p?p.total:0)+(ct?ct.total:0)+de.cur+(cf.immo||0),net=brut-di.crd,net_=cf.mode==='net';
+  $('#tot').textContent=eur(net_?net:brut);
+  document.querySelectorAll('#sw button').forEach(b=>b.classList.toggle('on',b.dataset.m===(net_?'net':'brut')));
+  if(document.activeElement!==$('#immo'))$('#immo').value=cf.immo||'';
+  $('#totsub').textContent=(p?'':'PEA non chargé (ouvre l’onglet PEA une fois) · ')+'PEA '+eur(p?p.total:0)+(ct?' · CTO '+eur(ct.total):'')+' · Épargne salariale '+eur(de.cur)+' · Immobilier '+eur(cf.immo||0)+(net_?' − prêts ≈ '+eur(di.crd):'');
   const cl=v=>v>0?'up':v<0?'dn':'';
   const T=[
    ['depenses','💸','Dépenses (ce mois)',`<div class="v dn">−${eur(dm.d)}</div><div class="m">Revenus ${eur(dm.r)} · solde <span class="${cl(dm.r-dm.d)}">${eur(dm.r-dm.d)}</span></div>`],
    ['salaire','💼','Salaire',ds?`<div class="v">${eur(ds.net)}</div><div class="m">Dernier net avant impôts · ${new Date(ds.date+'T12:00:00').toLocaleDateString('fr-FR',{month:'short',year:'numeric'})}</div>`:'<div class="m">Aucun salaire saisi</div>'],
    ['pea','📈','PEA',p?`<div class="v">${eur(p.total)}</div><div class="m">Gain <span class="${cl(p.gain)}">${eur(p.gain)}</span> · jour <span class="${cl(p.day)}">${eur(p.day)}</span></div>`:'<div class="m">Pas encore de données</div>'],
-   ['cto','🏦','CTO','<div class="m">À venir</div>'],
-   ['epargne','🎁','Épargne salariale',de.n?`<div class="v">${eur(de.tot)}</div><div class="m">${de.n} versements (intéressement, participation…)</div>`:'<div class="m">Aucun versement saisi</div>'],
+   ['cto','🏦','CTO',ct?`<div class="v">${eur(ct.total)}</div><div class="m">Gain <span class="${cl(ct.gain)}">${eur(ct.gain)}</span> · jour <span class="${cl(ct.day)}">${eur(ct.day)}</span></div>`:'<div class="m">Pas encore de données</div>'],
+   ['epargne','🎁','Épargne salariale',de.n?`<div class="v">${eur(de.cur)}</div><div class="m">Sur le compte · retiré ${eur(de.tr)} · perçu ${eur(de.tc)}</div>`:'<div class="m">Aucun versement saisi</div>'],
    ['immo','🏡','Immobilier',di.n?`<div class="v">≈ ${eur(di.crd)}</div><div class="m">Capital restant dû · ${di.n} prêt${di.n>1?'s':''}</div>`:'<div class="m">Aucun prêt saisi</div>'],
    ['crypto','₿','Crypto','<div class="m">À venir</div>'],
    ['sante','🩺','Santé','<div class="m">Remboursements et suivi</div>']];
   $('#tiles').innerHTML=T.map(([id,ic,t,b])=>`<button class="t${b.includes('À venir')?' soon':''}" data-go="${id}"><h3>${ic} ${t}</h3>${b}</button>`).join('');
+  $('#sw').onclick=e=>{const b=e.target.closest('button');if(b){CF.v={...CF.v,mode:b.dataset.m};renderHome()}};
+  $('#immo').onchange=e=>{CF.v={...CF.v,immo:Math.max(0,parseFloat(e.target.value)||0)};renderHome()};
   $('#tiles').onclick=e=>{const b=e.target.closest('[data-go]');if(b)go(b.dataset.go)};
 }
 
@@ -165,7 +176,7 @@ async function sync(){
 const later=(ms=1500)=>{clearTimeout(timer);timer=setTimeout(sync,ms)};
 addEventListener('storage',e=>{
   if(e.key===DK){M.t=Date.now();LS.s('hub_dep',M);later()}
-  if(e.key==='hub_pea'&&cur==='home')renderHome()});
+  if((e.key==='hub_pea'||e.key==='hub_cto')&&cur==='home')renderHome()});
 addEventListener('online',()=>{dot('','Reconnecté');later(500)});
 addEventListener('offline',()=>dot('off','Hors connexion'));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)later(500)});

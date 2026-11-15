@@ -118,7 +118,7 @@ select{border-radius:8px}
 .d span{font-weight:700}
 /* Listes et tableaux : 5 lignes visibles maximum puis défilement (hauteur ajustée en JS) */
 .lst{position:relative;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;margin-top:8px;border-top:1px solid var(--line)}
-.op[data-rec],.op[data-sal],.op[data-int],.op[data-op]{cursor:pointer}
+.op[data-rec],.op[data-sal],.op[data-int],.op[data-ret],.op[data-op]{cursor:pointer}
 .pg{display:flex;height:18px;border-radius:9px;overflow:hidden;background:var(--line)}
 .pg i{display:block;height:100%}
 .pgl{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.72rem;color:var(--mut);margin-top:8px}
@@ -268,6 +268,17 @@ g[data-tip]{cursor:pointer}
  <button type="button" class="sec hide" id="iDel" style="width:100%;color:var(--rouge)">🗑 Supprimer</button>
 </form></dialog>
 
+<dialog id="dlgW"><form method="dialog" id="frmW">
+ <h3 id="wTitle" style="margin:0 0 4px">Nouveau retrait</h3>
+ <label>Date du retrait</label><input id="wDate" type="date" required>
+ <label>Montant retiré (€)</label><input id="wMt" type="number" step="0.01" min="0.01" inputmode="decimal" required>
+ <label>Employeur / plan (facultatif)</label><input id="wEmp" type="text" list="wEmps"><datalist id="wEmps"></datalist>
+ <label>Motif (facultatif)</label><input id="wMotif" type="text" placeholder="Ex : déblocage anticipé, fin de blocage…">
+ <div class="rqn">Les champs encadrés en rouge sont obligatoires.</div>
+ <div class="row" style="margin-top:14px"><button type="button" class="sec" id="wCancel" style="flex:1">Annuler</button><button type="submit" style="flex:2">Enregistrer</button></div>
+ <button type="button" class="sec hide" id="wDel" style="width:100%;color:var(--rouge)">🗑 Supprimer</button>
+</form></dialog>
+
 <input type="file" id="file" accept=".json,.xml,.xlsx,.xlsm" multiple class="hide">
 <script>
 "use strict";
@@ -277,7 +288,7 @@ const PAL=["#0284c7","#7c3aed","#0d9488","#f97316","#dc2626","#ca8a04","#db2777"
 const SEC={depenses:["Depenses","Depense"],recurrentes:["Recurrentes","Recurrente"],salaires:["Salaires","Salaire"],prets:["Prets","Pret"],interessement:["Interessements","Interessement"],groupes:["Groupes","Groupe"]};
 const NUM=new Set(["montant","net","brut","impot","capital","taux","duree","assurance","premiere_reelle"]);
 const VER="26.6-a",KEY="depenses_v1",FKEY="depenses_fold";
-const MOD=new URLSearchParams(location.search).get("m")||"",MODT={dep:["home","ana","rec","data"],immo:["cred"],epargne:["int"],salaire:["sal","tax"],sante:["sante"]},TKEY="depenses_tab"+(MOD?"_"+MOD:""),TIDS=MODT[MOD]||["home","ana","rec","cred","sal","tax","int","sante","data"];
+const MOD=new URLSearchParams(location.search).get("m")||"",MODT={dep:["home","ana","rec","data"],immo:["cred"],epargne:["int","cpt","ret"],salaire:["sal","tax"],sante:["sante"]},TKEY="depenses_tab"+(MOD?"_"+MOD:""),TIDS=MODT[MOD]||["home","ana","rec","cred","sal","tax","int","cpt","ret","sante","data"];
 let D=load(),tab=loadTab(),per="m:"+TODAY().slice(0,7),gran="jour",q="",sens="Dépense";
 let FOLD=(()=>{try{return JSON.parse(localStorage.getItem(FKEY))||{}}catch(e){return{}}})();
 function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.depenses)return r}catch(e){}return{version:1,depenses:[],recurrentes:[],salaires:[],prets:[]}}
@@ -687,6 +698,25 @@ function vInt(){
  <div class="kpis"><div class="kpi wide" style="--c:var(--bleu)"><span>Total versé</span><b>${eur(tI+tP+tA+tV)}</b></div><div class="kpi" style="--c:var(--violet)"><span>Intéressement</span><b>${eur(tI)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Participation</span><b>${eur(tP)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Abondement</span><b>${eur(tA)}</b></div><div class="kpi" style="--c:var(--bleu)"><span>PPV</span><b>${eur(tV)}</b></div></div>
  ${card("int-yr","Intéressement / participation / abondement / PPV par année",chart+`<div class="lst">${yrRows}</div>`)}
  ${card("int-hist","Historique · touche une ligne pour la modifier",`<div class="lst">${L.slice().reverse().map(s=>`<div class="op" data-int="${s.i}"><div class="m"><b>${esc(s.type)}</b><small>${fdy(s.date)}${s.employeur?" · "+esc(s.employeur):""} · ${esc(s.dest||"")}${s.brut>0?" · brut "+eur2(s.brut):""}</small></div><span class="pos am">${eur2(s.montant)}</span><span style="color:var(--mut)">✎</span></div>`).join("")}</div>`)}`}
+function vCpt(){
+ const all=(D.interessement||[]).filter(s=>s.date);
+ if(!all.length)return`<div class="card" style="margin-top:0"><div class="empty">Aucun versement enregistré.<br>Ajoute-les dans l'onglet Historique.</div></div>`;
+ const isP=s=>String(s.dest||"").startsWith("Placé"),pl=all.filter(isP),tp=sum(pl,"montant"),tc=sum(all.filter(s=>!isP(s)),"montant"),sv=D.solde_epargne,val=sv&&sv.valeur>=0?sv.valeur:null,tr=sum(D.retraits_epargne||[],"montant"),bs=Math.max(0,tp-tr);
+ const byT={},byE={};pl.forEach(s=>{byT[s.type]=(byT[s.type]||0)+s.montant;const k=s.employeur||"Sans employeur";byE[k]=(byE[k]||0)+s.montant});
+ const kp=(l,v,c,w)=>`<div class="kpi${w?" wide":""}" style="--c:var(--${c})"><span>${l}</span><b>${eur(v)}</b></div>`;
+ return`<div class="card" style="margin-top:0"><div class="sh">💰 Valeur actuelle du compte (PEE / PERCO)</div><label>Montant réel sur ton compte (€)</label><input id="cptVal" type="number" step="0.01" min="0" inputmode="decimal" value="${val??""}" placeholder="${Math.round(bs)}"><div class="d" style="margin-top:6px">${sv&&sv.date?"Saisi le "+fdy(sv.date)+". ":""}Sans montant saisi : versements placés − retraits.</div></div>
+ <div class="kpis">${kp("Sur le compte",val??bs,"bleu",1)}${kp("Versements placés",tp,"violet")}${kp("Retiré du compte",tr,"rouge")}${kp("Déjà perçu (hors compte)",tc,"orange")}${val!=null?kp("Plus-value",val+tr-tp,val+tr-tp>=0?"vert":"rouge"):""}</div>
+ ${card("cpt-t","Placé par type",bars(byT,null))}${card("cpt-e","Placé par employeur",bars(byE,null))}`}
+document.addEventListener("change",e=>{if(e.target.id==="cptVal"){const v=parseFloat(e.target.value);D.solde_epargne=v>=0?{valeur:Math.round(v*100)/100,date:TODAY()}:null;save();render()}});
+function vRet(){
+ const all=(D.retraits_epargne||[]).map((r,i)=>({...r,i})).filter(r=>r.date).sort((a,b)=>a.date.localeCompare(b.date));
+ if(!all.length)return`<div class="card" style="margin-top:0"><div class="empty">Aucun retrait enregistré.<br>Appuie sur + pour en ajouter un.</div></div>`;
+ const tot=sum(all,"montant"),cy=TODAY().slice(0,4),Y={},E={};
+ all.forEach(r=>{const y=r.date.slice(0,4);Y[y]=(Y[y]||0)+r.montant;const k=r.employeur||"Sans employeur";E[k]=(E[k]||0)+r.montant});
+ const kp=(l,v,c,w)=>`<div class="kpi${w?" wide":""}" style="--c:var(--${c})"><span>${l}</span><b>${v}</b></div>`;
+ return`<div class="kpis">${kp("Total retiré",eur(tot),"rouge",1)}${kp("Retiré en "+cy,eur(sum(all.filter(r=>r.date.startsWith(cy)),"montant")),"orange")}${kp("Nombre de retraits",all.length,"bleu")}</div>
+ ${card("ret-yr","Retiré par année",bars(Y,"#f97316"))}${Object.keys(E).length>1?card("ret-emp","Retiré par employeur",bars(E,null)):""}
+ ${card("ret-hist","Historique des retraits · touche une ligne pour la modifier",`<div class="lst">${all.slice().reverse().map(r=>`<div class="op" data-ret="${r.i}"><div class="m"><b>${esc(r.motif||"Retrait")}</b><small>${fdy(r.date)}${r.employeur?" · "+esc(r.employeur):""}</small></div><span class="neg am">−${eur2(r.montant)}</span><span style="color:var(--mut)">✎</span></div>`).join("")}</div>`)}`}
 /* ---------- Nouveaux onglets : Recherche, Santé, Impôts ---------- */
 const UI={sq:"",scat:"all",ssens:"Dépense",syr:"all",hAct:"gen",hPrix:null,hQty:1,fy:null,iy:"all",hs:"all",hPr:"o",hS:"n",hMon:null,hg:"all",gd:"",selMode:false,sel:new Set(),gt:"",gn:"",gp:"",addG:"",sg:""};
 const nrm=s=>String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
@@ -810,7 +840,7 @@ function vTax(){
  <div class="d" style="margin-top:8px">Estimation simplifiée (sans crédits ni réductions d'impôt, ni revenus du capital). Net imposable ≈ net avant impôts × ${String(ratio).replace(".",",")}.</div>`,"margin-top:0")}
  ${ca>0?`<div class="kpis k3"><div class="kpi" style="--c:var(--bleu)"><span>Net avant impôts / mois</span><b>${eur(mb)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Taux d'imposition</span><b>${fp(taux*100)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Net après impôts / mois</span><b>${eur(mn)}</b></div></div>`:'<div class="card"><div class="empty">Saisis un salaire net avant impôts annuel, ou ajoute des salaires dans Suivi Salaire.</div></div>'}`}
 /* Ordre des onglets : … Suivi Salaire · Prime · Simulateur d'impôts · Santé (tout à droite) · Données */
-const TABS=[["home","🏠","Vue d'ensemble",vHome],["ana","📊","Analyse",vAna],["rec","🔁","Dépenses récurrentes",vRec],["cred","🏦","Suivi Crédit",vCred],["sal","💼","Suivi Salaire",vSal],["int","🎁","Prime",vInt],["tax","🧾","Simulateur d'impôts",vTax],["sante","🩺","Santé",vSante],["data","🔄","Données",vData]];
+const TABS=[["home","🏠","Vue d'ensemble",vHome],["ana","📊","Analyse",vAna],["rec","🔁","Dépenses récurrentes",vRec],["cred","🏦","Suivi Crédit",vCred],["sal","💼","Suivi Salaire",vSal],["int","📜","Historique",vInt],["cpt","💰","Sur le compte",vCpt],["ret","↩️","Retraits",vRet],["tax","🧾","Simulateur d'impôts",vTax],["sante","🩺","Santé",vSante],["data","🔄","Données",vData]];
 /* Limite chaque liste et chaque tableau à 5 lignes visibles, le reste défile */
 function fitLists(){
  document.querySelectorAll(".lst").forEach(l=>{l.style.maxHeight="";if(!l.offsetParent)return;const k=l.children[5];if(k)l.style.maxHeight=(k.offsetTop+1)+"px"});
@@ -871,6 +901,7 @@ function bind(){document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{
  document.querySelectorAll("[data-pret]").forEach(b=>b.onclick=()=>openPret(+b.dataset.pret));
  
  document.querySelectorAll("[data-int]").forEach(b=>b.onclick=()=>openInt(+b.dataset.int));
+ document.querySelectorAll("[data-ret]").forEach(b=>b.onclick=()=>openRet(+b.dataset.ret));
  g("#bImp",()=>$("#file").click());g("#bJ",()=>dl("depenses_"+new Date().toISOString().slice(0,10)+".json",JSON.stringify(stamp(),null,1),"application/json"));
  g("#bX",()=>dl("depenses.xml",toXml(stamp()),"application/xml"));g("#bC",()=>dl("depenses.csv",toCsv(),"text/csv"));
  g("#bClr",()=>{if(confirm("Effacer toutes les données du téléphone ?")){D={version:1,depenses:[],recurrentes:[],salaires:[],prets:[]};save();render()}})}
@@ -945,7 +976,7 @@ function setSens(s){sens=s;$("#sD").style.outline=s==="Dépense"?"2px solid var(
 function fillRec(on){const R=D.recurrentes.map((r,i)=>({r,i})).sort((a,b)=>a.r.libelle.localeCompare(b.r.libelle,"fr"));$("#fRecW").classList.toggle("hide",!(on&&R.length));
  $("#fRec").innerHTML='<option value="">— Saisie libre —</option>'+R.map(x=>`<option value="${x.i}">${esc(x.r.libelle)} · ${eur2(x.r.montant)}${x.r.type==="Revenu"?" (revenu)":""}</option>`).join("")}
 function fillGrp(cur){const L=grpNames();$("#fGrpW").classList.toggle("hide",!L.length);$("#fGrp").innerHTML='<option value="">— Aucun —</option>'+L.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");$("#fGrp").value=cur&&L.includes(cur)?cur:""}
-$("#fab").onclick=()=>{if(tab==="int")return openInt(-1);if(tab==="cred")return openPret(-1);if(tab==="rec")return openRec(-1);$("#fabBg").classList.remove("hide")};
+$("#fab").onclick=()=>{if(tab==="int"||tab==="cpt")return openInt(-1);if(tab==="ret")return openRet(-1);if(tab==="cred")return openPret(-1);if(tab==="rec")return openRec(-1);$("#fabBg").classList.remove("hide")};
 function newOp(){oIdx=-1;oAllow=true;oLink=null;salOn=false;$("#opTitle").textContent="Nouvelle opération";$("#fDel").classList.add("hide");$("#frm").reset();$("#fDate").value=TODAY();setSens("Dépense");fillGrp(UI.hg!=="all"&&!UI.hg.startsWith("sg:")?UI.hg:"");fillRec(true);
  $("#libs").innerHTML=[...new Set(D.depenses.slice(-400).map(o=>o.libelle))].map(l=>`<option value="${esc(l)}">`).join("");dlg.showModal()}
 $("#fabBg").onclick=e=>{if(e.target.id==="fabBg")e.target.classList.add("hide")};
@@ -1043,6 +1074,19 @@ $("#iDel").onclick=()=>{if(iIdx>=0&&confirm("Supprimer cette ligne ?")){D.intere
 $("#frmI").onsubmit=e=>{const m=parseFloat($("#iNet").value);if(!(m>0)){e.preventDefault();return}
  const o={date:$("#iDate").value,type:iType,montant:Math.round(m*100)/100,brut:Math.round((parseFloat($("#iBrut").value)||0)*100)/100,dest:iType==="Abondement"?$("#iDest").options[1].value:$("#iDest").value,employeur:$("#iEmp").value.trim()};
  D.interessement=D.interessement||[];if(iIdx>=0)D.interessement[iIdx]=o;else D.interessement.push(o);UI.iy="all";save();render()};
+/* Retraits d'épargne salariale */
+const dlgW=$("#dlgW");let wIdx=-1;
+function openRet(i=-1){wIdx=i;$("#frmW").reset();const r=i>=0?D.retraits_epargne[i]:null;
+ const emps=[...new Set([...(D.interessement||[]),...(D.retraits_epargne||[])].map(x=>x.employeur).filter(Boolean))];
+ $("#wEmps").innerHTML=emps.map(e=>`<option value="${esc(e)}">`).join("");
+ $("#wTitle").textContent=r?"Modifier le retrait":"Nouveau retrait";
+ if(r){$("#wDate").value=r.date;$("#wMt").value=r.montant;$("#wEmp").value=r.employeur||"";$("#wMotif").value=r.motif||""}else $("#wDate").value=TODAY();
+ $("#wDel").classList.toggle("hide",!r);dlgW.showModal()}
+$("#wCancel").onclick=()=>dlgW.close();
+$("#wDel").onclick=()=>{if(wIdx>=0&&confirm("Supprimer ce retrait ?")){D.retraits_epargne.splice(wIdx,1);save();dlgW.close();render()}};
+$("#frmW").onsubmit=e=>{const m=parseFloat($("#wMt").value);if(!(m>0)){e.preventDefault();return}
+ const o={date:$("#wDate").value,montant:Math.round(m*100)/100,employeur:$("#wEmp").value.trim(),motif:$("#wMotif").value.trim()};
+ D.retraits_epargne=D.retraits_epargne||[];if(wIdx>=0)D.retraits_epargne[wIdx]=o;else D.retraits_epargne.push(o);save();render()};
 /* Ajout / modification d'un prêt */
 const dlgP=$("#dlgP");let pIdx=-1;
 function updMens(){const c=parseFloat($("#pCap").value)||0,t=parseFloat($("#pTaux").value)||0,n=parseInt($("#pDur").value)||0,a=parseFloat($("#pAss").value)||0;
