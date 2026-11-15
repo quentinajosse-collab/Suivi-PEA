@@ -325,16 +325,6 @@ canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 
 <dialog id="op"><form id="opf" method="dialog"></form></dialog>
 
-<dialog id="welcome"><form id="welf" method="dialog" autocomplete="off">
-  <h2 style="margin:0 0 8px;font-size:1.2rem">👋 Bienvenue sur votre Tableau de Bord PEA</h2>
-  <p style="margin:0 0 12px">Avant d'afficher votre dashboard, quelques informations rapides :</p>
-  <label for="wel_nom">Quel est votre nom ?</label>
-  <input id="wel_nom" type="text" placeholder="Ex : Marie" style="width:100%;margin:4px 0 10px">
-  <label for="wel_br">Quel est votre courtier ?</label>
-  <input id="wel_br" type="text" placeholder="Ex : Boursorama, Trade Republic..." style="width:100%;margin:4px 0 10px">
-  <div id="wel_err" class="warn" hidden style="margin-bottom:10px">Merci de renseigner votre nom pour continuer.</div>
-  <button type="submit" id="wel_ok" class="sbtn primary" style="width:100%">Valider</button>
-</form></dialog>
 <dialog id="wldlg"></dialog>
 <dialog id="sim"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px"><h2 style="margin:0;font-size:1.2rem">🧪 Simulation nouvelle opération</h2><button type="button" id="sim_x">✕</button></div><div id="sTop"></div><div id="sB"></div><div id="sC"></div><div id="sD"></div></dialog>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -578,12 +568,12 @@ S.cfg=LS.g('cfg')||{};S.cfgOk=false;S.cfgBusy=false;S.wl={px:LS.g('wlpx')||{},h:
 /* Réglages : même table app_storage, clé « config » (comme config_pea.json côté Streamlit) */
 const cg=(k,d)=>S.cfg[k]!=null?S.cfg[k]:d;
 const n2=x=>{const v=parseFloat(String(x==null?'':x).replace(/[\s\u00a0\u202f]/g,'').replace(',','.'));return isFinite(v)?v:0};
-async function cfgLoad(){if(S.cfgOk||S.cfgBusy)return;if(!connected()){S.cfgOk=true;welcomeCheck();return}
+async function cfgLoad(){if(S.cfgOk||S.cfgBusy)return;if(!connected()){S.cfgOk=true;return}
   S.cfgBusy=true;
   try{const c=await raw(`/rest/v1/app_storage?select=value&key=eq.config&user_id=eq.${SB.s.uid}`,{},await ensure());
     S.cfgOk=true;if(c.length&&c[0].value&&typeof c[0].value=='object'){S.cfg=c[0].value;LS.s('cfg',S.cfg);S.wlAt=0;S.cfgBusy=false;draw()}}
   catch(e){S.cfgOk=false}
-  S.cfgBusy=false;welcomeCheck()}
+  S.cfgBusy=false}
 async function cfgSave(patch){S.cfg={...S.cfg,...patch};LS.s('cfg',S.cfg);if(!connected())return;
   if(!S.cfgOk)return st('Réglages enregistrés sur cet appareil seulement : la lecture en ligne a échoué, écriture bloquée par sécurité');
   try{await raw('/rest/v1/app_storage?on_conflict=user_id,key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
@@ -2067,7 +2057,7 @@ function chart(id,cfg){if(CH[id])CH[id].destroy();const el=document.getElementBy
   CH[id]=new Chart(el,cfg)}
 const sgn=(v,d=2)=>`${ar(v)} ${fS(v,d)}`;
 
-function draw(){TIPS.length=0;setTimeout(welcomeCheck,0);
+function draw(){TIPS.length=0;
   const v=$('#view');
   $('#tabs').innerHTML=TABS.map(([k,l])=>`<button role="tab" data-t="${k}" aria-selected="${k==S.tab}">${l}</button>`).join('');
   if(!S.tx.length){$('#tot').textContent='–';$('#sub').textContent='';
@@ -2532,12 +2522,6 @@ document.addEventListener('toggle',e=>{if(e.target.id=='imp_d'&&S.imp)S.imp.open
     if(Math.abs(t.clientX-sx)>TOL||Math.abs(t.clientY-sy)>TOL){clearTimeout(timer);cv=null}},{passive:false});
   ['touchend','touchcancel'].forEach(n=>document.addEventListener(n,()=>{clearTimeout(timer);cv=null;on=false},{passive:true}))})();
 /* ---------- Pop-up de premier lancement (reprise de _dialog_premier_lancement) ---------- */
-function welcomeCheck(){const d=$('#welcome');if(!d||d.open||!S.cfgOk||String(cg('user_name','')).trim())return;
-  $('#wel_err').hidden=true;d.showModal()}
-$('#welcome').addEventListener('cancel',e=>e.preventDefault());
-$('#welf').onsubmit=async e=>{e.preventDefault();const nm=$v('#wel_nom').trim();
-  if(!nm){$('#wel_err').hidden=false;return}
-  $('#welcome').close();await cfgSave({user_name:nm,broker:$v('#wel_br').trim()});ovHdr();draw()};
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',draw);
 load();draw();refreshPrices();pull();wlFetch();cfgLoad();
 </script>

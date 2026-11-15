@@ -1,4 +1,4 @@
-const V='hub-v10',CORE=['./','index.html','pea.html','cto.html','depenses.html','manifest.webmanifest','icon.svg'];
+const V='hub-v11',CORE=['./','index.html','pea.html','cto.html','depenses.html','manifest.webmanifest','icon.svg'];
 const CDN=['cdn.jsdelivr.net','fonts.googleapis.com','fonts.gstatic.com'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});

@@ -70,7 +70,6 @@ dialog .hint{color:var(--mut);font-size:12px;margin:6px 0 0}
     <div class="hero"><div class="sw" id="sw"><button data-m="brut">Brut</button><button data-m="net">Net</button></div><div class="n" id="tot">–</div><small id="totsub"></small></div>
     <div class="g" id="tiles"></div>
     <div class="bk" id="acc"></div>
-    <label class="cf">🏡 Valeur estimée de mon bien immobilier (€)<input id="immo" type="number" inputmode="decimal" min="0" placeholder="0"></label>
     <div id="sy"></div>
   </div></div>
   <div id="soon"><div class="w"><h1 id="sn"></h1><p class="sub">Ce module n'est pas encore branché. Il apparaîtra ici avec le même fonctionnement hors connexion.</p></div></div>
@@ -78,7 +77,7 @@ dialog .hint{color:var(--mut);font-size:12px;margin:6px 0 0}
 <dialog id="dlg">
   <form method="dialog">
     <h2>⚙️ Réglages</h2>
-    <p class="hint">Valables pour tout le patrimoine (PEA, CTO, dépenses…) sur cet appareil.</p>
+    <p class="hint">Valables pour tout le patrimoine (PEA, CTO, dépenses…) sur cet appareil. <b>Appliquer</b> enregistre seulement ; <b>OK</b> enregistre, applique et ferme.</p>
     <h3>Synchronisation Supabase</h3>
     <label for="sbu">Adresse du projet</label><input id="sbu" type="url" placeholder="https://xxxx.supabase.co">
     <label for="sbk">Clé publique (anon / publishable)</label><input id="sbk" type="text" autocomplete="off">
@@ -88,9 +87,9 @@ dialog .hint{color:var(--mut);font-size:12px;margin:6px 0 0}
     <div id="sbcode" hidden><label for="sbc">Code reçu par e-mail</label><input id="sbc" inputmode="numeric" autocomplete="one-time-code"><div class="bar"><button type="button" id="sbok">Valider le code</button></div></div>
     <p class="hint" id="sbst"></p>
     <h3>Comptes et courtiers</h3>
-    <p class="hint">Indique le courtier ou gestionnaire de chaque compte. Un même courtier peut avoir plusieurs CTO ; la crypto peut être rattachée à l'un d'eux (elle n'est alors pas comptée deux fois).</p>
+    <p class="hint">Indique le nom, le courtier ou la banque de chaque compte ; pour les comptes bancaires et livrets, le solde actuel. Un même courtier peut avoir plusieurs CTO ; la crypto peut être rattachée à l'un d'eux (elle n'est alors pas comptée deux fois).</p>
     <div id="accl"></div>
-    <div class="bar"><button type="button" id="addcto">➕ Ajouter un CTO</button></div>
+    <div class="bar"><button type="button" id="addcto">➕ CTO</button><button type="button" id="addbk">➕ Compte bancaire</button><button type="button" id="addlv">➕ Livret</button></div>
     <h3>Cours en direct</h3>
     <label for="gurl">Adresse du script Google (PEA et CTO)</label>
     <input type="url" id="gurl" placeholder="https://script.google.com/macros/s/…/exec">
@@ -99,7 +98,8 @@ dialog .hint{color:var(--mut);font-size:12px;margin:6px 0 0}
     <p class="hint">Exporte ou restaure tout le tableau de bord : dépenses, salaires, épargne salariale, PEA, CTO, comptes et courtiers, réglages. La connexion Supabase n'est jamais incluse (tu te reconnectes après un import sur un nouvel appareil).</p>
     <div class="bar"><button type="button" id="bkx">📤 Tout exporter</button><button type="button" id="bki">📥 Tout importer</button><input type="file" id="bkf" accept="application/json,.json" style="display:none"></div>
     <p class="hint" id="bkst"></p>
-    <div class="bar" style="justify-content:flex-end"><button value="ok">Fermer</button></div>
+    <p class="hint" id="cfst"></p>
+    <div class="bar" style="justify-content:flex-end"><button type="button" id="cfap">Appliquer</button><button type="button" id="cfok" style="background:var(--acc);color:#fff;border-color:var(--acc)">OK</button></div>
   </form>
 </dialog>
 <script>
@@ -120,12 +120,14 @@ const MODS0=[
 ];
 /* ---------- Comptes & courtiers (liste modifiable dans ⚙️ Réglages, synchronisée via Supabase, clé « hub_accounts ») ---------- */
 const ACCD=[{id:'pea',type:'PEA',broker:'',label:''},{id:'cto',type:'CTO',broker:'',label:''},{id:'epargne',type:'Épargne salariale',broker:'',label:''},{id:'crypto',type:'Crypto',broker:'',label:'',inCto:''}];
-const TYI={'PEA':'📈','CTO':'🏦','Épargne salariale':'🎁','Crypto':'₿'},TYR=['PEA','CTO','Épargne salariale','Crypto'];
+const EXTRA=['Compte bancaire','Livret'];
+const TYI={'PEA':'📈','CTO':'🏦','Épargne salariale':'🎁','Crypto':'₿','Compte bancaire':'🏧','Livret':'🐖'},TYR=['PEA','CTO','Épargne salariale','Crypto','Compte bancaire','Livret'];
+const isBk=a=>EXTRA.includes(a.type),bal=a=>+a.balance||0;
 const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function accs(){const l=((LS.g('hub_acc')||{}).list||[]).map(a=>({...a})),o=[...l];
   ACCD.forEach(d=>{if(!o.some(a=>a.id===d.id))o.push({...d})});
   return o.sort((a,b)=>TYR.indexOf(a.type)-TYR.indexOf(b.type)||a.id.localeCompare(b.id,'fr',{numeric:true}))}
-const nm=a=>a.label||(a.type==='CTO'&&a.id!=='cto'?'CTO '+a.id.slice(3):a.type);
+const nm=a=>a.label||(a.type==='CTO'&&a.id!=='cto'?'CTO '+a.id.slice(3):isBk(a)?a.type+' '+(a.id.replace(/^\D+/,'')||''):a.type).trim();
 const brokerOf=(a,A)=>a.type==='Crypto'&&a.inCto?((A||accs()).find(x=>x.id===a.inCto)||{}).broker||'':a.broker||'';
 let MODS=[];
 function buildMods(){const A=accs();MODS=[];
@@ -165,7 +167,7 @@ function depMois(){
 function crdPrets(D){const T=new Date(),P=(D.prets||[]).filter(p=>p.date_debut&&p.capital);let crd=0;
   P.forEach(p=>{const n=Math.round(p.duree)||240,i=p.taux/1200,k=Math.max(0,Math.min(n,(T.getFullYear()-+p.date_debut.slice(0,4))*12+T.getMonth()+1-+p.date_debut.slice(5,7)));
     crd+=i>0?p.capital*(Math.pow(1+i,n)-Math.pow(1+i,k))/(Math.pow(1+i,n)-1):p.capital*(1-k/n)});
-  return{crd,n:P.length}}
+  const cap=P.reduce((t,p)=>t+p.capital,0);return{crd,n:P.length,cap,paid:Math.max(0,cap-crd)}}
 const CF={get v(){return LS.g('hub_cfg')||{mode:'brut',immo:0}},set v(x){LS.s('hub_cfg',x)}};
 function epargne(D){const L=(D.interessement||[]).filter(s=>s.date),P=s=>String(s.dest||'').startsWith('Placé'),tp=L.filter(P).reduce((a,s)=>a+(s.montant||0),0),tc=L.filter(s=>!P(s)).reduce((a,s)=>a+(s.montant||0),0),sv=D.solde_epargne,tr=(D.retraits_epargne||[]).reduce((a,r)=>a+(r.montant||0),0);
   return{n:L.length,tp,tc,tr,cur:sv&&sv.valeur>=0?sv.valeur:Math.max(0,tp-tr)}}
@@ -175,11 +177,13 @@ function renderHome(){
   const p=LS.g('hub_pea'),dm=depMois(),D=LS.g('depenses_v1')||{},ds=[...(D.salaires||[])].filter(s=>s.date).sort((x,y)=>x.date<y.date?1:-1)[0],
     de=epargne(D),di=crdPrets(D),cf=CF.v;
   const cd=ctos.map(a=>LS.g('hub_'+a.id)),cl_=cd.filter(Boolean),ct=cl_.length?{total:cl_.reduce((s,c)=>s+c.total,0),gain:cl_.reduce((s,c)=>s+c.gain,0),day:cl_.reduce((s,c)=>s+(c.day||0),0)}:null;
-  const brut=(p?p.total:0)+(ct?ct.total:0)+de.cur+(cf.immo||0),net=brut-di.crd,net_=cf.mode==='net';
+  const im=D.immo||{},hasIm=D.immo!=null,iv=hasIm?(+im.valeur||0):(cf.immo||0),ia=+im.apport||0,
+    bkA=A.filter(a=>a.type==='Compte bancaire'),lvA=A.filter(a=>a.type==='Livret'),sb=bkA.reduce((t,a)=>t+bal(a),0),sl=lvA.reduce((t,a)=>t+bal(a),0),
+    fin=(p?p.total:0)+(ct?ct.total:0)+de.cur+sb+sl,immoNet=ia+di.paid,immoBrut=iv||(di.n||ia?ia+di.cap:0),
+    brut=fin+immoBrut,net=fin+immoNet,net_=cf.mode==='net';
   $('#tot').textContent=eur(net_?net:brut);
   document.querySelectorAll('#sw button').forEach(b=>b.classList.toggle('on',b.dataset.m===(net_?'net':'brut')));
-  if(document.activeElement!==$('#immo'))$('#immo').value=cf.immo||'';
-  $('#totsub').textContent=(p?'':'PEA non chargé (ouvre l’onglet PEA une fois) · ')+(ct?'':'CTO non chargé (ouvre l’onglet CTO une fois) · ')+'PEA '+eur(p?p.total:0)+(ct?' · CTO '+eur(ct.total):'')+' · Épargne salariale '+eur(de.cur)+' · Immobilier '+eur(cf.immo||0)+(net_?' − prêts ≈ '+eur(di.crd):'');
+  $('#totsub').textContent=(p?'':'PEA non chargé (ouvre l’onglet PEA une fois) · ')+(ct?'':'CTO non chargé (ouvre l’onglet CTO une fois) · ')+'PEA '+eur(p?p.total:0)+(ct?' · CTO '+eur(ct.total):'')+' · Épargne salariale '+eur(de.cur)+(bkA.length?' · Comptes '+eur(sb):'')+(lvA.length?' · Livrets '+eur(sl):'')+(net_?' · Immobilier : apport '+eur(ia)+' + capital remboursé '+eur(di.paid):' · Immobilier '+eur(immoBrut)+(iv?'':' (coût, estimation à saisir dans l’onglet Immobilier)'));
   const cl=v=>v>0?'up':v<0?'dn':'';
   const ctoTile=(a,c)=>[a.id,'🏦',esc(nm(a)),(c?`<div class="v">${eur(c.total)}</div><div class="m">Gain <span class="${cl(c.gain)}">${eur(c.gain)}</span> · jour <span class="${cl(c.day)}">${eur(c.day)}</span></div>`:'<div class="m">Pas encore de données</div>')+bk(a)];
   const cry=AB('Crypto'),cryCto=cry&&cry.inCto&&ctos.find(a=>a.id===cry.inCto);
@@ -189,20 +193,21 @@ function renderHome(){
    ['pea','📈','PEA',(p?`<div class="v">${eur(p.total)}</div><div class="m">Gain <span class="${cl(p.gain)}">${eur(p.gain)}</span> · jour <span class="${cl(p.day)}">${eur(p.day)}</span></div>`:'<div class="m">Pas encore de données</div>')+bk(AB('PEA'))],
    ...ctos.map((a,i)=>ctoTile(a,cd[i])),
    ['epargne','🎁','Épargne salariale',(de.n?`<div class="v">${eur(de.cur)}</div><div class="m">Sur le compte · retiré ${eur(de.tr)} · perçu ${eur(de.tc)}</div>`:'<div class="m">Aucun versement saisi</div>')+bk(AB('Épargne salariale'))],
-   ['immo','🏡','Immobilier',di.n?`<div class="v">≈ ${eur(di.crd)}</div><div class="m">Capital restant dû · ${di.n} prêt${di.n>1?'s':''}</div>`:'<div class="m">Aucun prêt saisi</div>'],
+   ...(bkA.length?[['depenses','🏧','Comptes bancaires',`<div class="v">${eur(sb)}</div>`+bkA.map(a=>`<div class="m">${esc(nm(a))}${brokerOf(a,A)?' · '+esc(brokerOf(a,A)):''} : <b>${eur(bal(a))}</b></div>`).join('')]]:[]),
+   ...(lvA.length?[['depenses','🐖','Livrets',`<div class="v">${eur(sl)}</div>`+lvA.map(a=>`<div class="m">${esc(nm(a))}${brokerOf(a,A)?' · '+esc(brokerOf(a,A)):''} : <b>${eur(bal(a))}</b></div>`).join('')]]:[]),
+   ['immo','🏡','Immobilier',(di.n||iv||ia)?`<div class="v">${eur(iv||immoBrut)}</div><div class="m">${iv?'Valeur estimée':'Coût (estimation à saisir)'} · reste dû ≈ ${eur(di.crd)}${di.n?' · '+di.n+' prêt'+(di.n>1?'s':''):''}</div><div class="m">Apport ${eur(ia)} · capital remboursé ${eur(di.paid)}</div>`:'<div class="m">Aucun bien ni prêt saisi</div>'],
    [cryCto?cryCto.id:'crypto','₿','Crypto',cryCto?`<div class="m">Détenue sur le CTO « ${esc(nm(cryCto))} » : déjà comprise dans sa valeur</div>${bk(cry)}`:'<div class="m">À venir</div>'+bk(cry)],
    ['sante','🩺','Santé','<div class="m">Remboursements et suivi</div>']];
   $('#tiles').innerHTML=T.map(([id,ic,t,b])=>`<button class="t${b.includes('À venir')?' soon':''}" data-go="${id}"><h3>${ic} ${t}</h3>${b}</button>`).join('');
   /* par courtier */
   const G={};A.forEach(a=>{const b=brokerOf(a,A).trim();(G[b]=G[b]||[]).push(a)});
-  const val=a=>a.type==='PEA'?(p?p.total:null):a.type==='CTO'?(LS.g('hub_'+a.id)||{}).total:a.type==='Épargne salariale'?(de.n?de.cur:null):null;
+  const val=a=>isBk(a)?bal(a):a.type==='PEA'?(p?p.total:null):a.type==='CTO'?(LS.g('hub_'+a.id)||{}).total:a.type==='Épargne salariale'?(de.n?de.cur:null):null;
   const ks=Object.keys(G).sort((x,y)=>!x?1:!y?-1:x.localeCompare(y,'fr'));
   $('#acc').innerHTML='<h2>🏛️ Mes comptes par courtier</h2>'+ks.map(k=>{const L=G[k],tot=L.reduce((s,a)=>s+(val(a)||0),0);
     return `<div class="bc"><div class="bh"><span>${k?esc(k):'Courtier non renseigné'}</span><span>${eur(tot)}</span></div>`+L.map(a=>{const v=val(a);
       const r=a.type==='Crypto'?(a.inCto?'inclus dans « '+esc(nm((A.find(x=>x.id===a.inCto)||{}))||'CTO')+' »':'à venir'):v==null?'–':eur(v);
       return `<div class="br"><span>${TYI[a.type]} ${esc(nm(a))}</span><span>${r}</span></div>`}).join('')+'</div>'}).join('')+'<div class="sub">Courtiers et comptes : ⚙️ Réglages.</div>';
   $('#sw').onclick=e=>{const b=e.target.closest('button');if(b){CF.v={...CF.v,mode:b.dataset.m};renderHome()}};
-  $('#immo').onchange=e=>{CF.v={...CF.v,immo:Math.max(0,parseFloat(e.target.value)||0)};renderHome()};
   $('#tiles').onclick=e=>{const b=e.target.closest('[data-go]');if(b)go(b.dataset.go)};
 }
 
@@ -266,7 +271,8 @@ async function syncAcc(){
 async function syncAll(){await sync();await syncAcc()}
 const later=(ms=1500)=>{clearTimeout(timer);timer=setTimeout(syncAll,ms)};
 addEventListener('storage',e=>{
-  if(e.key===DK){M.t=Date.now();LS.s('hub_dep',M);later()}
+  if(e.key===DK){M.t=Date.now();LS.s('hub_dep',M);later();if(cur==='home')renderHome()}
+  if(e.key==='hub_acc'){AM={...AM,t:Date.now()};LS.s('hub_acc_m',AM);buildMods();renderNav();if(cur==='home')renderHome();later()}
   if(/^hub_(pea|cto\d*)$/.test(e.key||'')&&cur==='home')renderHome()});
 addEventListener('online',()=>{dot('','Reconnecté');later(500)});
 addEventListener('offline',()=>dot('off','Hors connexion'));
@@ -275,7 +281,7 @@ setInterval(()=>{if(!document.hidden)syncAll()},60000);
 
 /* ---------- Réglages (Supabase par code e-mail + script Google des cours) ---------- */
 const dlg=$('#dlg'),gv=id=>$(id).value,sbst=t=>$('#sbst').textContent=t;
-function openCfg(){const s=sbs();$('#sbu').value=s.url||'';$('#sbk').value=s.key||'';$('#sbe').value=s.email||'';$('#gurl').value=LS.g('url')||'';$('#sbcode').hidden=true;sbst(s.url&&s.refresh?'Connecté ('+(s.email||'')+')':'Non connecté');renderAccDlg();dlg.showModal()}
+function openCfg(){const s=sbs();$('#sbu').value=s.url||'';$('#sbk').value=s.key||'';$('#sbe').value=s.email||'';$('#gurl').value=LS.g('url')||'';$('#sbcode').hidden=true;sbst(s.url&&s.refresh?'Connecté ('+(s.email||'')+')':'Non connecté');DR=accs();$('#cfst').textContent='';renderAccDlg();dlg.showModal()}
 $('#sbsend').onclick=async()=>{LS.s('sb',{...sbs(),url:gv('#sbu').trim().replace(/\/$/,''),key:gv('#sbk').trim(),email:gv('#sbe').trim()});
   try{await api('/auth/v1/otp',{method:'POST',body:JSON.stringify({email:sbs().email,create_user:false})});$('#sbcode').hidden=false;sbst('Code envoyé : vérifie ta boîte mail (et les spams).')}
   catch(e){sbst('Erreur : '+e.message)}};
@@ -283,21 +289,35 @@ $('#sbok').onclick=async()=>{try{const j=await api('/auth/v1/verify',{method:'PO
   LS.s('sb',{...sbs(),access:j.access_token,refresh:j.refresh_token,uid:j.user.id,exp:Math.floor(Date.now()/1000)+(j.expires_in||3600)});
   $('#sbcode').hidden=true;sbst('Connecté ✓');later(300)}catch(e){sbst('Code invalide ou expiré : '+e.message)}};
 $('#sbout').onclick=()=>{LS.s('sb',{...sbs(),access:null,refresh:null,uid:null});sbst('Déconnecté.');dot('err','Non connecté à Supabase');setSy('Dépenses : sauvegarde locale uniquement.')};
-function accSave(list){LS.s('hub_acc',{list});AM={...AM,t:Date.now()};LS.s('hub_acc_m',AM);buildMods();renderNav();renderHome();later(500)}
+function accSave(list,apply=true){LS.s('hub_acc',{list});AM={...AM,t:Date.now()};LS.s('hub_acc_m',AM);if(apply){buildMods();renderNav();renderHome();later(500)}}
 const cryOpts=(a,A)=>'<option value="">Compte crypto dédié (hors CTO)</option>'+A.filter(x=>x.type==='CTO').map(x=>`<option value="${x.id}"${a.inCto===x.id?' selected':''}>Dans le CTO « ${esc(nm(x))} »</option>`).join('');
-function renderAccDlg(){const A=accs();
-  $('#accl').innerHTML=A.map(a=>`<div class="ar" data-id="${a.id}"><b>${TYI[a.type]} ${esc(a.type)}</b>${a.type==='CTO'&&a.id!=='cto'?' <button type="button" data-del="1" style="float:right;padding:2px 8px">✕</button>':''}
-    <input data-f="label" placeholder="Nom du compte (facultatif)" value="${esc(a.label)}">
-    <input data-f="broker" placeholder="${a.type==='Épargne salariale'?'Gestionnaire (ex. Amundi)':'Courtier (ex. Boursorama)'}" value="${esc(a.broker)}">
+let DR=[]; /* brouillon des comptes : modifié dans la fenêtre, enregistré par Appliquer / OK */
+const delable=a=>(a.type==='CTO'&&a.id!=='cto')||isBk(a);
+function renderAccDlg(){const A=DR;
+  $('#accl').innerHTML=A.map(a=>`<div class="ar" data-id="${a.id}"><b>${TYI[a.type]} ${esc(a.type)}</b>${delable(a)?' <button type="button" data-del="1" style="float:right;padding:2px 8px">✕</button>':''}
+    <input data-f="label" placeholder="Nom du compte${isBk(a)?' (ex. Compte courant)':' (facultatif)'}" value="${esc(a.label)}">
+    <input data-f="broker" placeholder="${a.type==='Épargne salariale'?'Gestionnaire (ex. Amundi)':isBk(a)?'Banque (ex. Crédit Agricole)':'Courtier (ex. Boursorama)'}" value="${esc(a.broker)}">
+    ${isBk(a)?`<input data-f="balance" type="number" inputmode="decimal" step="0.01" placeholder="Solde actuel (€)" value="${a.balance!=null&&a.balance!==''?esc(a.balance):''}">`:''}
     ${a.type==='Crypto'?`<select data-f="inCto">${cryOpts(a,A)}</select>`:''}</div>`).join('')}
 $('#accl').addEventListener('change',e=>{const el=e.target,row=el.closest('.ar');if(!row||!el.dataset.f)return;
-  const A=accs(),a=A.find(x=>x.id===row.dataset.id);if(!a)return;a[el.dataset.f]=el.value.trim();accSave(A);
-  if(el.dataset.f==='label'){const sel=$('#accl select[data-f=inCto]');if(sel){const c=A.find(x=>x.type==='Crypto');sel.innerHTML=cryOpts(c,A)}}});
-$('#accl').addEventListener('click',e=>{const b=e.target.closest('[data-del]');if(!b)return;const id=b.closest('.ar').dataset.id;
-  if(!confirm('Retirer ce CTO de la liste ? Ses données restent enregistrées.'))return;
-  const A=accs().filter(x=>x.id!==id);A.forEach(x=>{if(x.inCto===id)x.inCto=''});accSave(A);renderAccDlg()});
-$('#addcto').onclick=()=>{const A=accs();let n=2;while(A.some(a=>a.id==='cto'+n))n++;A.push({id:'cto'+n,type:'CTO',broker:'',label:''});accSave(A);renderAccDlg()};
-dlg.addEventListener('close',()=>{const u=gv('#gurl').trim();if(u!==(LS.g('url')||''))LS.s('url',u)});
+  const a=DR.find(x=>x.id===row.dataset.id);if(!a)return;a[el.dataset.f]=el.dataset.f==='balance'?(parseFloat(el.value)||0):el.value.trim();
+  if(el.dataset.f==='label'){const sel=$('#accl select[data-f=inCto]');if(sel){const c=DR.find(x=>x.type==='Crypto');sel.innerHTML=cryOpts(c,DR)}}});
+$('#accl').addEventListener('click',e=>{const b=e.target.closest('[data-del]');if(!b)return;const id=b.closest('.ar').dataset.id,a=DR.find(x=>x.id===id);
+  if(!confirm(isBk(a)?'Retirer ce compte de la liste ?':'Retirer ce CTO de la liste ? Ses données restent enregistrées.'))return;
+  DR=DR.filter(x=>x.id!==id);DR.forEach(x=>{if(x.inCto===id)x.inCto=''});renderAccDlg()});
+const addAcc=(type,pre)=>{let n=1;while(DR.some(a=>a.id===pre+n))n++;DR.push({id:pre+n,type,broker:'',label:'',...(isBk({type})?{balance:0}:{})});renderAccDlg()};
+$('#addcto').onclick=()=>{let n=2;while(DR.some(a=>a.id==='cto'+n))n++;DR.push({id:'cto'+n,type:'CTO',broker:'',label:''});renderAccDlg()};
+$('#addbk').onclick=()=>addAcc('Compte bancaire','bk');
+$('#addlv').onclick=()=>addAcc('Livret','lv');
+/* Appliquer = enregistre seulement ; OK = enregistre, applique et ferme */
+function cfgSaveAll(apply){
+  const u=gv('#gurl').trim();if(u!==(LS.g('url')||''))LS.s('url',u);
+  const s=sbs(),su={url:gv('#sbu').trim().replace(/\/$/,''),key:gv('#sbk').trim(),email:gv('#sbe').trim()};
+  if(su.url!==(s.url||'')||su.key!==(s.key||'')||su.email!==(s.email||''))LS.s('sb',{...s,...su});
+  accSave(DR.map(a=>({...a})),apply);
+  $('#cfst').textContent=apply?'':'✓ Réglages enregistrés (appliqués en cliquant sur OK).'}
+$('#cfap').onclick=()=>cfgSaveAll(false);
+$('#cfok').onclick=()=>{cfgSaveAll(true);dlg.close()};
 
 /* ---------- Sauvegarde complète (export / import JSON de toutes les données) ---------- */
 const OKEY=k=>/^(raw|csv|cfg|url|depenses_.*|hub_cfg|hub_acc|cto\d*_(raw|csv|cfg))$/.test(k),bkst=t=>$('#bkst').textContent=t;
