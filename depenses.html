@@ -1,0 +1,1092 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0284c7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Dépenses">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Mes Dépenses, Salaires, Primes, Crédit, Santé &amp; Impôts</title>
+<style>
+:root{--bleu:#0284c7;--violet:#7c3aed;--vert:#0d9488;--rouge:#dc2626;--orange:#f97316;--bg:#f4f7fb;--card:#fff;--txt:#0f172a;--mut:#64748b;--line:#e2e8f0}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1220;--card:#131c2e;--txt:#e5edf8;--mut:#94a3b8;--line:#243049}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+header{background:linear-gradient(135deg,var(--bleu),var(--violet));color:#fff;padding:calc(18px + env(safe-area-inset-top)) 16px 54px}
+header h1{margin:0;font-size:1.15rem;font-weight:800;letter-spacing:-.02em}
+header small{opacity:.85}
+main{padding:0 14px;margin-top:-38px;max-width:760px;margin-left:auto;margin-right:auto}
+.card{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 4px 18px rgba(15,23,42,.08);border:1px solid var(--line)}
+.card h3{margin:0 0 10px;font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;color:var(--mut);display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;user-select:none;-webkit-user-select:none}
+.card.fold h3{margin-bottom:0}
+.card.fold .cb{display:none}
+.fi{font-style:normal;flex:none;width:24px;height:24px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg);font-size:.8rem;transition:transform .15s}
+.card.fold .fi{transform:rotate(-90deg)}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.kpis.k3{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.k3 .kpi{padding:10px 5px}
+.k3 .kpi span{font-size:.6rem;letter-spacing:.02em}
+.k3 .kpi b{font-size:.95rem}
+.kpi{background:color-mix(in srgb,var(--c) 14%,var(--card));border-radius:14px;padding:12px;border:1px solid color-mix(in srgb,var(--c) 30%,var(--line));border-left:5px solid var(--c);box-shadow:0 4px 14px rgba(15,23,42,.06)}
+.kpi.wide{grid-column:1/-1}
+.kpi span{display:block;font-size:.7rem;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+.kpi b{font-size:1.25rem;font-weight:800;color:var(--c)}
+.card .kpis{margin:12px 0 0}
+.card .kpi{box-shadow:none}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+input,select,button,textarea{font:inherit;color:var(--txt)}
+input,select{width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card)}
+button{border:0;border-radius:12px;padding:11px 14px;font-weight:700;background:linear-gradient(135deg,var(--bleu),var(--violet));color:#fff;cursor:pointer}
+button.sec{background:var(--card);color:var(--txt);border:1px solid var(--line)}
+button.del{background:none;color:var(--rouge);padding:4px 8px}
+.op{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.op:last-child{border:0}
+.op .m{flex:1;min-width:0}.op .m b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.92rem}
+.op .m small{color:var(--mut)}
+.pos{color:var(--vert);font-weight:800}.neg{color:var(--rouge);font-weight:800}
+.bar{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:.82rem}
+.bar i{display:block;height:10px;border-radius:6px;background:var(--c)}
+.bar .t{width:120px;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .v{margin-left:auto;font-weight:700}
+nav{position:sticky;top:calc(6px + env(safe-area-inset-top));z-index:9;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px;padding:4px 6px 0;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px;box-shadow:0 4px 18px rgba(15,23,42,.08)}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:none;height:42px;padding:0 14px;background:none;color:var(--mut);font-size:.88rem;font-weight:600;white-space:nowrap;border-radius:10px 10px 0 0;position:relative;transition:color .15s,background-color .15s}
+nav button:hover{background:color-mix(in srgb,var(--bleu) 8%,transparent);color:var(--bleu)}
+nav button.on{background:color-mix(in srgb,var(--bleu) 10%,transparent);color:var(--bleu)}
+nav button.on::after{content:"";position:absolute;left:10px;right:10px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:linear-gradient(90deg,var(--bleu),var(--violet))}
+.fab{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;font-size:1.8rem;padding:0;z-index:10;box-shadow:0 8px 22px rgba(124,58,237,.4)}
+.fabbg{position:fixed;inset:0;z-index:12;background:rgba(15,23,42,.35);display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;gap:10px;padding:0 16px calc(88px + env(safe-area-inset-bottom))}.fabbg.hide{display:none!important}.fabbg button{padding:13px 20px;font-size:.95rem;border-radius:26px;box-shadow:0 8px 22px rgba(15,23,42,.3)}
+.selbar{position:fixed;left:12px;right:84px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:11;display:flex;gap:8px;align-items:center;padding:8px 10px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(15,23,42,.22)}.selbar .t{flex:1;min-width:0;font-size:.8rem;line-height:1.25}.selbar .t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.selbar button{padding:9px 12px;font-size:.85rem}
+dialog{border:0;border-radius:18px;padding:16px;width:min(94vw,440px);background:var(--card);color:var(--txt)}
+dialog::backdrop{background:rgba(15,23,42,.5)}
+label{font-size:.75rem;color:var(--mut);font-weight:600;display:block;margin:8px 0 3px}
+.seg{display:flex;gap:6px}.seg button{flex:1}
+.empty{text-align:center;color:var(--mut);padding:20px 0}
+.hide{display:none}
+.seg button{min-width:0;padding-left:6px;padding-right:6px;font-size:.9rem}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.rc{border-collapse:separate;border-spacing:0;width:100%;font-size:.8rem;white-space:nowrap;font-variant-numeric:tabular-nums}
+.rc th,.rc td{padding:8px 10px;text-align:center;border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
+.rc thead th{background:color-mix(in srgb,var(--mut) 10%,var(--card));color:var(--mut);font-weight:700;font-size:.68rem;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--line)}
+.rc thead th.g{font-size:.72rem}
+.rc thead tr:first-child th:first-child,.rc tbody th{position:sticky;left:0;z-index:1}
+.rc tbody th{font-weight:800;background:var(--card)}
+.rc tbody tr:nth-child(even) td,.rc tbody tr:nth-child(even) th{background:color-mix(in srgb,var(--mut) 8%,var(--card))}
+.rc tbody tr:hover td,.rc tbody tr:hover th{background:color-mix(in srgb,var(--bleu) 9%,var(--card))}
+.rc tbody tr:last-child td,.rc tbody tr:last-child th{border-bottom:0}
+.rc tr.tot th,.rc tr.tot td{font-weight:800;border-top:2px solid var(--line);border-bottom:0}
+@media(max-width:480px){.rc th,.rc td{padding:8px 5px}.rc{font-size:.74rem}}
+.rc.wr tbody th{white-space:normal;text-align:left;min-width:128px}
+.rc .mini{height:6px;border-radius:4px;margin-top:5px;min-width:70px}
+/* Titres de sélection (comme « Période affichée » du tableau de bord Bourse) */
+.sh{font-size:.98rem;font-weight:800;margin:0 0 8px;letter-spacing:-.01em}
+.sh+label{margin-top:0}
+select{border-radius:8px}
+.k3 .kpi,.kpi{text-align:center}
+.ch{display:flex;align-items:flex-start;user-select:none;-webkit-user-select:none}
+.ch .yax{flex:none}
+.sc{flex:1;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.sc svg{display:block}
+.sc.fit svg{touch-action:pan-y}
+.hz{fill:transparent;cursor:pointer}
+.hz:hover,.hz.act{fill:rgba(127,127,127,.16)}
+.lg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.72rem;color:var(--mut);margin-top:6px}
+.lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.lg i.ds{height:0;width:14px;border-radius:0;border-top:2px dashed #64748b;vertical-align:3px}
+.bar[data-tip]{cursor:pointer;padding:3px 4px;border-radius:8px}
+.bar.act{background:rgba(127,127,127,.12)}
+#tip{position:fixed;display:none;z-index:60;pointer-events:none;max-width:250px;background:#0f172a;color:#fff;border-radius:10px;padding:8px 11px;font-size:.76rem;line-height:1.4;box-shadow:0 8px 24px rgba(15,23,42,.35)}
+#tip .tt{font-weight:800;margin-bottom:3px}
+#tip .tl{display:flex;justify-content:space-between;gap:14px}
+#tip .tc{margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,255,255,.18);color:#cbd5e1}
+.hm{display:grid;grid-template-columns:30px repeat(12,minmax(0,1fr));gap:3px;font-size:.56rem;align-items:center}
+.hm .hh{text-align:center;color:var(--mut);font-weight:600}
+.hm .hy{color:var(--mut);font-weight:700;font-size:.62rem}
+.hc{height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-variant-numeric:tabular-nums;cursor:pointer}
+.hc.off{background:rgba(127,127,127,.08);cursor:default}
+.hc.act{outline:2px solid var(--bleu)}
+.hl{display:flex;align-items:center;gap:8px;font-size:.68rem;color:var(--mut);margin-top:8px}
+.hl i{flex:1;height:8px;border-radius:6px;background:linear-gradient(90deg,rgba(220,38,38,.1),rgba(220,38,38,.95))}
+.op .r{text-align:center;min-width:92px}
+.am{display:inline-block;min-width:84px;text-align:center}
+.lst{border:1px solid var(--line);border-radius:10px;padding:0 8px}
+.lst .op:nth-child(even){background:color-mix(in srgb,var(--mut) 8%,transparent);margin:0 -8px;padding-left:8px;padding-right:8px}
+.lst .op:hover{background:color-mix(in srgb,var(--bleu) 8%,transparent)}
+.d{font-size:.68rem;color:var(--mut);margin-top:2px}
+.d span{font-weight:700}
+/* Listes et tableaux : 5 lignes visibles maximum puis défilement (hauteur ajustée en JS) */
+.lst{position:relative;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;margin-top:8px;border-top:1px solid var(--line)}
+.op[data-rec],.op[data-sal],.op[data-int],.op[data-op]{cursor:pointer}
+.pg{display:flex;height:18px;border-radius:9px;overflow:hidden;background:var(--line)}
+.pg i{display:block;height:100%}
+.pgl{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.72rem;color:var(--mut);margin-top:8px}
+.pgl b{color:var(--txt)}
+.pgl em{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px;font-style:normal}
+dialog [required]:invalid{border:2px solid var(--rouge)!important}
+dialog [required]:invalid:focus{outline:2px solid color-mix(in srgb,var(--rouge) 40%,transparent)}
+#iSeg{flex-wrap:wrap}#iSeg button{flex:1 1 calc(50% - 3px)}
+.mu{color:var(--mut)}
+.rc thead th[data-sc]{cursor:pointer}
+.so{font-size:.62rem;margin-left:3px;color:var(--bleu)}
+.lst .op.sel{background:color-mix(in srgb,var(--bleu) 16%,transparent)}
+.ck{font-size:1.15rem}
+.op[data-grp]{cursor:pointer}
+.yc{border:1px solid var(--line);border-radius:12px;margin:10px 0;overflow:hidden;background:var(--card)}
+.yc h4{margin:0;padding:9px 12px;display:flex;justify-content:space-between;align-items:baseline;background:color-mix(in srgb,var(--mut) 9%,var(--card));font-size:1.05rem;font-weight:800}
+.yc h4 small{font-size:.7rem;color:var(--mut);font-weight:600}
+.yg{display:grid;grid-template-columns:1.15fr 1fr 1fr;font-size:.8rem;align-items:center}
+.yg>div{padding:7px 10px;border-top:1px solid var(--line)}
+.yg>.hd{border-top:0;font-size:.62rem;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:700;padding-bottom:2px}
+.yg .rl{font-weight:700;font-size:.76rem}
+.yg .v{text-align:right;font-variant-numeric:tabular-nums}
+.yg .v b{display:block;font-size:.88rem}
+.yg .v .e{font-size:.68rem;margin-top:1px}
+.rb{cursor:pointer;transition:fill-opacity .12s}.rb.act,.rb:hover{fill-opacity:.85}
+g[data-tip]{cursor:pointer}
+.rqn{font-size:.72rem;color:var(--rouge);margin:6px 0 0}
+/* Historique des salaires : brut / net avant impôts / impôt / net après impôts sur une ligne */
+.tri{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin-top:5px}
+.tri>div{border-radius:7px;padding:3px 2px;text-align:center;background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 30%,transparent);line-height:1.15;min-width:0}
+.tri small{display:block;font-size:.5rem;text-transform:uppercase;letter-spacing:.02em;color:var(--mut);white-space:nowrap}
+.tri b{display:block;font-size:.68rem;color:var(--c);white-space:nowrap}
+.tri .nt{background:var(--c);border-color:var(--c)}
+.tri .nt small,.tri .nt b{color:#fff}
+
+</style>
+</head>
+<body>
+<header><h1>💶 Mes Dépenses, Salaires, Primes, Crédit, Santé &amp; Impôts</h1><small id="sub"></small></header>
+<main><nav id="nav"></nav><div id="app"></div></main>
+<button class="fab" id="fab" aria-label="Ajouter">+</button>
+<div class="fabbg hide" id="fabBg"><button id="fabG">🧳 Nouveau groupe</button><button id="fabO">➕ Nouvelle opération</button></div>
+
+<dialog id="dlg"><form method="dialog" id="frm">
+ <h3 id="opTitle" style="margin:0 0 4px">Nouvelle opération</h3>
+ <div class="seg" style="margin-top:8px"><button type="button" class="sec" data-sens="Dépense" id="sD">Dépense</button><button type="button" class="sec" data-sens="Revenu" id="sR">Revenu</button></div>
+ <div id="fRecW" class="hide"><label>🔁 Depuis une dépense récurrente</label><select id="fRec"></select></div>
+ <label>Libellé</label><input id="fLib" required autocomplete="off" list="libs">
+ <datalist id="libs"></datalist>
+ <div id="fMtW"><label>Montant (€)</label><input id="fMt" type="number" step="0.01" min="0.01" inputmode="decimal" required></div>
+ <label>Catégorie</label><select id="fCat" required></select>
+ <div id="fGrpW"><label>Groupe (voyage, projet…)</label><select id="fGrp"></select></div>
+ <label>Date</label><input id="fDate" type="date" required>
+ <div id="fSalW" class="hide">
+  <label>Employeur</label><input id="fEmp" autocomplete="off" list="emps2"><datalist id="emps2"></datalist>
+  <label>Salaire brut (€)</label><input id="fBrut" type="number" step="0.01" min="0" inputmode="decimal">
+  <label>Salaire net avant impôts (€)</label><input id="fNet" type="number" step="0.01" min="0.01" inputmode="decimal">
+  <label>Impôt payé (€)</label><input id="fImp" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0">
+  <div class="d" id="fApr" style="margin-top:6px"></div>
+ </div>
+ <div class="rqn">Les champs encadrés en rouge sont obligatoires.</div>
+ <div class="row" style="margin-top:14px"><button type="button" class="sec" id="fCancel" style="flex:1">Annuler</button><button type="submit" style="flex:2">Enregistrer</button></div>
+ <button type="button" class="sec hide" id="fDel" style="width:100%;color:var(--rouge)">🗑 Supprimer cette opération</button>
+</form></dialog>
+
+<dialog id="dlgG"><form method="dialog" id="frmG">
+ <h3 style="margin:0 0 4px">🧳 Nouveau groupe</h3>
+ <div class="d">Donne un nom au groupe, puis choisis ses opérations dans la liste.</div>
+ <label>Nom du groupe (ex. Voyage Italie)</label><input id="gNNom" required autocomplete="off">
+ <label>N° dans le tableau des groupes</label><select id="gNPos"></select>
+ <div class="rqn">Les champs encadrés en rouge sont obligatoires.</div>
+ <div class="row" style="margin-top:14px"><button type="button" class="sec" id="gNCancel" style="flex:1">Annuler</button><button type="submit" style="flex:2">Choisir les opérations</button></div>
+</form></dialog>
+
+<dialog id="dlgSG"><form method="dialog" id="frmSG">
+ <h3 id="sgTitle" style="margin:0 0 4px">🗂 Nouveau groupe de groupes</h3>
+ <div class="d">Ex. « Voyages », « Travail » : regroupe plusieurs groupes pour voir leur coût / gain total.</div>
+ <label>Nom</label><input id="sgNom" required autocomplete="off">
+ <label>Groupes à inclure</label><div id="sgList" style="max-height:40vh;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:0 8px"></div>
+ <div class="rqn">Les champs encadrés en rouge sont obligatoires.</div>
+ <div class="row" style="margin-top:14px"><button type="button" class="sec" id="sgCancel" style="flex:1">Annuler</button><button type="submit" style="flex:2">Enregistrer</button></div>
+</form></dialog>
+
+<dialog id="dlgS"><form method="dialog" id="frmS">
+ <h3 id="sTitle" style="margin:0 0 4px">Nouveau salaire perçu</h3>
+ <label>Date de versement</label><input id="sDate" type="date" required>
+ <label>Employeur</label><input id="sEmp" autocomplete="off" list="emps" required><datalist id="emps"></datalist>
+ <label>Type</label><select id="sType"><option>Salaire</option><option>Prime</option><option>13e mois</option><option>Indemnités</option><option>Autre</option></select>
+ <label>Salaire brut (€)</label><input id="sBrut" type="number" step="0.01" min="0" inputmode="decimal" required>
+ <label>Salaire net avant impôts (€)</label><input id="sNet" type="number" step="0.01" min="0.01" inputmode="decimal" required>
+ <label>Impôt payé (€)</label><input id="sImp" type="number" step="0.01" inputmode="decimal" placeholder="0">
+ <div class="d" id="sApr" style="margin-top:6px"></div>
+ <div class="rqn">Les champs encadrés en rouge sont obligatoires.</div>
+ <div class="row" style="margin-top:14px"><button type="button" class="sec" id="sCancel" style="flex:1">Annuler</button><button type="submit" style="flex:2">Enregistrer</button></div>
+ <button type="button" class="sec hide" id="sDel" style="width:100%;color:var(--rouge)">🗑 Supprimer ce salaire</button>
+</form></dialog>
+
+<dialog id="dlgR"><form method="dialog" id="frmR">
+ <h3 id="rTitle" style="margin:0 0 4px">Nouvelle récurrence</h3>
+ <div class="seg" style="margin-top:8px"><button type="button" class="sec" id="rC">Charge</button><button type="button" class="sec" id="rV">Revenu</button></div>
+ <label>Libellé</label><input id="rLib" required autocomplete="off">
+ <label>Montant mensuel (€)</label><input id="rMt" type="number" step="0.01" min="0.01" inputmode="decimal" required>
+ <label>Catégorie</label><select id="rCat"></select>
+ <div id="rGrpW"><label>Groupe (facultatif)</label><select id="rGrp"></select></div>
+ <div class="rqn">Les champs encadrés en rouge sont obligatoires.</div>
+ <div class="row" style="margin-top:14px"><button type="button" class="sec" id="rCancel" style="flex:1">Annuler</button><button type="submit" style="flex:2">Enregistrer</button></div>
+ <button type="button" class="sec hide" id="rDel" style="width:100%;color:var(--rouge)">🗑 Supprimer cette récurrence</button>
+</form></dialog>
+
+<dialog id="dlgM"><form method="dialog" id="frmM">
+ <h3 id="mTitle" style="margin:0 0 4px">Acte</h3>
+ <div class="d" id="mG" style="margin:0 0 6px"></div>
+ <label>Base de remboursement Sécu (€)</label><input id="mBr" type="number" step="0.01" inputmode="decimal">
+ <label>Taux Sécurité sociale (%)</label><input id="mSec" type="number" step="1" inputmode="decimal">
+ <label>Participation forfaitaire / franchise (€)</label><input id="mPf" type="number" step="0.01" inputmode="decimal">
+ <label>Prix habituel (€)</label><input id="mPrix" type="number" step="0.01" inputmode="decimal">
+ <div class="d" style="margin-top:8px">Les garanties Ipeca (socle 0739/461 + sur-complémentaire 0739/462) sont celles de tes notices ; tu peux ajuster ici la base Sécu, le taux Sécu, la franchise et le prix habituel.</div>
+ <div class="row" style="margin-top:14px"><button type="button" class="sec" id="mCancel" style="flex:1">Annuler</button><button type="submit" style="flex:2">Enregistrer</button></div>
+ <button type="button" class="sec" id="mReset" style="width:100%;color:var(--rouge)">↺ Valeurs par défaut</button>
+</form></dialog>
+
+<dialog id="dlgP"><form method="dialog" id="frmP">
+ <h3 id="pTitle" style="margin:0 0 4px">Nouveau prêt</h3>
+ <label>Nom du prêt</label><input id="pNom" autocomplete="off" required>
+ <label>Capital emprunté (€)</label><input id="pCap" type="number" step="0.01" min="1" inputmode="decimal" required>
+ <div class="row" style="margin:0"><div style="flex:1;min-width:0"><label>Taux annuel (%)</label><input id="pTaux" type="number" step="0.001" min="0" inputmode="decimal" required></div>
+ <div style="flex:1;min-width:0"><label>Durée (mois)</label><input id="pDur" type="number" step="1" min="1" inputmode="numeric" required></div></div>
+ <label>Date de la 1re mensualité</label><input id="pDeb" type="date" required>
+ <label>Assurance mensuelle (€)</label><input id="pAss" type="number" step="0.01" min="0" inputmode="decimal">
+ <label>1re mensualité réelle (€)</label><input id="pPrem" type="number" step="0.01" min="0" inputmode="decimal">
+ <div class="d" id="pMens" style="margin-top:6px"></div>
+ <div class="rqn">Les champs encadrés en rouge sont obligatoires.</div>
+ <div class="row" style="margin-top:14px"><button type="button" class="sec" id="pCancel" style="flex:1">Annuler</button><button type="submit" style="flex:2">Enregistrer</button></div>
+ <button type="button" class="sec hide" id="pDel" style="width:100%;color:var(--rouge)">🗑 Supprimer ce prêt</button>
+</form></dialog>
+
+<dialog id="dlgI"><form method="dialog" id="frmI">
+ <h3 id="iTitle" style="margin:0 0 4px">Nouvel intéressement / participation / abondement / PPV</h3>
+ <div class="seg" id="iSeg" style="margin-top:8px"><button type="button" class="sec" id="iI">Intéressement</button><button type="button" class="sec" id="iP">Participation</button><button type="button" class="sec" id="iA">Abondement</button><button type="button" class="sec" id="iV">PPV</button></div>
+ <label>Date de versement</label><input id="iDate" type="date" required>
+ <label>Montant brut (€)</label><input id="iBrut" type="number" step="0.01" min="0" inputmode="decimal">
+ <label>Montant net (€)</label><input id="iNet" type="number" step="0.01" min="0.01" inputmode="decimal" required>
+ <div id="iDestW"><label>Destination</label><select id="iDest"><option>Perçu (versé sur le compte)</option><option>Placé (PEE / PERCO)</option></select></div><div class="d hide" id="iAbN" style="margin-top:6px">L'abondement est versé directement sur ton plan d'épargne : il est toujours placé (PEE / PERCO).</div>
+ <label>Entreprise</label><select id="iEmp"></select>
+ <div class="rqn">Les champs encadrés en rouge sont obligatoires.</div>
+ <div class="row" style="margin-top:14px"><button type="button" class="sec" id="iCancel" style="flex:1">Annuler</button><button type="submit" style="flex:2">Enregistrer</button></div>
+ <button type="button" class="sec hide" id="iDel" style="width:100%;color:var(--rouge)">🗑 Supprimer</button>
+</form></dialog>
+
+<input type="file" id="file" accept=".json,.xml,.xlsx,.xlsm" multiple class="hide">
+<script>
+"use strict";
+const CATS=["Salaire","Prime / Remboursement","Virement reçu","Logement","Énergie & Charges","Assurances","Courses & Nourriture","Restaurants & Sorties","Transport & Carburant","Voiture (entretien/assurance)","Santé","Vêtements & Shopping","Loisirs & Abonnements","Voyages","Cadeaux","Impôts","Crédit","Frais bancaires","Retrait espèces","Virement émis","Divers"];
+const REV=["Salaire","Prime / Remboursement","Virement reçu"];
+const PAL=["#0284c7","#7c3aed","#0d9488","#f97316","#dc2626","#ca8a04","#db2777","#4f46e5","#059669","#ea580c","#0891b2","#9333ea"];
+const SEC={depenses:["Depenses","Depense"],recurrentes:["Recurrentes","Recurrente"],salaires:["Salaires","Salaire"],prets:["Prets","Pret"],interessement:["Interessements","Interessement"],groupes:["Groupes","Groupe"]};
+const NUM=new Set(["montant","net","brut","impot","capital","taux","duree","assurance","premiere_reelle"]);
+const VER="26.6-a",KEY="depenses_v1",FKEY="depenses_fold";
+const TKEY="depenses_tab",TIDS=["home","ana","rec","cred","sal","tax","int","sante","data"];
+let D=load(),tab=loadTab(),per="m:"+TODAY().slice(0,7),gran="jour",q="",sens="Dépense";
+let FOLD=(()=>{try{return JSON.parse(localStorage.getItem(FKEY))||{}}catch(e){return{}}})();
+function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.depenses)return r}catch(e){}return{version:1,depenses:[],recurrentes:[],salaires:[],prets:[]}}
+function grpNames(){const used=[...new Set(D.depenses.map(o=>o.groupe).filter(Boolean))];let L=[...new Set((D.groupes||[]).map(g=>g&&g.nom!=null?g.nom:g).filter(n=>used.includes(n)))];
+ used.filter(n=>!L.includes(n)).sort((a,b)=>a.localeCompare(b,"fr")).forEach(n=>L.push(n));D.groupes=L.map(nom=>({nom}));return L}
+function gsetpos(n,pos){const L=grpNames(),i=L.indexOf(n);if(i<0)return;L.splice(i,1);const p=Math.min(Math.max(parseInt(pos)||i+1,1),L.length+1);L.splice(p-1,0,n);D.groupes=L.map(nom=>({nom}));save();render()}
+function assignGroup(name,idxs,pos){const L=grpNames(),isNew=!L.includes(name);idxs.forEach(i=>{if(D.depenses[i])D.depenses[i].groupe=name});
+ if(isNew){const p=Math.min(Math.max(parseInt(pos)||L.length+1,1),L.length+1);L.splice(p-1,0,name);D.groupes=L.map(nom=>({nom}))}save()}
+function save(){const GL=grpNames();D.sgroupes=(D.sgroupes||[]).map(x=>({nom:x.nom,groupes:(x.groupes||[]).filter(g=>GL.includes(g))}));try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){alert("Stockage impossible")}}
+function loadTab(){try{const t=localStorage.getItem(TKEY);return TIDS.includes(t)?t:"home"}catch(e){return"home"}}
+function saveTab(){try{localStorage.setItem(TKEY,tab)}catch(e){}}
+function saveFold(){try{localStorage.setItem(FKEY,JSON.stringify(FOLD))}catch(e){}}
+const $=s=>document.querySelector(s);
+const eur=n=>(n||0).toLocaleString("fr-FR",{style:"currency",currency:"EUR",maximumFractionDigits:0});
+const eur2=n=>(n||0).toLocaleString("fr-FR",{style:"currency",currency:"EUR"});
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const isRev=o=>o.sens?o.sens==="Revenu":REV.includes(o.categorie);
+const fdate=d=>d?new Date(d+"T00:00:00").toLocaleDateString("fr-FR",{day:"2-digit",month:"short"}):"";
+const mlabel=m=>new Date(m+"-01T00:00:00").toLocaleDateString("fr-FR",{month:"long",year:"numeric"});
+/* Section repliable : titre cliquable avec petite icône */
+const card=(id,title,body,st)=>`<div class="card${FOLD[id]?" fold":""}"${st?` style="${st}"`:""}><h3 data-f="${id}"><span>${title}</span><i class="fi">▾</i></h3><div class="cb">${body}</div></div>`;
+
+function bars(map,col,tf){const e=Object.entries(map).sort((a,b)=>b[1]-a[1]);if(!e.length)return'<div class="empty">Aucune donnée</div>';const mx=e[0][1]||1;
+ return e.map(([k,v],i)=>`<div class="bar" style="--c:${col||PAL[i%PAL.length]}"${tf?` data-tip="${esc(tf(k,v))}"`:""}><span class="t">${esc(k)}</span><i style="width:${Math.max(3,v/mx*100*.45)}%"></i><span class="v">${eur(v)}</span></div>`).join("")}
+
+/* ---------- Dates (chaînes ISO AAAA-MM-JJ, sans décalage de fuseau) ---------- */
+function TODAY(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
+const D0=s=>new Date(s+"T12:00:00Z");
+function addD(s,n){const d=D0(s);d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
+function diffD(a,b){return Math.round((D0(b)-D0(a))/864e5)}
+function dow(s){return(D0(s).getUTCDay()+6)%7}
+function nextM(m){let[y,o]=m.split("-").map(Number);o++;if(o>12){o=1;y++}return y+"-"+String(o).padStart(2,"0")}
+function addM(s,k){const d=D0(s),day=d.getUTCDate();d.setUTCDate(1);d.setUTCMonth(d.getUTCMonth()+k);const dm=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0,12)).getUTCDate();d.setUTCDate(Math.min(day,dm));return d.toISOString().slice(0,10)}
+function isoWeek(m){const th=addD(m,3),y=+th.slice(0,4),j=y+"-01-04",m1=addD(j,-dow(j));return[y,Math.floor(diffD(m1,m)/7)+1]}
+const MS=["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."],cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const OPS=()=>D.depenses.filter(o=>/^\d{4}-\d{2}-\d{2}$/.test(o.date||""));
+
+/* ---------- Infobulles (survol à la souris, toucher / glisser au doigt) ---------- */
+const TC={r:"#f87171",g:"#2dd4bf",b:"#38bdf8",v:"#a78bfa",o:"#fb923c"};
+const tl=(k,v,c)=>`<div class="tl"><span>${k}</span><b${c?` style="color:${c}"`:""}>${v}</b></div>`;
+const topCats=(c,n=3)=>Object.entries(c||{}).sort((a,b)=>b[1]-a[1]).slice(0,n);
+function tipHtml(title,lines,cats){return`<div class="tt">${esc(title)}</div>${lines.join("")}${cats&&cats.length?`<div class="tc">${cats.map(([k,v])=>`<div class="tl"><span>${esc(k)}</span><span>${eur(v)}</span></div>`).join("")}</div>`:""}`}
+const tipEl=document.createElement("div");tipEl.id="tip";document.body.appendChild(tipEl);
+let actZ=null;
+function hideTip(){tipEl.style.display="none";if(actZ){actZ.classList.remove("act");actZ=null}}
+function showTip(z,x,y){if(actZ&&actZ!==z)actZ.classList.remove("act");actZ=z;z.classList.add("act");tipEl.innerHTML=z.getAttribute("data-tip");tipEl.style.display="block";
+ const w=tipEl.offsetWidth,h=tipEl.offsetHeight;let l=Math.min(Math.max(8,x-w/2),innerWidth-w-8),t=y-h-22;if(t<8)t=y+26;tipEl.style.left=l+"px";tipEl.style.top=t+"px"}
+function zoneAt(x,y){const e=document.elementFromPoint(x,y);return e&&e.closest?e.closest("[data-tip]"):null}
+document.addEventListener("pointerdown",e=>{const z=zoneAt(e.clientX,e.clientY);z?showTip(z,e.clientX,e.clientY):hideTip()});
+document.addEventListener("pointermove",e=>{const z=zoneAt(e.clientX,e.clientY);z?showTip(z,e.clientX,e.clientY):(actZ&&hideTip())});
+document.addEventListener("pointercancel",hideTip);
+document.addEventListener("scroll",hideTip,true);
+
+/* ---------- Graphiques SVG génériques ---------- */
+let CID=0;
+const cw=()=>Math.max(260,(($("#app")||{}).clientWidth||340)-30);
+function nTicks(mx){if(!(mx>0))return{top:3,t:[0,1,2,3]};const raw=mx/3,p=Math.pow(10,Math.floor(Math.log10(raw))),m=raw/p,s=(m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p;return{top:s*3,t:[0,s,s*2,s*3]}}
+const axl=v=>v>=1000?(+(v/1000).toFixed(1)+"").replace(".",",")+"k€":(+v.toFixed(1)+"").replace(".",",")+"€";
+function gridY(tk,Y,W){let yl="",gl="";tk.t.forEach(t=>{const y=Y(t).toFixed(1);yl+=`<text x="34" y="${(Y(t)+3).toFixed(1)}" text-anchor="end" font-size="9" fill="#64748b">${axl(t)}</text>`;gl+=`<line x1="0" x2="${W.toFixed(0)}" y1="${y}" y2="${y}" style="stroke:var(--line)" stroke-dasharray="3 4"/>`});return[yl,gl]}
+function barChart(it,o={}){if(!it.length)return'<div class="empty">Aucune donnée</div>';
+ const H=150,T=18,B=34,n=it.length,mx=Math.max(...it.map(x=>x.v),o.avg||0,0),tk=nTicks(mx),Y=v=>T+H-v/tk.top*H,avail=Math.max(120,cw()-38),W=Math.max(avail,n*(o.bw||40)),cell=W/n,bwid=Math.min(cell*.72,48),HT=T+H+B;
+ const[yl,gl]=gridY(tk,Y,W);let bs="",lb="",zn="";
+ it.forEach((x,i)=>{const cx=i*cell+cell/2,h=x.v>0?Math.max(x.v/tk.top*H,1.5):0;
+  bs+=`<rect x="${(cx-bwid/2).toFixed(1)}" y="${(T+H-h).toFixed(1)}" width="${bwid.toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="${x.c||o.col}" fill-opacity=".92"/>`;
+  if(o.vals&&x.v>0)bs+=`<text x="${cx.toFixed(1)}" y="${(T+H-h-4).toFixed(1)}" font-size="9" font-weight="700" text-anchor="middle" style="fill:var(--txt)">${kfmt(x.v)}</text>`;
+  if(x.l1)lb+=`<text x="${cx.toFixed(1)}" y="${T+H+13}" font-size="8.5" text-anchor="middle" fill="#64748b">${esc(x.l1)}</text>`;
+  if(x.l2)lb+=`<text x="${cx.toFixed(1)}" y="${T+H+25}" font-size="8" text-anchor="middle" fill="#94a3b8">${esc(x.l2)}</text>`;
+  zn+=`<rect class="hz" x="${(i*cell).toFixed(1)}" y="0" width="${cell.toFixed(1)}" height="${HT}"${x.tip?` data-tip="${esc(x.tip)}"`:""}/>`});
+ const av=o.avg>0?`<line x1="0" x2="${W.toFixed(0)}" y1="${Y(o.avg).toFixed(1)}" y2="${Y(o.avg).toFixed(1)}" stroke="#64748b" stroke-width="1.5" stroke-dasharray="6 4"/>`:"";
+ return`<div class="ch"><svg class="yax" width="38" height="${HT}">${yl}</svg><div class="sc${W<=avail+1?" fit":""}" data-end="1"><svg width="${W.toFixed(0)}" height="${HT}">${gl}${av}${bs}${lb}${zn}</svg></div></div>${o.lg||""}`}
+/* Barres empilées : chaque élément = {l1,segs:[{v,c,o}],tip} ; o.avg = ligne pointillée de moyenne */
+function stackChart(it,o={}){if(!it.length)return'<div class="empty">Aucune donnée</div>';
+ const H=150,T=18,B=34,n=it.length,mx=Math.max(...it.map(x=>x.segs.reduce((s,g)=>s+g.v,0)),0,o.avg||0),tk=nTicks(mx),Y=v=>T+H-v/tk.top*H,avail=Math.max(120,cw()-38),W=Math.max(avail,n*(o.bw||40)),cell=W/n,bwid=Math.min(cell*.72,48),HT=T+H+B;
+ const[yl,gl]=gridY(tk,Y,W);let bs="",lb="",zn="";
+ it.forEach((x,i)=>{const cx=i*cell+cell/2;let acc=0;
+  x.segs.forEach((g,j)=>{if(!(g.v>0))return;const h=Math.max(g.v/tk.top*H,.6),y=T+H-(acc+g.v)/tk.top*H;acc+=g.v;
+   bs+=`<rect x="${(cx-bwid/2).toFixed(1)}" y="${y.toFixed(1)}" width="${bwid.toFixed(1)}" height="${h.toFixed(1)}" fill="${g.c}" fill-opacity="${g.o??.92}"/>`});
+  if(x.l1)lb+=`<text x="${cx.toFixed(1)}" y="${T+H+13}" font-size="8.5" text-anchor="middle" fill="#64748b">${esc(x.l1)}</text>`;
+  zn+=`<rect class="hz" x="${(i*cell).toFixed(1)}" y="0" width="${cell.toFixed(1)}" height="${HT}"${x.tip?` data-tip="${esc(x.tip)}"`:""}/>`});
+ return`<div class="ch"><svg class="yax" width="38" height="${HT}">${yl}</svg><div class="sc${W<=avail+1?" fit":""}" data-end="1"><svg width="${W.toFixed(0)}" height="${HT}">${gl}${bs}${o.avg>0?`<line x1="0" x2="${W.toFixed(0)}" y1="${Y(o.avg).toFixed(1)}" y2="${Y(o.avg).toFixed(1)}" stroke="#64748b" stroke-width="1.5" stroke-dasharray="6 4"/>`:""}${lb}${zn}</svg></div></div>${o.lg||""}`}
+function areaChart(it,o={}){if(!it.length)return'<div class="empty">Aucune donnée</div>';
+ const H=150,T=18,B=26,n=it.length,two=it.some(x=>x.v2!=null),tk=nTicks(Math.max(...it.map(x=>Math.max(x.v,x.v2||0)),0)),Y=v=>T+H-v/tk.top*H,W=Math.max(120,cw()-38),cell=W/n,HT=T+H+B,id="ga"+(++CID),X=i=>(i+.5)*cell;
+ const[yl,gl]=gridY(tk,Y,W);let lb="",zn="",dots="";
+ const ser=(k,col,gid)=>{const d="M"+it.map((x,i)=>`${X(i).toFixed(1)} ${Y(x[k]||0).toFixed(1)}`).join("L");
+  if(n<=31)it.forEach((x,i)=>{dots+=`<circle cx="${X(i).toFixed(1)}" cy="${Y(x[k]||0).toFixed(1)}" r="3" fill="${col}"/>`});
+  return`<path d="${d}L${X(n-1).toFixed(1)} ${T+H}L${X(0).toFixed(1)} ${T+H}Z" fill="url(#${gid})"/><path d="${d}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linejoin="round"/>`};
+ const gd=(gid,col,op)=>`<linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity="${op}"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient>`;
+ const st=Math.max(1,Math.ceil(n/5)),idx=[];for(let i=0;i<n;i+=st)idx.push(i);if(n-1-idx[idx.length-1]>=st*.6)idx.push(n-1);
+ it.forEach((x,i)=>{zn+=`<rect class="hz" x="${(i*cell).toFixed(1)}" y="0" width="${cell.toFixed(1)}" height="${HT}"${x.tip?` data-tip="${esc(x.tip)}"`:""}/>`});
+ idx.forEach(i=>{const x=Math.min(Math.max(X(i),16),W-16);lb+=`<text x="${x.toFixed(1)}" y="${T+H+15}" font-size="8.5" text-anchor="middle" fill="#64748b">${esc(it[i].l||"")}</text>`});
+ const s1=ser("v",o.col,id),s2=two?ser("v2",o.col2,id+"b"):"";
+ return`<div class="ch"><svg class="yax" width="38" height="${HT}">${yl}</svg><div class="sc fit"><svg width="${W.toFixed(0)}" height="${HT}"><defs>${gd(id,o.col,.42)}${two?gd(id+"b",o.col2,.3):""}</defs>${gl}${s2}${s1}${dots}${lb}${zn}</svg></div></div>${o.lg||""}`}
+
+/* ---------- Périodes et regroupements (jour / semaine / mois / année) ---------- */
+const G=[["jour","Jour"],["semaine","Semaine"],["mois","Mois"],["annee","Année"]],UN={jour:"jour",semaine:"semaine",mois:"mois",annee:"an"},TT={jour:"jour",semaine:"semaine",mois:"mois",annee:"année"},BW={jour:18,semaine:34,mois:44,annee:64},CAP={jour:400,semaine:260,mois:240,annee:60};
+function perRange(){const T=TODAY(),L=OPS(),last=L.reduce((m,o)=>o.date>m?o.date:m,""),first=L.reduce((m,o)=>o.date<m?o.date:m,"9999-99-99"),hi=last>T?last:T,ref=last||T;let a,b;
+ if(per.startsWith("m:")){const m=per.slice(2);a=m+"-01";b=addD(nextM(m)+"-01",-1)}
+ else if(per.startsWith("y:")){const y=per.slice(2);a=y+"-01-01";b=y+"-12-31"}
+ else if(per==="all"){a=first==="9999-99-99"?T:first;b=hi}
+ else{b=ref;a=addD(addM(ref,-parseInt(per)),1)}
+ if(b>hi)b=hi;if(a>b)a=b;return{a,b}}
+function mkBuckets(a,b,g){const o=[];
+ if(g==="jour")for(let d=a;d<=b;d=addD(d,1))o.push(d);
+ else if(g==="semaine")for(let d=addD(a,-dow(a));d<=b;d=addD(d,7))o.push(d);
+ else if(g==="mois")for(let m=a.slice(0,7);m<=b.slice(0,7);m=nextM(m))o.push(m);
+ else for(let y=+a.slice(0,4);y<=+b.slice(0,4);y++)o.push(""+y);
+ return o}
+function trunc(a,b,g){const n=CAP[g];let m=a;
+ if(g==="jour")m=addD(b,-(n-1));else if(g==="semaine")m=addD(b,-7*(n-1));else if(g==="mois")m=addM(b.slice(0,7)+"-01",-(n-1));else m=(+b.slice(0,4)-(n-1))+"-01-01";
+ return m>a?m:a}
+const bkey=(g,d)=>g==="jour"?d:g==="semaine"?addD(d,-dow(d)):g==="mois"?d.slice(0,7):d.slice(0,4);
+function aggr(L,a,b,g){const keys=mkBuckets(a,b,g),M=new Map(keys.map(k=>[k,{k,d:0,r:0,n:0,c:{}}]));
+ L.forEach(o=>{const x=M.get(bkey(g,o.date));if(!x)return;x.n++;if(isRev(o))x.r+=o.montant;else{x.d+=o.montant;x.c[o.categorie]=(x.c[o.categorie]||0)+o.montant}});
+ return keys.map(k=>M.get(k))}
+function ttl(g,k){if(g==="jour")return cap(D0(k).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric",timeZone:"UTC"}));
+ if(g==="semaine"){const e=addD(k,6);return`Semaine ${isoWeek(k)[1]} · ${k.slice(8)}/${k.slice(5,7)} → ${e.slice(8)}/${e.slice(5,7)}/${e.slice(0,4)}`}
+ return g==="mois"?cap(mlabel(k)):k}
+function lbl(g,k,i){if(g==="jour"){const m=+k.slice(5,7);return[String(+k.slice(8)),(k.slice(8)==="01"||i===0)?MS[m-1].replace(".",""):""]}
+ if(g==="semaine")return[k.slice(8)+"/"+k.slice(5,7),"S"+isoWeek(k)[1]];
+ if(g==="mois"){const m=+k.slice(5,7);return[MS[m-1].replace(".",""),(m===1||i===0)?k.slice(0,4):""]}
+ return[k,""]}
+function bTip(g,x){const l=[tl("Dépenses",eur2(x.d),TC.r)];if(x.r>0)l.push(tl("Revenus",eur2(x.r),TC.g),tl("Solde",eur2(x.r-x.d),TC.b));l.push(tl("Opérations",x.n));return tipHtml(ttl(g,x.k),l,topCats(x.c))}
+function perSel(){const ms=months().slice(),ys=[...new Set(ms.map(m=>m.slice(0,4)))].sort().reverse(),o=(v,l)=>`<option value="${v}" ${v===per?"selected":""}>${esc(l)}</option>`;
+ return`<optgroup label="Périodes">${[["all","Tout l'historique"],["12m","12 derniers mois"],["6m","6 derniers mois"],["3m","3 derniers mois"]].map(x=>o(x[0],x[1])).join("")}</optgroup><optgroup label="Années">${ys.map(y=>o("y:"+y,y)).join("")}</optgroup><optgroup label="Mois">${ms.map(m=>o("m:"+m,cap(mlabel(m)))).join("")}</optgroup>`}
+
+/* ---------- Tableau récapitulatif par année ---------- */
+function recap(){const L=OPS();if(!L.length)return'<div class="empty">Aucune donnée</div>';
+ const Y={},T={nd:0,d:0,nr:0,r:0};
+ L.forEach(o=>{const y=o.date.slice(0,4),x=Y[y]??={nd:0,d:0,nr:0,r:0};if(isRev(o)){x.nr++;x.r+=o.montant;T.nr++;T.r+=o.montant}else{x.nd++;x.d+=o.montant;T.nd++;T.d+=o.montant}});
+ const row=(l,x,tot)=>{const df=x.r-x.d,tx=x.r>0?df/x.r*100:null,c=df>=0?"pos":"neg";
+  return`<tr${tot?' class="tot"':""}><th>${l}</th><td>${x.nd}</td><td>${eur(x.d)}</td><td>${eur(x.r)}</td><td class="${c}">${df>0?"+":""}${eur(df)}</td><td class="${c}">${tx==null?"—":tx.toFixed(1).replace(".",",")+" %"}</td></tr>`};
+ const ys=Object.keys(Y).sort().reverse();
+ return`<div class="tw"><table class="rc"><thead><tr><th rowspan="2">Année</th><th colspan="2" class="g" style="color:var(--rouge)">Dépenses</th><th class="g" style="color:var(--vert)">Revenus</th><th colspan="2" class="g" style="color:var(--bleu)">Bilan</th></tr>
+ <tr><th>Nombre</th><th>Montant</th><th>Montant</th><th>Différence</th><th>Épargne</th></tr></thead>
+ <tbody>${ys.map(y=>row(y,Y[y])).join("")}${ys.length>1?row("Total",T,1):""}</tbody></table></div>`}
+
+/* ---------- Cartographie mensuelle (années en lignes, mois en colonnes) ---------- */
+function heat(){const L=OPS();if(!L.length)return'<div class="empty">Aucune donnée</div>';
+ const S={};L.forEach(o=>{const k=o.date.slice(0,7),x=S[k]??={d:0,r:0,n:0,c:{}};x.n++;if(isRev(o))x.r+=o.montant;else{x.d+=o.montant;x.c[o.categorie]=(x.c[o.categorie]||0)+o.montant}});
+ const ks=Object.keys(S).sort(),k0=ks[0],T=TODAY().slice(0,7),k1=ks[ks.length-1]>T?ks[ks.length-1]:T,y0=+k0.slice(0,4),y1=+k1.slice(0,4);
+ let zm=0;ks.forEach(k=>{if(k<=k1)zm=Math.max(zm,S[k].d)});zm=zm||1;
+ const HN=["Jan","Fév","Mar","Avr","Mai","Jui","Jul","Aoû","Sep","Oct","Nov","Déc"],cl=v=>v>=10000?Math.round(v/1000)+"k":v>=1000?(v/1000).toFixed(1).replace(".",",")+"k":String(Math.round(v));
+ let h=`<div class="hm"><span></span>${HN.map(m=>`<span class="hh">${m}</span>`).join("")}`;
+ for(let y=y1;y>=y0;y--){h+=`<span class="hy">${y}</span>`;
+  for(let m=1;m<=12;m++){const k=y+"-"+String(m).padStart(2,"0");if(k<k0||k>k1){h+='<div class="hc off"></div>';continue}
+   const x=S[k]||{d:0,r:0,n:0,c:{}},a=x.d/zm,tp=tipHtml(cap(mlabel(k)),[tl("Dépenses",eur2(x.d),TC.r),...(x.r>0?[tl("Revenus",eur2(x.r),TC.g),tl("Solde",eur2(x.r-x.d),TC.b)]:[]),tl("Opérations",x.n)],topCats(x.c));
+   h+=`<div class="hc" style="background:rgba(220,38,38,${(.08+.87*a).toFixed(2)});color:${a>.5?"#fff":"var(--txt)"}" data-tip="${esc(tp)}">${cl(x.d)}</div>`}}
+ return h+`</div><div class="hl"><span>0</span><i></i><span>${eur(zm)}</span></div>`}
+
+function months(){return[...new Set(OPS().map(o=>o.date.slice(0,7)).concat([TODAY().slice(0,7)]))].sort().reverse()}
+function fixPer(){if(per.startsWith("m:")&&!months().includes(per.slice(2)))per="m:"+TODAY().slice(0,7)}
+
+/* ---------- Onglet 1 : période + revenus/dépenses/solde + liste ---------- */
+function selSum(){let d=0,r=0,n=0;UI.sel.forEach(i=>{const o=D.depenses[i];if(!o)return;n++;if(isRev(o))r+=o.montant;else d+=o.montant});return{n,d,r}}
+const cg=v=>v>0?{l:"Coût net",c:"orange",v}:v<0?{l:"Gain net",c:"vert",v:-v}:{l:"Coût net",c:"orange",v:0};
+const cgTxt=v=>v>0?"coût "+eur2(v):v<0?"gain "+eur2(-v):"0,00 €";
+function selHtml(){const s=selSum(),c=cg(s.d-s.r);return`<div class="kpis k3" style="margin-top:0"><div class="kpi" style="--c:var(--rouge)"><span>Dépenses</span><b>${eur2(s.d)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Revenus</span><b>${eur2(s.r)}</b></div><div class="kpi" style="--c:var(--${c.c})"><span>${c.l}</span><b>${eur2(c.v)}</b></div></div>`}
+function selLine(){const s=selSum(),c=cg(s.d-s.r);return s.n?s.n+" sélectionnée"+(s.n>1?"s":"")+" · "+c.l+" "+eur2(c.v):"Touche des opérations"}
+function refSel(){const l=$("#selLine");if(l)l.textContent=selLine()}
+function curTgt(){return UI.gt||UI.gd||(UI.hg!=="all"&&!UI.hg.startsWith("sg:")?UI.hg:"__new")}
+function yearStats(g){const M={};D.depenses.forEach(o=>{if(o.groupe!==g||!o.date)return;const y=o.date.slice(0,4),x=M[y]??={y,d:0,r:0};if(isRev(o))x.r+=o.montant;else x.d+=o.montant});return Object.values(M).sort((a,b)=>a.y.localeCompare(b.y))}
+function vHome(){
+ fixPer();
+ const{a,b}=perRange(),used={};D.depenses.forEach(o=>{if(o.date)used[o.categorie]=1});
+ const cats=Object.keys(used).sort((x,y)=>x.localeCompare(y,"fr")),
+ grs=grpNames();
+ if(UI.scat!=="all"&&!used[UI.scat])UI.scat="all";
+ const sgs=D.sgroupes||[],hgSG=UI.hg.startsWith("sg:")?sgs.find(x=>x.nom===UI.hg.slice(3)):null;if(UI.hg!=="all"&&!grs.includes(UI.hg)&&!hgSG)UI.hg="all";const hgN=hgSG?hgSG.nom:UI.hg;
+ if(UI.gd&&!grs.includes(UI.gd))UI.gd="";
+ if(UI.gt&&UI.gt!=="__new"&&!grs.includes(UI.gt))UI.gt="";
+ const t=nrm(q.trim()),filt=!!t||UI.scat!=="all"||UI.hs!=="all"||UI.hg!=="all",sm=UI.selMode;
+ /* Avec un groupe choisi, la période est ignorée : le groupe est affiché en entier */
+ const L=D.depenses.map((o,i)=>({...o,i})).filter(o=>/^\d{4}-\d{2}-\d{2}$/.test(o.date||"")&&(UI.hg!=="all"?(hgSG?hgSG.groupes.includes(o.groupe):o.groupe===UI.hg):(o.date>=a&&o.date<=b))&&(UI.hs==="all"||(isRev(o)?"Revenu":"Dépense")===UI.hs)&&(UI.scat==="all"||o.categorie===UI.scat)&&(!t||nrm(o.libelle).includes(t))).sort((x,y)=>y.date.localeCompare(x.date)||y.i-x.i);
+ const r=L.filter(isRev).reduce((s,o)=>s+o.montant,0),d=L.filter(o=>!isRev(o)).reduce((s,o)=>s+o.montant,0),gk=cg(d-r);
+ const GS=grs.map((g,gi)=>{const l=D.depenses.filter(o=>o.groupe===g),dd=l.filter(o=>!isRev(o)).reduce((s,o)=>s+o.montant,0),rr=l.filter(isRev).reduce((s,o)=>s+o.montant,0);return{g,pos:gi+1,n:l.length,d:dd,r:rr,ys:yearStats(g)}});
+ const tgt=curTgt(),isNew=tgt==="__new";
+ /* Section : créer un groupe / ajouter des opérations à un groupe */
+ const tn=isNew?((UI.gn||"").trim()||"nouveau groupe"):tgt,
+ selBar=sm?`<div class="selbar"><div class="t"><b>🧳 ${esc(tn)}</b><span id="selLine">${selLine()}</span></div><button class="sec" id="selEnd">Annuler</button><button id="selSave">Ajouter</button></div>`:"";
+ /* Détail du groupe choisi dans la liste déroulante : position, renommer, dissoudre, coût / gain par année, opérations */
+ const ys=UI.gd?yearStats(UI.gd):[],gi0=grs.indexOf(UI.gd),cgv=v=>(v>0?"Coût ":v<0?"Gain ":"")+eur2(Math.abs(v)),
+ gOps=UI.gd?D.depenses.map((o,i)=>({...o,i})).filter(o=>o.groupe===UI.gd&&o.date).sort((x,y)=>y.date.localeCompare(x.date)||y.i-x.i):[];
+ const mg=UI.gd?`<div class="sh" style="margin-top:14px">🧳 Détail du groupe « ${esc(UI.gd)} »</div>
+ <button id="gAddOps" style="width:100%;margin-bottom:10px">➕ Ajouter des opérations à ce groupe</button>
+ <label>N° dans le tableau des groupes</label>
+ <div class="row" style="margin:0"><select id="gPos" style="flex:1;min-width:0">${grs.map((g,k)=>`<option value="${k+1}" ${k===gi0?"selected":""}>${k+1}${k===gi0?" · position actuelle":" · "+esc(g)}</option>`).join("")}</select></div>
+ <div class="row" style="margin:10px 0 0"><button class="sec" id="gRen" style="flex:1">✎ Renommer</button><button class="sec" id="gDel" style="flex:1;color:var(--rouge)">Dissoudre</button></div>
+ ${ys.length>1?`<div class="sh" style="margin-top:12px">Coût / gain par année</div><div class="tw"><table class="rc" data-sk="gyr"><thead><tr><th>Année</th><th>Dépenses</th><th>Revenus</th><th>Coût / gain net</th></tr></thead><tbody>${ys.map(y=>{const v=y.d-y.r;return`<tr><th>${y.y}</th><td class="neg">${eur2(y.d)}</td><td class="pos">${eur2(y.r)}</td><td data-v="${v}" class="${v>0?"neg":"pos"}">${cgv(v)}</td></tr>`}).join("")}<tr class="tot"><th>Total</th><td class="neg">${eur2(ys.reduce((a,y)=>a+y.d,0))}</td><td class="pos">${eur2(ys.reduce((a,y)=>a+y.r,0))}</td><td class="${ys.reduce((a,y)=>a+y.d-y.r,0)>0?"neg":"pos"}">${cgv(ys.reduce((a,y)=>a+y.d-y.r,0))}</td></tr></tbody></table></div>`:""}
+ <div class="sh" style="margin-top:12px">Opérations du groupe · ${gOps.length}</div><div class="tw"><table class="rc"><thead><tr><th>Date</th><th>Libellé</th><th>Montant</th></tr></thead><tbody>${gOps.map(o=>`<tr data-gop="${o.i}" style="cursor:pointer"><td style="white-space:nowrap">${fdy(o.date)}</td><td style="text-align:left;white-space:normal">${esc(o.libelle)}</td><td class="${isRev(o)?"pos":"neg"}">${isRev(o)?"+":"−"}${eur2(o.montant)}</td></tr>`).join("")}</tbody></table></div>`:"";
+ /* Tableau de tous les groupes */
+ const tbl=GS.length?`<div class="tw"><table class="rc" data-sk="grp"><thead><tr><th>N°</th><th>Groupe</th><th>Dépenses</th><th>Revenus</th><th>Coût / gain net</th></tr></thead><tbody>${GS.map(x=>{const v=x.d-x.r;return`<tr><td data-v="${x.pos}"><b>${x.pos}</b></td><td style="text-align:left;white-space:normal;min-width:110px"><b>${esc(x.g)}</b><div class="d">${x.n} opération${x.n>1?"s":""}</div></td><td data-v="${x.d}" class="neg">${eur2(x.d)}</td><td data-v="${x.r}" class="pos">${eur2(x.r)}</td><td data-v="${v}" class="${v>0?"neg":"pos"}">${v>0?"Coût ":v<0?"Gain ":""}${eur2(Math.abs(v))}</td></tr>`}).join("")}</tbody></table></div>`:'<div class="empty">Aucun groupe pour le moment</div>';
+ /* Groupes de groupes (ex. « Voyages », « Travail ») */
+ const SG=sgs.map(x=>{const ms=x.groupes.filter(g=>grs.includes(g)),l=D.depenses.filter(o=>o.date&&ms.includes(o.groupe)),dd=l.filter(o=>!isRev(o)).reduce((s,o)=>s+o.montant,0),rr=l.filter(isRev).reduce((s,o)=>s+o.montant,0);return{s:x,ms,n:l.length,d:dd,r:rr}});
+ if(UI.sg&&!sgs.some(x=>x.nom===UI.sg))UI.sg="";
+ const sgc=SG.find(x=>x.s.nom===UI.sg),cgs=v=>(v>0?"Coût ":v<0?"Gain ":"")+eur2(Math.abs(v));
+ const sgTbl=SG.length?`<div class="tw"><table class="rc" data-sk="sgrp"><thead><tr><th>Groupe de groupes</th><th>Dépenses</th><th>Revenus</th><th>Coût / gain net</th></tr></thead><tbody>${SG.map(x=>{const v=x.d-x.r;return`<tr><td style="text-align:left;white-space:normal;min-width:110px"><b>${esc(x.s.nom)}</b><div class="d">${x.ms.length} groupe${x.ms.length>1?"s":""} · ${x.n} opération${x.n>1?"s":""}</div></td><td data-v="${x.d}" class="neg">${eur2(x.d)}</td><td data-v="${x.r}" class="pos">${eur2(x.r)}</td><td data-v="${v}" class="${v>0?"neg":"pos"}">${cgs(v)}</td></tr>`}).join("")}</tbody></table></div>`:'<div class="empty">Aucun groupe de groupes pour le moment</div>';
+ const sgDet=sgc?`<div class="sh" style="margin-top:14px">🗂 Détail de « ${esc(sgc.s.nom)} »</div><div class="row" style="margin:0 0 10px"><button class="sec" id="sgEdit" style="flex:1">✎ Modifier</button><button class="sec" id="sgDel" style="flex:1;color:var(--rouge)">Supprimer</button></div>
+ <div class="tw"><table class="rc"><thead><tr><th>Groupe</th><th>Dépenses</th><th>Revenus</th><th>Coût / gain net</th></tr></thead><tbody>${sgc.ms.map(g=>{const x=GS.find(z=>z.g===g),v=x.d-x.r;return`<tr><td style="text-align:left;white-space:normal"><b>${esc(g)}</b></td><td class="neg">${eur2(x.d)}</td><td class="pos">${eur2(x.r)}</td><td class="${v>0?"neg":"pos"}">${cgs(v)}</td></tr>`}).join("")}<tr class="tot"><th>Total</th><td class="neg">${eur2(sgc.d)}</td><td class="pos">${eur2(sgc.r)}</td><td class="${sgc.d-sgc.r>0?"neg":"pos"}">${cgs(sgc.d-sgc.r)}</td></tr></tbody></table></div>
+ <div class="d" style="margin-top:8px">Astuce : choisis ce groupe de groupes dans le filtre « Groupe » en haut pour voir toutes ses opérations.</div>`:"";
+ const sgCard=card("home-sg","🗂 Groupes de groupes",(grs.length?`<button id="bAddSG" style="width:100%;margin-bottom:10px">➕ Nouveau groupe de groupes</button>`:'<div class="d" style="margin-bottom:8px">Crée d\'abord un groupe pour pouvoir les regrouper.</div>')+sgTbl+(sgs.length?`<label style="margin-top:12px">Voir le détail</label><select data-u="sg"><option value="">— Choisir —</option>${sgs.map(x=>opt(x.nom,x.nom,UI.sg)).join("")}</select>`:"")+sgDet);
+
+ return`<div class="card" style="margin-top:0"><div class="sh">🗓️ Période affichée et recherche</div>
+ <label>Période</label><select id="pSel">${perSel()}</select>
+ <label>Rechercher (libellé)</label><input id="q" placeholder="🔍 Ex. coiffeur, pharmacie…" value="${esc(q)}" autocomplete="off">
+ <div class="row" style="margin:0"><div style="flex:1;min-width:0"><label>Catégorie</label><select data-u="scat"><option value="all">Toutes</option>${cats.map(c=>opt(c,c,UI.scat)).join("")}</select></div>
+ <div style="flex:1;min-width:0"><label>Type</label><select data-u="hs">${opt("all","Les deux",UI.hs)}${opt("Dépense","Dépenses",UI.hs)}${opt("Revenu","Revenus",UI.hs)}</select></div></div>
+ ${grs.length?`<label>Groupe</label><select data-u="hg"><option value="all">Tous (selon la période)</option>${grs.map(g=>opt(g,"🧳 "+g,UI.hg)).join("")}${sgs.length?`<optgroup label="Groupes de groupes">${sgs.map(x=>opt("sg:"+x.nom,"🗂 "+x.nom,UI.hg)).join("")}</optgroup>`:""}</select>`:""}
+ ${filt?'<button class="sec" id="sReset" style="width:100%;margin-top:10px">↺ Réinitialiser la recherche</button>':""}
+</div>
+ <div class="kpis"><div class="kpi" style="--c:var(--vert)"><span>Revenus</span><b>${eur(r)}</b></div><div class="kpi" style="--c:var(--rouge)"><span>Dépenses</span><b>${eur(d)}</b></div>
+ <div class="kpi wide" style="--c:var(--bleu)"><span>Solde</span><b>${eur(r-d)}</b></div>
+ ${UI.hg!=="all"?`<div class="kpi wide" style="--c:var(--${gk.c})"><span>${gk.l} ${hgSG?"du groupe de groupes":"du groupe"} « ${esc(hgN)} »</span><b>${eur(gk.v)}</b></div>`:""}</div>
+ <div id="opList" style="scroll-margin-top:70px">${card("home-list",(UI.hg!=="all"?(hgSG?"Groupe de groupes":"Groupe")+" « "+esc(hgN)+" » · ":"Opérations sur la période · ")+L.length,`${sm?`<div style="background:color-mix(in srgb,var(--bleu) 12%,var(--card));border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:.82rem">☑ Touche les opérations à ajouter au groupe « ${esc(tn)} ». Les filtres et la recherche restent utilisables.<div class="row" style="margin:8px 0 0"><button class="sec" id="selAll" style="flex:1">Tout sélectionner</button><button class="sec" id="selNone" style="flex:1">Tout désélectionner</button></div><button class="sec" id="selUn" style="width:100%;margin-top:6px">Retirer du groupe les opérations cochées</button></div>`:""}<div class="lst">${L.length?L.map(o=>`<div class="op${sm&&UI.sel.has(o.i)?" sel":""}" data-op="${o.i}"><div class="m"><b>${esc(o.libelle)}</b><small>${fdy(o.date)} · ${esc(o.categorie)}${o.groupe?" · 🧳 "+esc(o.groupe):""}</small></div><span class="am ${isRev(o)?"pos":"neg"}">${isRev(o)?"+":"−"}${eur2(o.montant)}</span><span class="ck" style="color:var(--mut)">${sm?(UI.sel.has(o.i)?"☑":"☐"):"✎"}</span></div>`).join(""):'<div class="empty">Aucune opération</div>'}</div>`,"margin-top:0")}</div>
+ <div id="grpSec" style="scroll-margin-top:70px"><div class="sh" style="margin:18px 4px 8px">🧳 Groupes de dépenses</div>
+ ${card("home-grp","🧳 Mes groupes · touche un titre pour trier",tbl+(grs.length?`<label style="margin-top:12px">Voir le détail d'un groupe</label><select data-u="gd"><option value="">— Choisir un groupe —</option>${grs.map((g,k)=>opt(g,(k+1)+". "+g,UI.gd||"")).join("")}</select>`:"")+mg)}</div><div id="sgSec">${sgCard}</div>${selBar}`}
+
+/* ---------- Onglet 2 : analyse ---------- */
+function vAna(){
+ fixPer();
+ const{a,b}=perRange(),L=OPS().filter(o=>o.date>=a&&o.date<=b),g=gran;
+ const d=L.filter(o=>!isRev(o)).reduce((s,o)=>s+o.montant,0),r=L.filter(isRev).reduce((s,o)=>s+o.montant,0),days=diffD(a,b)+1;
+ const cat={},cnt={};L.filter(o=>!isRev(o)).forEach(o=>{cat[o.categorie]=(cat[o.categorie]||0)+o.montant;cnt[o.categorie]=(cnt[o.categorie]||0)+1});
+ const ta=trunc(a,b,g),BK=aggr(L,ta,b,g);
+ const main=barChart(BK.map((x,i)=>{const[l1,l2]=lbl(g,x.k,i);return{l1,l2,v:x.d,tip:bTip(g,x)}}),{col:"#dc2626",bw:BW[g],vals:g==="mois"||g==="annee",
+  lg:`<div class="lg"><span><i style="background:#dc2626"></i>Dépenses</span></div>`});
+ /* Jour de la semaine : moyenne calculée depuis la toute première dépense */
+ const WD=["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"],WF=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"],ws=Array(7).fill(0),wn=Array(7).fill(0),wd=Array(7).fill(0);
+ const EX=OPS().filter(o=>!isRev(o));
+ if(EX.length){const f0=EX.reduce((m,o)=>o.date<m?o.date:m,"9999-99-99"),l0x=EX.reduce((m,o)=>o.date>m?o.date:m,""),l0=l0x>TODAY()?l0x:TODAY();
+  for(let x=f0;x<=l0;x=addD(x,1))wd[dow(x)]++;EX.forEach(o=>{const i=dow(o.date);ws[i]+=o.montant;wn[i]++})}
+ const wk=barChart(WD.map((l,i)=>{const m=wd[i]?ws[i]/wd[i]:0;return{l1:l,v:m,tip:tipHtml(WF[i],[tl("Moyenne / jour",eur2(m),TC.v),tl("Total",eur2(ws[i]),TC.r),tl("Opérations",wn[i]),tl("Jours concernés",wd[i])])}}),{col:"#7c3aed",bw:40,vals:1});
+ const MF=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"],mo=Array.from({length:12},()=>({s:0,n:0,c:0}));
+ if(EX.length){const f0=EX.reduce((m,o)=>o.date<m?o.date:m,"9999-99-99"),l0x=EX.reduce((m,o)=>o.date>m?o.date:m,""),l0=l0x>TODAY()?l0x:TODAY();
+  for(let k=f0.slice(0,7);k<=l0.slice(0,7);k=nextM(k))mo[+k.slice(5,7)-1].c++;EX.forEach(o=>{const x=mo[+o.date.slice(5,7)-1];x.s+=o.montant;x.n++})}
+ const mav=barChart(mo.map((x,i)=>{const m=x.c?x.s/x.c:0;return{l1:MS[i].replace(".",""),v:m,tip:tipHtml(MF[i],[tl("Moyenne / mois",eur2(m),TC.b),tl("Total",eur2(x.s),TC.r),tl("Opérations",x.n),tl("Mois concernés",x.c)])}}),{col:"#0284c7",bw:20});
+ return`${card("ana-recap","Récapitulatif par année",recap(),"margin-top:0")}
+ ${card("ana-heat","Cartographie mensuelle des dépenses",heat())}
+ ${card("ana-wk","Dépenses moyennes par jour de la semaine",wk)}
+ ${card("ana-mo","Dépenses moyennes par mois",mav)}
+ <div class="card"><div class="sh">🗓️ Période affichée</div><label>Période</label><select id="pSel">${perSel()}</select>
+ <div class="sh" style="margin-top:12px">📐 Regrouper par</div><div class="seg">${G.map(x=>`<button class="${x[0]===g?"":"sec"}" data-g="${x[0]}">${x[1]}</button>`).join("")}</div></div>
+ <div class="kpis k3"><div class="kpi" style="--c:var(--vert)"><span>Revenus</span><b>${eur(r)}</b></div><div class="kpi" style="--c:var(--rouge)"><span>Dépenses</span><b>${eur(d)}</b></div><div class="kpi" style="--c:var(--bleu)"><span>Solde</span><b>${eur(r-d)}</b></div><div class="kpi" style="--c:var(--violet)"><span>Épargne</span><b>${r>0?Math.round((r-d)/r*100):0} %</b></div><div class="kpi" style="--c:var(--orange)"><span>Moy. / jour</span><b>${eur(d/days)}</b></div><div class="kpi" style="--c:var(--bleu)"><span>Opérations</span><b>${L.length}</b></div></div>
+ ${card("ana-main","Dépenses par "+TT[g],main)}
+ ${card("ana-cf","Cashflow · "+perLabel(),cashflow(L))}`}
+
+/* ---------- Cashflow : diagramme de flux (revenus → budget → groupes → catégories) ---------- */
+function perLabel(){if(per.startsWith("m:"))return cap(mlabel(per.slice(2)));if(per.startsWith("y:"))return per.slice(2);if(per==="all")return"tout l'historique";return parseInt(per)+" derniers mois"}
+const CFG=[["Logement",["Logement","Énergie & Charges","Assurances"],"#a78bfa"],["Vie quotidienne",["Courses & Nourriture","Restaurants & Sorties","Santé","Vêtements & Shopping","Cadeaux","Divers"],"#38bdf8"],["Transport",["Transport & Carburant","Voiture (entretien/assurance)"],"#34d399"],["Loisirs & Voyages",["Loisirs & Abonnements","Voyages"],"#fbbf24"],["Crédit & Impôts",["Crédit","Impôts","Frais bancaires"],"#f87171"],["Autres",["Retrait espèces","Virement émis"],"#94a3b8"]];
+function cashflow(L){
+ const rv={},ex={},cn={},tot=o=>Object.values(o).reduce((a,b)=>a+b,0);
+ L.forEach(o=>{if(isRev(o))rv[o.categorie]=(rv[o.categorie]||0)+o.montant;else{ex[o.categorie]=(ex[o.categorie]||0)+o.montant;cn[o.categorie]=(cn[o.categorie]||0)+1}});
+ const R=tot(rv),Dp=tot(ex),Bud=Math.max(R,Dp);
+ if(!(Bud>0))return'<div class="empty">Aucune donnée</div>';
+ /* colonnes : 0 revenus, 1 budget, 2 groupes, 3 catégories */
+ const src=Object.entries(rv).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]).map(([n,v])=>({n,v,c:"#818cf8"}));
+ if(Dp>R)src.push({n:"Déficit",v:Dp-R,c:"#fb923c"});
+ const known=new Set(CFG.flatMap(g=>g[1])),grp=[];
+ CFG.forEach(([n,cs,c])=>{const ks=Object.keys(ex).filter(k=>ex[k]>0&&(cs.includes(k)||(n==="Autres"&&!known.has(k))));
+  if(ks.length){const lv=ks.map(k=>({n:k,v:ex[k],c,cnt:cn[k]})).sort((a,b)=>b.v-a.v);grp.push({n,v:lv.reduce((a,l)=>a+l.v,0),c,lv})}});
+ if(R>Dp)grp.push({n:"Épargne",v:R-Dp,c:"#2dd4bf",lv:[]});
+ grp.sort((a,b)=>b.v-a.v);
+ const leaves=grp.flatMap(g=>g.lv);
+ const ctr={n:"Budget",v:Bud,c:"#fdba74"};
+ const W=Math.max(cw(),680),nw=8,x0=4,x3=W-nw-4,sp=(x3-x0)/3,XS=[x0,x0+sp,x0+2*sp,x3],SL=17,GAP=6,sc=240/Bud;
+ const cols=[src,[ctr],grp,leaves];
+ cols.forEach(c=>c.forEach(n=>{n.h=Math.max(n.v*sc,2);n.so=0;n.io=0}));
+ const slot=n=>Math.max(n.h,SL)+GAP,colH=c=>c.reduce((a,n)=>a+slot(n),0),Hm=Math.max(...cols.map(colH));
+ cols.forEach((c,ci)=>{let y=10+(Hm-colH(c))/2;c.forEach(n=>{n.x=XS[ci];n.y=y+(slot(n)-GAP-n.h)/2;n.cy=n.y+n.h/2;n.ci=ci;y+=slot(n)})});
+ const pc=v=>fp(v/Bud*100);
+ let rb="",nd="",lb="";
+ const link=(s,t,v,c)=>{const th=Math.max(v*sc,1),y0=s.y+s.so,y1=t.y+t.io;s.so+=th;t.io+=th;
+  const xa=s.x+nw,xb=t.x,xm=(xa+xb)/2,tip=tipHtml(s.n+" → "+t.n,[tl("Montant",eur2(v),TC.b),tl("Part du budget",pc(v))]);
+  rb+=`<path class="rb" d="M${xa.toFixed(1)} ${y0.toFixed(1)}C${xm.toFixed(1)} ${y0.toFixed(1)} ${xm.toFixed(1)} ${y1.toFixed(1)} ${xb.toFixed(1)} ${y1.toFixed(1)}L${xb.toFixed(1)} ${(y1+th).toFixed(1)}C${xm.toFixed(1)} ${(y1+th).toFixed(1)} ${xm.toFixed(1)} ${(y0+th).toFixed(1)} ${xa.toFixed(1)} ${(y0+th).toFixed(1)}Z" fill="${c}" fill-opacity=".5" data-tip="${esc(tip)}"/>`};
+ src.forEach(n=>link(n,ctr,n.v,n.c));
+ grp.forEach(g=>link(ctr,g,g.v,g.c));
+ grp.forEach(g=>g.lv.forEach(l=>link(g,l,l.v,g.c)));
+ cols.forEach((c,ci)=>c.forEach(n=>{
+  const lines=[tl("Montant",eur2(n.v),TC.b),tl("Part du budget",pc(n.v))];if(n.cnt)lines.push(tl("Opérations",n.cnt),tl("Moyenne",eur2(n.v/n.cnt),TC.o));
+  const tip=esc(tipHtml(n.n,lines)),nm=n.n.length>20?n.n.slice(0,19)+"…":n.n,tx=nm+": "+eur(n.v),w=Math.round(tx.length*5.5+14),px=ci===0?n.x+nw+5:n.x-5-w;
+  nd+=`<rect x="${n.x.toFixed(1)}" y="${n.y.toFixed(1)}" width="${nw}" height="${n.h.toFixed(1)}" rx="3" fill="${n.c}" data-tip="${tip}"/>`;
+  lb+=`<g data-tip="${tip}"><rect x="${px.toFixed(1)}" y="${(n.cy-8.5).toFixed(1)}" width="${w}" height="17" rx="6" fill="#fff" fill-opacity=".93"/><text x="${(px+7).toFixed(1)}" y="${(n.cy+3.5).toFixed(1)}" font-size="10" font-weight="600" fill="#0f172a">${esc(tx)}</text></g>`}));
+ return`<div class="sc"><svg width="${W.toFixed(0)}" height="${(Hm+20).toFixed(0)}">${rb}${nd}${lb}</svg></div><div class="lg"><span>Touche un flux ou une étiquette pour le détail · fais glisser pour voir tout le schéma</span></div>`}
+
+/* ---------- Dépenses récurrentes (modifiables sur le téléphone) ---------- */
+function vRec(){const R=D.recurrentes,c=R.filter(r=>r.type==="Charge").reduce((a,r)=>a+r.montant,0),v=R.filter(r=>r.type==="Revenu").reduce((a,r)=>a+r.montant,0);
+ return`<button id="bAddRec" style="width:100%;margin-bottom:12px">➕ Ajouter une récurrence</button>
+ <div class="kpis"><div class="kpi" style="--c:var(--rouge)"><span>Charges / mois</span><b>${eur2(c)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Revenus / mois</span><b>${eur2(v)}</b></div>
+ <div class="kpi" style="--c:var(--bleu)"><span>Solde / mois</span><b>${eur2(v-c)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Charges / an</span><b>${eur2(c*12)}</b></div></div>
+ ${card("rec-list","Récurrentes · touche une ligne pour la modifier",`<div class="lst">${R.length?R.map((r,i)=>`<div class="op" data-rec="${i}"><div class="m"><b>${esc(r.libelle)}</b><small>${esc(r.categorie||"")} · ${r.type==="Revenu"?"Revenu":"Charge"}${r.groupe?" · 🧳 "+esc(r.groupe):""}</small></div><span class="am ${r.type==="Revenu"?"pos":"neg"}">${eur2(r.montant)}</span><span style="color:var(--mut)">✎</span></div>`).join(""):'<div class="empty">Aucune récurrence</div>'}</div>`)}`}
+
+/* ---------- Suivi crédit (tous les prêts regroupés) ---------- */
+function pmt(c,t,n){const i=t/1200;return i>0?c*i/(1-Math.pow(1+i,-n)):c/n}
+function sched(p){const n=Math.max(1,Math.round(p.duree)||240),i=p.taux/1200,m=pmt(p.capital,p.taux,n),st=p.date_debut||TODAY();let crd=p.capital;const S=[];
+ for(let k=0;k<n;k++){const it=Math.max(0,crd*i),cp=Math.min(crd,Math.max(0,m-it));crd=Math.max(0,crd-cp);S.push({k,d:addM(st,k),it,cp,crd})}
+ return{m,n,S}}
+/* Remboursement : année en cours par défaut (mois par mois), ou toutes les années */
+function crYear(P,yi){
+ const cy=TODAY().slice(0,4),yrs=[...new Set(P.flatMap(x=>x.S.map(r=>r.d.slice(0,4))))].sort().reverse();let y=UI.cy||cy;
+ if(y!=="all"&&!yrs.includes(y))y=yrs.includes(cy)?cy:yrs[0];
+ const lg='<div class="lg"><span><i style="background:#0d9488"></i>Capital</span><span><i style="background:#f97316"></i>Intérêts</span><span>Clair = à venir</span></div>',
+ sel='<label>Année</label><select data-u="cy">'+opt("all","Toutes les années",y)+yrs.map(a=>opt(a,a===cy?a+" (en cours)":a,y)).join("")+'</select>';
+ if(y==="all")return card("cr-yr","Remboursement par année : capital / intérêts",sel+stackChart(yi,{bw:34,lg}));
+ let tc=0,ti=0,ta=0;const it=[];
+ for(let m=1;m<=12;m++){const k=y+"-"+String(m).padStart(2,"0");let cp=0,i=0,as=0,fut=false,has=false;
+  P.forEach(x=>{const r=x.map.get(k);if(r){has=true;cp+=r.cp;i+=r.it;as+=x.as;if(r.k>=x.el)fut=true}});
+  tc+=cp;ti+=i;ta+=as;const o=fut?.35:.92;
+  it.push({l1:MS[m-1].replace(".",""),segs:[{v:cp,c:"#0d9488",o},{v:i,c:"#f97316",o}],tip:tipHtml(cap(mlabel(k)),has?[tl("Capital remboursé",eur2(cp),TC.g),tl("Intérêts",eur2(i),TC.o),tl("Assurance",eur2(as),TC.v),tl("Total mensualité",eur2(cp+i+as)),tl("Statut",fut?"à venir":"payée")]:[tl("Aucune échéance","—")])})}
+ const kp=(l,v,c)=>`<div class="kpi" style="--c:var(--${c})"><span>${l}</span><b>${eur(v)}</b></div>`;
+ return card("cr-yr","Remboursement "+y+" : capital / intérêts",sel+stackChart(it,{bw:26,lg})+'<div class="kpis">'+kp("Capital "+y,tc,"vert")+kp("Intérêts "+y,ti,"orange")+kp("Assurance "+y,ta,"violet")+kp("Total payé "+y,tc+ti+ta,"bleu")+'</div>')}
+function vCred(){
+ if(!D.prets.length)return'<div class="card" style="margin-top:0"><div class="empty">Aucun prêt<br>Appuie sur + pour en ajouter un.</div></div>';
+ const T=TODAY(),paidNow=OPS().some(o=>!isRev(o)&&o.date.slice(0,7)===T.slice(0,7)&&nrm(o.libelle).includes("remboursement credit immobilier"));
+ const P=D.prets.map(p=>{const s=sched(p),st=p.date_debut||T,dm=(+T.slice(0,4)-+st.slice(0,4))*12+(+T.slice(5,7)-+st.slice(5,7)),el=Math.max(0,Math.min(s.n,dm+(paidNow&&dm>=0?1:0)));
+  return{p,m:s.m,n:s.n,S:s.S,el,as:p.assurance||0,k0:s.S[0].d.slice(0,7),map:new Map(s.S.map(r=>[r.d.slice(0,7),r]))}});
+ const tot=f=>P.reduce((s,x)=>s+f(x),0);
+ const cap0=tot(x=>x.p.capital),pc=tot(x=>sum(x.S.slice(0,x.el),"cp")),pI=tot(x=>sum(x.S.slice(0,x.el),"it")),ti=tot(x=>sum(x.S,"it")),crd=Math.max(0,cap0-pc),cost=cap0+ti,w1=cost?pc/cost*100:0,w2=cost?pI/cost*100:0;
+ const mens=tot(x=>x.m),ass=tot(x=>x.as),left=Math.max(...P.map(x=>x.n-x.el)),end=P.map(x=>x.S[x.n-1].d.slice(0,7)).sort().pop(),first=P.map(x=>x.k0).sort()[0];
+ /* Par année : capital / intérêts (clair = à venir) */
+ const Y={};P.forEach(x=>x.S.forEach(r=>{const y=r.d.slice(0,4),o=Y[y]??={cp:0,it:0,cpP:0,itP:0,as:0,n:0};o.n++;o.cp+=r.cp;o.it+=r.it;o.as+=x.as;if(r.k<x.el){o.cpP+=r.cp;o.itP+=r.it}}));
+ const yi=Object.keys(Y).sort().map(y=>{const o=Y[y];return{l1:y,segs:[{v:o.cpP,c:"#0d9488"},{v:o.itP,c:"#f97316"},{v:o.cp-o.cpP,c:"#0d9488",o:.3},{v:o.it-o.itP,c:"#f97316",o:.3}],
+  tip:tipHtml(y,[tl("Capital remboursé",eur2(o.cp),TC.g),tl("Intérêts",eur2(o.it),TC.o),tl("Assurance",eur2(o.as),TC.v),tl("Total payé",eur2(o.cp+o.it+o.as)),tl("Mensualités",o.n)])}});
+ /* Capital restant dû cumulé de tous les prêts */
+ const crdI=[];for(let k=first;k<=end;k=nextM(k)){const v=P.reduce((s,x)=>s+(x.map.has(k)?x.map.get(k).crd:(k<x.k0?x.p.capital:0)),0),d=k+"-01";
+  crdI.push({l:mshort(d),v,tip:tipHtml(cap(mlabel(k)),[tl("Capital restant dû",eur2(v),TC.b),tl("Capital déjà remboursé",eur2(cap0-v),TC.g)])})}
+ const rem=x=>Math.max(0,x.p.capital-sum(x.S.slice(0,x.el),"cp")),pp=(a,b)=>b>0?Math.max(0,Math.min(100,a/b*100)):0,pr=v=>v.toFixed(0)+" %";
+ const lrow=(nm,sub,c0,rb,tot,ix)=>{const rs=Math.max(0,c0-rb);return`<tr${tot?' class="tot"':` data-pret="${ix}" style="cursor:pointer"`}><th>${nm}${ix!=null?' <span style="color:var(--mut)">✎</span>':""}${sub?`<div class="d">${sub}</div>`:""}<div class="pg mini"><i style="width:${pp(rb,c0).toFixed(1)}%;background:#0d9488"></i></div></th><td>${eur(c0)}</td><td class="pos">${eur(rb)}</td><td class="neg">${eur(rs)}</td><td>${pr(pp(rb,c0))}</td></tr>`};
+ const loans=card("cr-loans","Mes prêts · touche une ligne pour la modifier",`<div class="tw"><table class="rc"><thead><tr><th>Prêt</th><th>Prêt total</th><th>Remboursé</th><th>Restant dû</th><th>Avancé</th></tr></thead><tbody>${P.map((x,ix)=>lrow(esc(x.p.nom),eur2(x.m)+" / mois hors ass. · fin "+esc(mlabel(x.S[x.n-1].d.slice(0,7))),x.p.capital,x.p.capital-rem(x),0,ix)).join("")}${P.length>1?lrow("Total","",cap0,pc,1):""}</tbody></table></div>`);
+ return`${card("cr-sum",P.length>1?"Mes crédits":esc(P[0].p.nom),`<div class="pg"><i style="width:${w1.toFixed(2)}%;background:#0d9488"></i><i style="width:${w2.toFixed(2)}%;background:#f97316"></i></div>
+  <div class="pgl"><span><em style="background:#0d9488"></em>Capital remboursé <b>${eur(pc)}</b></span><span><em style="background:#f97316"></em>Intérêts payés <b>${eur(pI)}</b></span><span><em style="background:var(--line)"></em>Reste à payer <b>${eur(crd+(ti-pI))}</b></span></div>
+  <div class="kpis"><div class="kpi" style="--c:var(--bleu)"><span>Mensualité (hors ass.)</span><b>${eur2(mens)}</b></div><div class="kpi" style="--c:var(--violet)"><span>Avec assurance</span><b>${eur2(mens+ass)}</b></div>
+  <div class="kpi" style="--c:var(--rouge)"><span>Capital restant dû</span><b>${eur(crd)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Intérêts restants</span><b>${eur(ti-pI)}</b></div>
+  <div class="kpi" style="--c:var(--vert)"><span>Fin du prêt</span><b style="font-size:1rem">${esc(mlabel(end))}</b></div><div class="kpi" style="--c:var(--bleu)"><span>Mois restants</span><b>${left}</b></div></div>`,"margin-top:0")}
+ ${loans}
+ ${crYear(P,yi)}
+ ${card("cr-crd","Évolution du capital restant dû",areaChart(crdI,{col:"#0284c7"}))}`}
+
+function vData(){return card("dat-sync","Synchronisation PC ⇄ téléphone",`<p style="font-size:.85rem;color:var(--mut);margin-top:0">En mémoire sur ce téléphone : ${D.depenses.length} opérations, ${D.salaires.length} salaires, ${D.prets.length} prêts, ${D.recurrentes.length} récurrentes, ${(D.interessement||[]).length} intéressements/participations.${D.exporte_le?`<br>Dernier import : ${esc(D.exporte_le)}`:""}</p>
+ <div class="row"><button id="bImp" style="flex:1">📥 Importer (Excel, JSON ou XML)</button></div>
+ <div class="row"><button id="bJ" style="flex:1">📦 Tout exporter pour le PC (1 fichier)</button></div>
+ <p style="font-size:.78rem;color:var(--mut);margin:0 0 8px">Un seul fichier JSON avec dépenses, récurrentes, salaires (impôt inclus), prêts et intéressement / participation. Sur le PC : « 📱 Appli mobile » → Récupérer → ce fichier.</p>
+ <div class="row"><button class="sec" id="bX" style="flex:1">📤 Même export en XML</button><button class="sec" id="bC" style="flex:1">📄 CSV (opérations seules)</button></div>
+ <p style="font-size:.78rem;color:var(--mut)">Tu peux sélectionner en une fois <b>mes_depenses.xlsx</b>, <b>mes_salaires.xlsx</b>, <b>credit_immobilier.xlsx</b> (et depenses_recurrences.xlsx) : chaque fichier est reconnu automatiquement. Sur le PC : onglet « 📱 Appli mobile » → télécharger puis importer ici. Après avoir saisi des dépenses, des récurrences ou des salaires au téléphone, exportez et rechargez le fichier dans le PC (l'import remplace les données du PC).</p>`,"margin-top:0")+
+ card("dat-danger","Zone sensible",`<button class="sec" id="bClr" style="color:var(--rouge)">🗑 Effacer les données du téléphone</button>`)}
+const sum=(a,k)=>a.reduce((t,x)=>t+(x[k]||0),0);
+const fdy=d=>d?new Date(d+"T00:00:00").toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"}):"";
+const mshort=d=>new Date(d+"T00:00:00").toLocaleDateString("fr-FR",{month:"short",year:"2-digit"});
+const kfmt=v=>v>=1000?(v/1000).toFixed(1).replace(".",",")+" k€":Math.round(v)+" €";
+const pct=(a,b)=>b>0?(a-b)/b*100:null;
+const dsp=p=>p==null?"":`<span class="${p>=0?"pos":"neg"}">${p>=0?"+":""}${p.toFixed(1).replace(".",",")} %</span>`;
+const rate=(i,n)=>n>0?(i/n*100).toFixed(1).replace(".",",")+" %":"—";
+/* Suivi salaire : l'année en cours est sélectionnée par défaut */
+let salY=TODAY().slice(0,4);
+/* Impôt estimé d'une année : salaires déjà reçus (net avant impôts) + mois restants × moyenne mensuelle des années précédentes
+   (à défaut d'année précédente : moyenne mensuelle de l'année en cours). Ne dépend que des salaires.
+   Cohérence : reste à payer = impôt estimé − impôt déjà payé ; net après impôts du reste = net avant impôts du reste − reste à payer ;
+   taux moyen = impôt estimé ÷ revenu net avant impôts (même base que le « Taux d'impôt moyen » de l'onglet Salaire). */
+function taxEst(y){
+ const F=D.fisc||{},parts=F.parts>0?F.parts:1,ratio=F.ratio>0?F.ratio:1.03,B=BAR[F.bar]||BAR["2025"],cy=TODAY().slice(0,4),
+ S=D.salaires.filter(s=>s.date&&s.date.startsWith(y)),recu=sum(S,"net"),imp=sum(S,"impot"),mr=new Set(S.map(s=>s.date.slice(0,7))).size,prev={};
+ D.salaires.forEach(s=>{if(s.date&&s.date.slice(0,4)<y){const a=s.date.slice(0,4),p=prev[a]??={n:0,m:new Set()};p.n+=s.net;p.m.add(s.date.slice(5,7))}});
+ const pm=Object.values(prev).map(p=>p.n/p.m.size),moy=mr?recu/mr:(pm.length?pm.reduce((a,b)=>a+b,0)/pm.length:0),
+ rest=y===cy?Math.max(0,12-mr):0,pr=rest*moy,proj=recu+pr,R=irCalc(proj*ratio,parts,B),reste=Math.max(0,R.ir-imp),prNet=Math.max(0,pr-reste);
+ return{recu,imp,rest,moy,pr,prNet,proj,netAp:Math.max(0,proj-R.ir),ir:R.ir,reste,taux:proj>0?R.ir/proj:0,tauxR:pr>0?Math.min(1,reste/pr):null,np:pm.length}}
+function taxCard(y){const t=taxEst(y);if(!(t.proj>0))return"";
+ const k=(l,v,c,w)=>`<div class="kpi${w?" wide":""}" style="--c:var(--${c})"><span>${l}</span><b>${v}</b></div>`,cy=y===TODAY().slice(0,4);
+ const du=t.taux*t.recu,ks=[k("Impôt estimé de l'année",eur(t.ir),"orange",1),k("Net avant impôts estimé / an",eur(t.proj),"bleu"),k("Net après impôts estimé / an",eur(t.netAp),"vert"),k("Taux moyen estimé de l'année",fp(t.taux*100),"orange")];
+ if(cy)ks.push(k("Impôt qui aurait dû être payé à ce jour",eur(du),"violet"));
+ ks.push(k("Impôt déjà payé",eur(t.imp),"rouge"),k("Reste à payer estimé",eur(t.reste),"violet"));
+ if(cy)ks.push(k("Taux à indiquer sur impots.gouv (pour le reste de l'année)",t.rest>0?(t.reste>0?fp(t.tauxR*100):"0 % (impôt déjà couvert)"):"—","vert",1));
+ return card("sal-taxe","Impôt estimé en "+y,`<div class="kpis" style="margin-top:0">${ks.join("")}</div>
+ <div class="d" style="margin-top:8px">${cy?`Net avant impôts estimé de l'année = déjà reçu (${eur(t.recu)}) + ${t.rest} mois × ${eur(t.moy)} (moyenne mensuelle des salaires déjà reçus cette année). Taux à indiquer = reste à payer estimé ÷ net avant impôts des mois restants (${eur(t.pr)}), soit ${eur(t.prNet)} de net après impôts sur le reste de l'année. `:"Année terminée : salaires réellement reçus. "}Taux moyen = impôt estimé ÷ net avant impôts de l'année. Impôt qui aurait dû être payé à ce jour = taux moyen × net avant impôts déjà reçu (comparé à l'impôt déjà payé : avance si payé > dû, retard sinon). Nombre de parts : onglet Simulateur d'impôts.</div>`)}
+/* ---------- Salaires : brut, net avant impôts, impôt payé, net après impôt ---------- */
+function vSal(){
+ const cy=TODAY().slice(0,4);
+ const all=D.salaires.map((s,i)=>({...s,i})).filter(s=>s.date).sort((a,b)=>a.date.localeCompare(b.date));
+ const ys=[...new Set(all.map(s=>s.date.slice(0,4)))].sort().reverse(),ysel=[...new Set(ys.concat([cy]))].sort().reverse();
+ if(salY!=="all"&&!ysel.includes(salY))salY=cy;
+ if(!all.length)return`<div class="card" style="margin-top:0"><div class="empty">Aucun salaire enregistré pour le moment.<br>Saisis un revenu de catégorie « Salaire » depuis la Vue d'ensemble (bouton +), ou importe <b>mes_salaires.xlsx</b> depuis l'onglet Données.</div></div>`;
+ const L=salY==="all"?all:all.filter(s=>s.date.startsWith(salY)),net=sum(L,"net"),imp=sum(L,"impot"),brut=sum(L,"brut");
+ const YR=ys.slice().reverse().map(y=>{const l=all.filter(s=>s.date.startsWith(y)),mo=new Set(l.map(s=>s.date.slice(0,7))).size||1,n=sum(l,"net"),im=sum(l,"impot"),b=sum(l,"brut");return{y,n,im,ap:n-im,b,c:l.length,moy:n/mo,moyAp:(n-im)/mo,moyB:b/mo,moyIm:im/mo}});
+ YR.forEach((r,i)=>{const p=YR[i-1];r.d=p?{b:pct(r.b,p.b),mb:pct(r.moyB,p.moyB),n:pct(r.n,p.n),mn:pct(r.moy,p.moy),a:pct(r.ap,p.ap),ma:pct(r.moyAp,p.moyAp),mi:pct(r.moyIm,p.moyIm)}:null});
+ const emp={},ecn={};L.forEach(s=>{const k=s.employeur||"Non renseigné";emp[k]=(emp[k]||0)+s.net;ecn[k]=(ecn[k]||0)+1});
+ const yr=salY==="all"?(ys[0]||cy):salY;
+ /* Tableau compact par année : 5 lignes visibles puis défilement (même principe que les autres tableaux) */
+ const ev=p=>p==null?"":` (<span class="${p>=0?"pos":"neg"}">${p>=0?"+":""}${p.toFixed(1).replace(".",",")} %</span>)`,evI=p=>p==null?"":` (<span class="${p>=0?"neg":"pos"}">${p>=0?"+":""}${p.toFixed(1).replace(".",",")} %</span>)`;
+ const yrT=`<div class="tw"><table class="rc"><thead><tr><th>Année</th><th>Brut</th><th>Net avant impôts</th><th>Impôt payé</th><th>Net après impôts</th></tr></thead><tbody>${YR.slice().reverse().map(r=>{const d=r.d||{};return`<tr><th>${r.y}<div class="d">${r.c} vers.</div></th><td style="color:var(--violet);font-weight:700">${r.b>0?eur(r.b):"—"}${r.b>0?`<div class="d">${eur(r.moyB)}/mois${ev(d.mb)}</div>`:""}</td><td style="color:var(--bleu);font-weight:700">${eur(r.n)}<div class="d">${eur(r.moy)}/mois${ev(d.mn)}</div></td><td style="color:var(--orange);font-weight:700">${eur(r.im)}<div class="d">${eur(r.moyIm)}/mois${evI(d.mi)}</div></td><td class="pos">${eur(r.ap)}<div class="d">${eur(r.moyAp)}/mois${ev(d.ma)}</div></td></tr>`}).join("")}</tbody></table></div><div class="d" style="margin-top:6px">Sous chaque total : moyenne mensuelle (calculée sur les mois réellement versés) et, entre parenthèses, son évolution par rapport à l'année précédente</div>`;
+ const hist=L.slice().reverse().map(s=>`<div class="op" data-sal="${s.i}"><div class="m"><b>${esc(s.employeur)}</b><small>${fdy(s.date)} · ${esc(s.type)}${s.notes?` · ${esc(s.notes)}`:""}</small><div class="tri"><div style="--c:var(--violet)"><small>Brut</small><b>${s.brut>0?eur2(s.brut):"—"}</b></div><div style="--c:var(--bleu)"><small>Net av. impôts</small><b>${eur2(s.net)}</b></div><div style="--c:var(--orange)"><small>Impôt</small><b>${s.impot>0?"−"+eur2(s.impot):"0 €"}</b></div><div class="nt" style="--c:var(--vert)"><small>Net après</small><b>${eur2(s.net-(s.impot||0))}</b></div></div></div><span style="color:var(--mut)">✎</span></div>`).join("");
+ return`<div class="card" style="margin-top:0"><div class="sh">🗓️ Période affichée</div><label>Année</label><select id="sSel"><option value="all">Toutes les années</option>${ysel.map(y=>`<option value="${y}" ${y===salY?"selected":""}>${y}</option>`).join("")}</select></div>
+ <div class="kpis k3"><div class="kpi" style="--c:var(--violet)"><span>Salaire brut</span><b>${brut>0?eur(brut):"—"}</b></div><div class="kpi" style="--c:var(--bleu)"><span>Net avant impôts</span><b>${eur(net)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Impôt payé</span><b>${eur(imp)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Net après impôts</span><b>${eur(net-imp)}</b></div>
+ <div class="kpi" style="--c:var(--rouge)"><span>Taux d'impôt moyen</span><b>${rate(imp,net)}</b></div>
+ <div class="kpi" style="--c:var(--bleu)"><span>Versements</span><b>${L.length}</b></div></div>
+ ${taxCard(yr)}
+ ${card("sal-yr","Net après impôt et impôt payé par année",stackChart(YR.map(r=>({l1:r.y,segs:[{v:r.ap,c:"#0284c7"},{v:r.im,c:"#f97316"}],tip:tipHtml(r.y,[tl("Net après impôts",eur2(r.ap),TC.b),tl("Moyenne par mois",eur2(r.moyAp),TC.v),tl("Impôt sur le revenu",eur2(r.im),TC.o),tl("Taux d'impôt",rate(r.im,r.n))])})),{bw:64,lg:'<div class="lg"><span><i style="background:#0284c7"></i>Net après impôt</span><span><i style="background:#f97316"></i>Impôt payé</span></div>'})+yrT)}
+ ${card("sal-emp","Répartition par employeur (net avant impôts)",bars(emp,null,(k,v)=>tipHtml(k,[tl("Total net avant impôts",eur2(v),TC.g),tl("Part",(net>0?v/net*100:0).toFixed(1).replace(".",",")+" %"),tl("Versements",ecn[k])])))}
+ ${card("sal-hist","Historique des versements · touche une ligne pour la modifier",`<div class="lst">${hist}</div>`)}`}
+/* ---------- Intéressement / Participation (onglet « Prime ») ---------- */
+function vInt(){
+ const all=(D.interessement||[]).map((s,i)=>({...s,i})).filter(s=>s.date).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!all.length)return`<div class="card" style="margin-top:0"><div class="empty">Aucun versement enregistré pour le moment.<br>Appuie sur + pour en ajouter un.</div></div>`;
+ const ys=[...new Set(all.map(s=>s.date.slice(0,4)))].sort().reverse();
+ if(UI.iy!=="all"&&!ys.includes(UI.iy))UI.iy="all";
+ const T=(l,t)=>sum(l.filter(s=>s.type===t),"montant"),L=UI.iy==="all"?all:all.filter(s=>s.date.startsWith(UI.iy)),tI=T(L,"Intéressement"),tP=T(L,"Participation"),tA=T(L,"Abondement"),tV=T(L,"PPV");
+ const YR=ys.slice().reverse().map(y=>{const l=all.filter(s=>s.date.startsWith(y)),i=T(l,"Intéressement"),p=T(l,"Participation"),a=T(l,"Abondement"),v=T(l,"PPV");return{y,i,p,a,v,t:i+p+a+v,c:l.length}});
+  const chart=stackChart(YR.map(r=>({l1:r.y,segs:[{v:r.i,c:"#7c3aed"},{v:r.p,c:"#0d9488"},{v:r.a,c:"#f97316"},{v:r.v,c:"#0284c7"}],tip:tipHtml(r.y,[tl("Intéressement",eur2(r.i),TC.v),tl("Participation",eur2(r.p),TC.g),tl("Abondement",eur2(r.a),TC.o),tl("PPV",eur2(r.v),TC.b),tl("Total",eur2(r.t),TC.b),tl("Versements",r.c)])})),{bw:64,lg:'<div class="lg"><span><i style="background:#7c3aed"></i>Intéressement</span><span><i style="background:#0d9488"></i>Participation</span><span><i style="background:#f97316"></i>Abondement</span><span><i style="background:#0284c7"></i>PPV</span></div>'});
+ const yrRows=YR.slice().reverse().map(r=>`<div class="op"><div class="m"><b>${r.y}</b><small>${r.c} versement${r.c>1?"s":""}</small><div class="d">Intéressement ${eur(r.i)} · Participation ${eur(r.p)} · Abondement ${eur(r.a)} · PPV ${eur(r.v)}</div></div><div class="r"><b>${eur(r.t)}</b></div></div>`).join("");
+ return`<div class="card" style="margin-top:0"><div class="sh">🗓️ Période affichée</div><label>Année</label><select data-u="iy"><option value="all">Toutes les années</option>${ys.map(y=>opt(y,y,UI.iy)).join("")}</select></div>
+ <div class="kpis"><div class="kpi wide" style="--c:var(--bleu)"><span>Total versé</span><b>${eur(tI+tP+tA+tV)}</b></div><div class="kpi" style="--c:var(--violet)"><span>Intéressement</span><b>${eur(tI)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Participation</span><b>${eur(tP)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Abondement</span><b>${eur(tA)}</b></div><div class="kpi" style="--c:var(--bleu)"><span>PPV</span><b>${eur(tV)}</b></div></div>
+ ${card("int-yr","Intéressement / participation / abondement / PPV par année",chart+`<div class="lst">${yrRows}</div>`)}
+ ${card("int-hist","Historique · touche une ligne pour la modifier",`<div class="lst">${L.slice().reverse().map(s=>`<div class="op" data-int="${s.i}"><div class="m"><b>${esc(s.type)}</b><small>${fdy(s.date)}${s.employeur?" · "+esc(s.employeur):""} · ${esc(s.dest||"")}${s.brut>0?" · brut "+eur2(s.brut):""}</small></div><span class="pos am">${eur2(s.montant)}</span><span style="color:var(--mut)">✎</span></div>`).join("")}</div>`)}`}
+/* ---------- Nouveaux onglets : Recherche, Santé, Impôts ---------- */
+const UI={sq:"",scat:"all",ssens:"Dépense",syr:"all",hAct:"gen",hPrix:null,hQty:1,fy:null,iy:"all",hs:"all",hPr:"o",hS:"n",hMon:null,hg:"all",gd:"",selMode:false,sel:new Set(),gt:"",gn:"",gp:"",addG:"",sg:""};
+const nrm=s=>String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+const fp=v=>(+v.toFixed(1)+"").replace(".",",")+" %";
+const opt=(v,l,cur)=>`<option value="${esc(v)}" ${String(v)===String(cur)?"selected":""}>${esc(l)}</option>`;
+
+/* ---------- Simulateur santé : reste à payer (Sécurité sociale + Ipeca socle 0739/461 + sur-complémentaire 0739/462) ----------
+   Garanties issues des notices IPECA MBDA FRANCE (mise à jour 01/01/2026). Les montants « % BR » sont versés EN PLUS de la Sécu.
+   Types de garantie (k) :
+   pr   médecin : o = % BR si signataire OPTAM ; n = [socle hors OPTAM, sur-co si Sécu 100 %, sur-co si Sécu < 100 %]
+   pct  p % de la base de remboursement   · tm  ticket modérateur   · fr  100 % des frais réels
+   frc  frais réels sous déduction Sécu, limités à p % BR   · cap  forfait / plafond v (€) en plus de la Sécu
+   tot  montant v (€) Sécu et TM inclus (optique classe B, psychologue)   · len / len2  lentilles   · aud  aide auditive classe II
+   an : plafond annuel (le « Nombre » cumule les dépenses de l'année).  mon : monture (100 € max pris en charge). */
+const PMSS=4005;
+const ACTS=[
+ {id:"gen",g:"Soins courants",nom:"Consultation généraliste",br:30,sec:70,pf:2,prix:30,k:"pr",o:80,n:[60,20,20],t:"Signataire OPTAM : 80 % BR · sinon 60 % BR (socle) + 20 % BR (sur-co)"},
+ {id:"spe",g:"Soins courants",nom:"Consultation spécialiste",br:30,sec:70,pf:2,prix:50,k:"pr",o:170,n:[130,70,40],t:"Signataire OPTAM : 170 % BR · sinon 130 % BR (socle) + 70 % BR si Sécu 100 % / 40 % sinon (sur-co)"},
+ {id:"atm",g:"Soins courants",nom:"Actes techniques médicaux",br:50,sec:70,pf:2,prix:80,k:"pr",o:130,n:[110,30,20],t:"Signataire OPTAM : 130 % BR · sinon 110 % BR (socle) + 30 % si Sécu 100 % / 20 % sinon (sur-co)"},
+ {id:"rad",g:"Soins courants",nom:"Radiologie, échographie, imagerie",br:40,sec:70,pf:2,prix:60,k:"pr",o:130,n:[110,30,20],t:"Signataire OPTAM : 130 % BR · sinon 110 % BR (socle) + 30 % si Sécu 100 % / 20 % sinon (sur-co)"},
+ {id:"sf",g:"Soins courants",nom:"Sage-femme",br:25,sec:70,pf:0,prix:30,k:"pct",p:140,t:"140 % BR"},
+ {id:"kin",g:"Soins courants",nom:"Paramédical (kiné, infirmier…)",br:16.13,sec:60,pf:1,prix:25,k:"pct",p:140,t:"140 % BR (franchise 1 € à ta charge)"},
+ {id:"ana",g:"Soins courants",nom:"Analyses et examens de biologie",br:25,sec:60,pf:2,prix:25,k:"pct",p:180,t:"180 % BR"},
+ {id:"pha",g:"Soins courants",nom:"Médicaments remboursés à 65 %",br:15,sec:65,pf:1,prix:15,k:"tm",t:"100 % du ticket modérateur (franchise 1 € / boîte à ta charge)"},
+ {id:"mat",g:"Soins courants",nom:"Matériel médical (LPP)",br:100,sec:60,pf:0,prix:150,k:"pct",p:290,t:"290 % BR"},
+ {id:"opa",g:"Optique",nom:"Optique 100 % Santé (classe A)",br:80,sec:60,pf:0,prix:200,k:"fr",t:"100 % des frais réels dans la limite des prix limites de vente (classe A) : reste à charge nul"},
+ {id:"opA",g:"Optique",nom:"Optique classe B · équipement A (420 €)",br:40,sec:60,pf:0,prix:450,mon:150,k:"tot",v:420,t:"420 € Sécu et TM inclus, dont 100 € max pour la monture"},
+ {id:"opB",g:"Optique",nom:"Optique classe B · équipement B (560 €)",br:40,sec:60,pf:0,prix:600,mon:150,k:"tot",v:560,t:"560 € Sécu et TM inclus, dont 100 € max pour la monture (1 verre A + 1 verre C)"},
+ {id:"opC",g:"Optique",nom:"Optique classe B · équipement C (700 €)",br:40,sec:60,pf:0,prix:750,mon:150,k:"tot",v:700,t:"700 € Sécu et TM inclus, dont 100 € max pour la monture"},
+ {id:"opD",g:"Optique",nom:"Optique classe B · équipement D (610 €)",br:40,sec:60,pf:0,prix:650,mon:150,k:"tot",v:610,t:"610 € Sécu et TM inclus, dont 100 € max pour la monture (1 verre A + 1 verre F)"},
+ {id:"opE",g:"Optique",nom:"Optique classe B · équipement E (750 €)",br:40,sec:60,pf:0,prix:800,mon:150,k:"tot",v:750,t:"750 € Sécu et TM inclus, dont 100 € max pour la monture (1 verre C + 1 verre F)"},
+ {id:"opF",g:"Optique",nom:"Optique classe B · équipement F (800 €)",br:40,sec:60,pf:0,prix:850,mon:150,k:"tot",v:800,t:"800 € Sécu et TM inclus, dont 100 € max pour la monture"},
+ {id:"len",g:"Optique",nom:"Lentilles remboursées par la Sécu (par œil)",br:40,sec:60,pf:0,prix:150,k:"len",v:.07*PMSS,t:"90 % des frais réels sous déduction Sécu, limité à 7 % PMSS / œil / an (au-delà : TM)"},
+ {id:"len2",g:"Optique",nom:"Lentilles non remboursées (par lentille / an)",br:0,sec:0,pf:0,prix:300,k:"len2",v:.07*PMSS,t:"90 % des frais réels, limité à 7 % PMSS / lentille / an"},
+ {id:"chr",g:"Optique",nom:"Chirurgie réfractive (laser)",br:0,sec:0,pf:0,prix:1200,k:"cap",v:500,an:1,t:"500 € / année civile / bénéficiaire"},
+ {id:"au1",g:"Aides auditives",nom:"Aide auditive 100 % Santé (classe I, par oreille)",br:400,sec:60,pf:0,prix:950,k:"fr",t:"100 % des frais réels dans la limite des prix limites de vente : reste à charge nul"},
+ {id:"au2",g:"Aides auditives",nom:"Aide auditive classe II · adulte >20 ans (par oreille)",br:400,sec:60,pf:0,prix:1500,k:"aud",v:680,t:"680 € par oreille, dans la limite de 1 700 € Sécu et TM inclus"},
+ {id:"aue",g:"Aides auditives",nom:"Aide auditive classe II · enfant ≤20 ans (par oreille)",br:1400,sec:60,pf:0,prix:1600,k:"aud",v:860,t:"860 € par oreille, dans la limite de 1 700 € Sécu et TM inclus"},
+ {id:"pil",g:"Aides auditives",nom:"Piles, accessoires, consommables",br:40,sec:60,pf:0,prix:40,k:"pct",p:100,t:"100 % BR"},
+ {id:"dsn",g:"Dentaire",nom:"Dentiste : soins (carie, détartrage)",br:28.92,sec:70,pf:0,prix:40,k:"pct",p:130,t:"130 % BR"},
+ {id:"d100",g:"Dentaire",nom:"Prothèse dentaire 100 % Santé",br:107.5,sec:70,pf:0,prix:500,k:"fr",t:"100 % des frais réels dans la limite des honoraires limites de facturation : reste à charge nul"},
+ {id:"dmai",g:"Dentaire",nom:"Prothèse / inlay-core / inlay-onlay · panier maîtrisé",br:107.5,sec:70,pf:0,prix:550,k:"pct",p:400,t:"400 % BR (Sécu et TM inclus), dans la limite des honoraires limites de facturation"},
+ {id:"dlib",g:"Dentaire",nom:"Prothèse / inlay-core / inlay-onlay · panier libre",br:107.5,sec:70,pf:0,prix:900,k:"pct",p:400,t:"400 % BR"},
+ {id:"dnr",g:"Dentaire",nom:"Prothèse non remboursée Sécu (hors implant)",br:107.5,sec:0,pf:0,prix:700,k:"pct",p:470,t:"470 % BR reconstituée (BR = base qu'aurait eue un acte identique remboursé)"},
+ {id:"dimp",g:"Dentaire",nom:"Implant dentaire (pilier + implant = 1 acte)",br:0,sec:0,pf:0,prix:1800,k:"cap",v:.37*PMSS,t:"37 % PMSS / acte, 2 actes max / année civile / bénéficiaire"},
+ {id:"dpar",g:"Dentaire",nom:"Parodontologie non remboursée Sécu",br:0,sec:0,pf:0,prix:300,k:"cap",v:200,an:1,t:"200 € / année civile / bénéficiaire"},
+ {id:"or100",g:"Dentaire",nom:"Orthodontie remboursée Sécu à 100 %",br:193.5,sec:100,pf:0,prix:800,k:"pct",p:370,t:"370 % BR"},
+ {id:"or70",g:"Dentaire",nom:"Orthodontie remboursée Sécu à 70 %",br:193.5,sec:70,pf:0,prix:800,k:"pct",p:400,t:"400 % BR"},
+ {id:"ornr",g:"Dentaire",nom:"Orthodontie non remboursée Sécu",br:193.5,sec:0,pf:0,prix:900,k:"pct",p:470,t:"470 % BR reconstituée (prorata temporis si résiliation en cours de traitement)"},
+ {id:"hon",g:"Hospitalisation",nom:"Honoraires (chirurgien, anesthésiste…)",br:300,sec:80,pf:0,prix:600,k:"pr",o:500,n:[120,400,380],t:"Signataire OPTAM/OPTAM-ACO : 500 % BR · sinon 120 % BR (socle, 200 % BR Sécu comprise max) + 400 % si Sécu 100 % / 380 % sinon (sur-co)"},
+ {id:"han",g:"Hospitalisation",nom:"Frais annexes",br:100,sec:80,pf:0,prix:100,k:"pct",p:500,t:"500 % BR"},
+ {id:"hfs",g:"Hospitalisation",nom:"Frais de séjour, établissement conventionné (par jour)",br:800,sec:80,pf:0,prix:1500,k:"frc",p:500,t:"100 % des frais réels sous déduction de la Sécu, limité à 500 % BR"},
+ {id:"hfj",g:"Hospitalisation",nom:"Forfait journalier hospitalier (par jour)",br:0,sec:0,pf:0,prix:23,k:"fr",t:"100 % des frais réels (23 €/j en médecine-chirurgie, 17 €/j en psychiatrie)"},
+ {id:"hac",g:"Hospitalisation",nom:"Accompagnement d'un enfant <17 ans (lit, repas, par jour)",br:0,sec:0,pf:0,prix:50,k:"cap",v:.01*PMSS,t:"1 % PMSS / jour"},
+ {id:"hch",g:"Hospitalisation",nom:"Chambre particulière (y compris ambulatoire, par jour)",br:0,sec:0,pf:0,prix:100,k:"cap",v:.02*PMSS,t:"2 % PMSS / jour"},
+ {id:"htr",g:"Hospitalisation",nom:"Frais de transport (ambulance, taxi conventionné…)",br:80,sec:65,pf:4,prix:80,k:"tm",t:"100 % du ticket modérateur (franchise 4 € à ta charge)"},
+ {id:"hur",g:"Hospitalisation",nom:"Forfait patient urgences",br:0,sec:0,pf:0,prix:19.61,k:"fr",t:"100 % des frais réels"},
+ {id:"hps",g:"Hospitalisation",nom:"Séjour >60 j psychiatrie, convalescence, rééducation (par jour)",br:300,sec:80,pf:0,prix:350,k:"tm",t:"Frais de séjour : 100 % du ticket modérateur (forfait journalier : 100 % FR)"},
+ {id:"nai",g:"Maternité",nom:"Forfait naissance ou adoption",br:0,sec:0,pf:0,prix:150,k:"cap",v:150,t:"150 € par enfant ou par adoption (chambre particulière : 2 % PMSS / jour ; dépassements dans « Soins courants » et « Hospitalisation »)"},
+ {id:"cu1",g:"Autres prestations",nom:"Cure thermale remboursée par la Sécu",br:500,sec:65,pf:0,prix:1000,k:"cap",v:.18*PMSS,t:"18 % PMSS / cure, dans la limite des frais restant à charge"},
+ {id:"cu2",g:"Autres prestations",nom:"Cure thermale non remboursée par la Sécu",br:0,sec:0,pf:0,prix:1000,k:"cap",v:.14*PMSS,t:"14 % PMSS / cure, dans la limite des frais restant à charge"},
+ {id:"psy",g:"Autres prestations",nom:"Psychologue conventionné (Mon soutien psy)",br:50,sec:60,pf:0,prix:50,k:"tot",v:50,t:"50 € / consultation Sécu incluse, 12 consultations / année civile"},
+ {id:"ost",g:"Autres prestations",nom:"Médecine douce (ostéo, chiro, acupuncture…) et sevrage tabagique",br:0,sec:0,pf:0,prix:60,k:"cap",v:100,an:1,t:"100 € / année civile / bénéficiaire"}];
+const getActs=()=>ACTS.map(a=>({...a,...((D.sante&&D.sante.o&&D.sante.o[a.id])||{})}));
+function actCalc(a,prix,x){x=x||{};
+ const s100=!!x.s100&&a.br>0,sec=s100?100:a.sec,pf=s100?0:(a.pf||0),sg=Math.min(prix,a.br*sec/100),secu=Math.max(0,sg-Math.min(pf,sg)),av=Math.max(0,prix-sg),tm=a.br*(100-sec)/100;
+ let m=0,ms=0;
+ if(a.k==="pr"){
+  if(x.pr==="n"){const so=Math.min(a.n[0],Math.max(0,200-sec))*a.br/100,su=a.n[sec>=100?1:2]*a.br/100;m=Math.min(so,av);ms=Math.min(su,Math.max(0,av-m))}
+  else m=Math.min(a.o*a.br/100,av)}
+ else{
+  if(a.k==="pct")m=a.p*a.br/100;
+  else if(a.k==="tm")m=tm;
+  else if(a.k==="fr")m=av;
+  else if(a.k==="frc")m=Math.min(av,a.p*a.br/100);
+  else if(a.k==="cap")m=a.v;
+  else if(a.k==="tot"){const mon=x.mon!=null?x.mon:(a.mon||0);m=Math.min(a.v,prix-Math.max(0,mon-100))-sg}
+  else if(a.k==="len")m=Math.max(tm,Math.min(.9*prix,a.v)-sg);
+  else if(a.k==="len2")m=Math.min(.9*prix,a.v);
+  else if(a.k==="aud")m=Math.min(a.v,1700-sg);
+  m=Math.max(0,Math.min(m,av))}
+ return{secu,mut:m+ms,mutS:ms,reste:Math.max(0,prix-secu-m-ms)}}
+function vSante(){
+ const AC=getActs(),cur=AC.find(a=>a.id===UI.hAct)||AC[0],prix=UI.hPrix>0?UI.hPrix:cur.prix,qty=UI.hQty>0?UI.hQty:1,
+ mon=cur.mon!=null?(typeof UI.hMon==="number"?UI.hMon:cur.mon):null,x={pr:UI.hPr,s100:UI.hS==="100",mon},
+ P=cur.an?prix*qty:prix,q=cur.an?1:qty,c=actCalc(cur,P,x),T=P*q,S=c.secu*q,M=c.mut*q,MS=c.mutS*q,Rr=c.reste*q,p=v=>T>0?(v/T*100).toFixed(2):0,
+ GR=[...new Set(AC.map(a=>a.g))],
+ yr=TODAY().slice(0,4),H=OPS().filter(o=>o.categorie==="Santé"&&!isRev(o)&&o.date.startsWith(yr));
+ return`${card("h-sim","Simulateur de reste à payer",`<label>Type de dépense</label><select data-u="hAct">${GR.map(g=>`<optgroup label="${esc(g)}">${AC.filter(a=>a.g===g).map(a=>opt(a.id,a.nom,cur.id)).join("")}</optgroup>`).join("")}</select>
+ ${cur.k==="pr"?`<label>Praticien</label><select data-u="hPr">${opt("o","Conventionné signataire OPTAM / OPTAM-ACO (ou secteur 1)",UI.hPr)}${opt("n","Conventionné non signataire (secteur 2 hors OPTAM)",UI.hPr)}</select>`:""}
+ ${cur.br>0&&cur.sec<100?`<label>Remboursement Sécu</label><select data-u="hS">${opt("n","Taux normal ("+cur.sec+" %)",UI.hS)}${opt("100","100 % (ALD, maternité, accident du travail)",UI.hS)}</select>`:""}
+ <div class="row" style="margin:0"><div style="flex:1;min-width:0"><label>Prix facturé (€)</label><input type="number" step="0.01" inputmode="decimal" data-u="hPrix" value="${prix}"></div>
+ <div style="flex:1;min-width:0"><label>Nombre</label><input type="number" step="1" min="1" inputmode="numeric" data-u="hQty" value="${qty}"></div></div>
+ ${mon!=null?`<label>Dont monture (€) : 100 € max pris en charge</label><input type="number" step="0.01" inputmode="decimal" data-u="hMon" value="${mon}">`:""}
+ <div class="d" style="margin-top:8px">${esc(cur.t)}${cur.an?" · plafond annuel : le nombre cumule les dépenses de l'année":""}</div>
+ <div class="d">Base Sécu utilisée : ${eur2(cur.br)} à ${UI.hS==="100"&&cur.br>0?100:cur.sec} % (modifiable en touchant la ligne dans le tableau ci-dessous)</div>
+ <div class="pg" style="margin-top:14px"><i style="width:${p(S)}%;background:#0284c7"></i><i style="width:${p(M)}%;background:#0d9488"></i><i style="width:${p(Rr)}%;background:#dc2626"></i></div>
+ <div class="pgl"><span><em style="background:#0284c7"></em>Sécu <b>${eur2(S)}</b></span><span><em style="background:#0d9488"></em>Ipeca <b>${eur2(M)}</b></span><span><em style="background:#dc2626"></em>Reste <b>${eur2(Rr)}</b></span></div>
+ <div class="kpis"><div class="kpi" style="--c:var(--violet)"><span>Prix total</span><b>${eur2(T)}</b></div><div class="kpi" style="--c:var(--bleu)"><span>Sécurité sociale</span><b>${eur2(S)}</b></div>
+ <div class="kpi" style="--c:var(--vert)"><span>Mutuelle Ipeca</span><b>${eur2(M)}</b></div><div class="kpi" style="--c:var(--rouge)"><span>Reste à payer</span><b>${eur2(Rr)}</b></div></div>
+ ${MS>0?`<div class="d" style="margin-top:8px">Dont sur-complémentaire (0739/462) : <span>${eur2(MS)}</span> · socle (0739/461) : <span>${eur2(M-MS)}</span></div>`:""}`,"margin-top:0")}
+ ${card("h-dep","Santé dans mes dépenses · "+yr,`<div class="kpis" style="margin-top:0"><div class="kpi" style="--c:var(--orange)"><span>Dépensé en ${yr}</span><b>${eur(sum(H,"montant"))}</b></div><div class="kpi" style="--c:var(--bleu)"><span>Opérations</span><b>${H.length}</b></div></div>`)}
+ ${card("h-rec","Ma mutuelle Ipeca · socle 0739/461 + sur-co 0739/462 · touche une ligne pour la modifier",`<div class="d" style="margin:0 0 8px;text-align:center">Garanties des notices MBDA FRANCE (maj. 01/01/2026) · PMSS 2026 : ${eur(PMSS)} · calcul pour un praticien signataire OPTAM, Sécu au taux normal</div><div class="tw"><table class="rc wr"><thead><tr><th>Acte</th><th>Sécu</th><th>Ipeca</th><th>Reste</th></tr></thead><tbody>${AC.map(a=>{const r=actCalc(a,a.prix,{pr:"o",mon:a.mon!=null?a.mon:null});return`<tr data-act="${a.id}" style="cursor:pointer"><th>${esc(a.nom)}<div class="d">${esc(a.g)} · ${eur(a.prix)} · ${esc(a.t)}</div></th><td class="pos">${eur2(r.secu)}</td><td class="pos">${eur2(r.mut)}</td><td class="neg">${eur2(r.reste)}</td></tr>`}).join("")}</tbody></table></div>`)}`}
+
+/* ---------- Simulateur d'impôts : salaire net avant impôts annuel → taux et net après impôts ---------- */
+const BAR={"2025":{n:"Barème en vigueur (revenus 2025)",tr:[[11600,0],[29579,.11],[84577,.3],[181917,.41],[Infinity,.45]],dec:[897,1483],pl:1807},
+ "2026":{n:"Barème PLF 2027 (revenus 2026, non voté)",tr:[[11844,0],[30200,.11],[86353,.3],[185737,.41],[Infinity,.45]],dec:[915,1513],pl:1845}},ABAT=[509,14555];
+/* ded=false : pas de déduction forfaitaire de 10 % */
+function irCalc(net,parts,B,ded){const ab=ded===false?0:Math.min(Math.max(net*.1,ABAT[0]),ABAT[1]),rev=Math.max(0,net-ab),base=parts>=2?2:1,
+ tp=q=>{let t=0,pv=0;for(const[l,r]of B.tr){if(q>pv)t+=(Math.min(q,l)-pv)*r;pv=l;if(q<=l)break}return t};
+ let brut=tp(rev/parts)*parts;if(parts>base)brut=Math.max(brut,tp(rev/base)*base-(parts-base)*2*B.pl);
+ const dc=Math.max(0,B.dec[base-1]-.4525*brut),ir=Math.max(0,brut-dc),q=rev/parts,tmi=(B.tr.find(x=>q<=x[0])||B.tr[B.tr.length-1])[1];
+ return{rev,ir,tmi,taux:net>0?ir/net:0}}
+function vTax(){
+ const F=D.fisc||{},parts=F.parts>0?F.parts:1,ratio=F.ratio>0?F.ratio:1.03,B=BAR[F.bar]||BAR["2025"],ded=F.ded!==false,cy=TODAY().slice(0,4),
+ auto=Math.round(taxEst(cy).proj),ca=F.ca>0?F.ca:auto,
+ R=irCalc(ca*ratio,parts,B,ded),taux=ca>0?R.ir/ca:0,mb=ca/12,mn=(ca-R.ir)/12;
+ return`${card("t-set","Simulateur d'impôts",`<label>Salaire net avant impôts annuel (€) — vide = estimé d'après mes salaires</label><input type="number" step="1" inputmode="decimal" data-d="fisc.ca" value="${F.ca>0?F.ca:""}" placeholder="${auto||""}">
+ <label>Nombre de parts</label><input type="number" step="0.5" min="1" inputmode="decimal" data-d="fisc.parts" value="${parts}">
+ <label style="display:flex;align-items:center;gap:10px;margin-top:12px;font-size:.85rem;color:var(--txt)"><input type="checkbox" data-d="fisc.ded" ${ded?"checked":""} style="width:22px;height:22px;padding:0;flex:none"> Déduction fiscale de 10 %</label>
+ <div class="d" style="margin-top:8px">Estimation simplifiée (sans crédits ni réductions d'impôt, ni revenus du capital). Net imposable ≈ net avant impôts × ${String(ratio).replace(".",",")}.</div>`,"margin-top:0")}
+ ${ca>0?`<div class="kpis k3"><div class="kpi" style="--c:var(--bleu)"><span>Net avant impôts / mois</span><b>${eur(mb)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Taux d'imposition</span><b>${fp(taux*100)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Net après impôts / mois</span><b>${eur(mn)}</b></div></div>`:'<div class="card"><div class="empty">Saisis un salaire net avant impôts annuel, ou ajoute des salaires dans Suivi Salaire.</div></div>'}`}
+/* Ordre des onglets : … Suivi Salaire · Prime · Simulateur d'impôts · Santé (tout à droite) · Données */
+const TABS=[["home","🏠","Vue d'ensemble",vHome],["ana","📊","Analyse",vAna],["rec","🔁","Dépenses récurrentes",vRec],["cred","🏦","Suivi Crédit",vCred],["sal","💼","Suivi Salaire",vSal],["int","🎁","Prime",vInt],["tax","🧾","Simulateur d'impôts",vTax],["sante","🩺","Santé",vSante],["data","🔄","Données",vData]];
+/* Limite chaque liste et chaque tableau à 5 lignes visibles, le reste défile */
+function fitLists(){
+ document.querySelectorAll(".lst").forEach(l=>{l.style.maxHeight="";if(!l.offsetParent)return;const k=l.children[5];if(k)l.style.maxHeight=(k.offsetTop+1)+"px"});
+ document.querySelectorAll(".tw").forEach(w=>{w.style.maxHeight="";if(!w.offsetParent)return;const rows=w.querySelectorAll("tbody tr");if(rows.length<=5)return;
+  w.style.maxHeight=(rows[5].getBoundingClientRect().top-w.getBoundingClientRect().top+w.scrollTop+1)+"px";
+  let top=0;w.querySelectorAll("thead tr").forEach(tr=>{tr.querySelectorAll("th").forEach(th=>{th.style.position="sticky";th.style.top=top+"px";th.style.zIndex=3});top+=tr.offsetHeight})})}
+const SORTS={};
+const cellTxt=c=>{const n=c.firstChild;return((n?n.textContent:"")||c.textContent).trim()};
+function cellKey(c){if(c.dataset.v!==undefined)return parseFloat(c.dataset.v);const t=cellTxt(c),m=t.replace(/[\u00a0\u202f\s]/g,"").replace("−","-").match(/^-?\d+(?:[.,]\d+)?/);return m?parseFloat(m[0].replace(",",".")):t}
+function applySort(tb,key,ths){const s=SORTS[key];ths.forEach((th,c)=>{if(!th)return;const sp=th.querySelector(".so");if(sp)sp.textContent=s&&s.c===c?(s.d>0?"▲":"▼"):""});if(!s)return;
+ const bd=tb.tBodies[0],rows=[...bd.rows],fixed=rows.filter(r=>r.classList.contains("tot")),v=rows.filter(r=>!r.classList.contains("tot"));
+ v.sort((x,y)=>{const a=cellKey(x.cells[s.c]),b=cellKey(y.cells[s.c]),na=typeof a==="number"&&!isNaN(a),nb=typeof b==="number"&&!isNaN(b);let r=na&&nb?a-b:na?-1:nb?1:String(a).localeCompare(String(b),"fr");return r*s.d});
+ v.concat(fixed).forEach(r=>bd.appendChild(r))}
+function sortTables(){document.querySelectorAll("#app table.rc").forEach((tb,ti)=>{if(!tb.tHead||!tb.tBodies[0])return;const key=tb.dataset.sk||tab+":"+ti,hr=[...tb.tHead.rows],occ=hr.map(()=>[]),ths=[];
+ hr.forEach((tr,ri)=>{let c=0;[...tr.cells].forEach(th=>{while(occ[ri][c])c++;const cs=th.colSpan||1,rs=th.rowSpan||1;for(let i=0;i<rs;i++)for(let j=0;j<cs;j++)if(occ[ri+i])occ[ri+i][c+j]=1;if(cs===1)ths[c]=th;c+=cs})});
+ ths.forEach((th,c)=>{if(!th)return;th.setAttribute("data-sc","1");th.title="Trier cette colonne";if(!th.querySelector(".so"))th.insertAdjacentHTML("beforeend",'<span class="so"></span>');
+  th.onclick=()=>{const s=SORTS[key];SORTS[key]=s&&s.c===c?{c,d:-s.d}:{c,d:1};applySort(tb,key,ths);fitLists()}});
+ applySort(tb,key,ths)})}
+function render(){hideTip();const t=TABS.find(x=>x[0]===tab);$("#app").innerHTML=t[3]();
+ const nv=$("#nav"),sl=nv.scrollLeft;nv.innerHTML=TABS.map(x=>`<button data-t="${x[0]}" class="${x[0]===tab?"on":""}">${x[1]} ${x[2]}</button>`).join("");
+ const on=nv.querySelector(".on");if(on)nv.scrollLeft=on.offsetLeft-(nv.clientWidth-on.offsetWidth)/2;else nv.scrollLeft=sl;
+ $("#sub").textContent="v"+VER+" · "+D.depenses.length+" opérations";bind();sortTables();$("#fab").style.display=["sante","tax","sal"].includes(tab)?"none":"";document.querySelectorAll(".sc[data-end]").forEach(e=>{e.scrollLeft=e.scrollWidth});fitLists()}
+function bind(){document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{if(b.dataset.t==="sal"&&tab!=="sal")salY=TODAY().slice(0,4);tab=b.dataset.t;saveTab();render();scrollTo(0,0)});
+ document.querySelectorAll("[data-f]").forEach(h=>h.onclick=()=>{const c=h.parentElement,id=h.dataset.f;c.classList.toggle("fold");FOLD[id]=c.classList.contains("fold")?1:0;saveFold();hideTip();
+  if(!FOLD[id]){c.querySelectorAll(".sc[data-end]").forEach(e=>{e.scrollLeft=e.scrollWidth})}fitLists()});
+ const ps=$("#pSel");if(ps)ps.onchange=e=>{per=e.target.value;render()};
+ document.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{gran=b.dataset.g;render()});
+ const qi=$("#q");if(qi)qi.oninput=e=>{q=e.target.value.toLowerCase();const p=e.target.selectionStart;render();const n=$("#q");n.focus();n.setSelectionRange(p,p)};
+ document.querySelectorAll("[data-op]").forEach(b=>b.onclick=()=>{const i=+b.dataset.op;if(!UI.selMode)return openOp(i);
+  UI.sel.has(i)?UI.sel.delete(i):UI.sel.add(i);b.classList.toggle("sel",UI.sel.has(i));const k=b.querySelector(".ck");if(k)k.textContent=UI.sel.has(i)?"☑":"☐";refSel()});
+ document.querySelectorAll("[data-gop]").forEach(b=>b.onclick=()=>openOp(+b.dataset.gop));
+ const g=(id,f)=>{const e=$(id);if(e)e.onclick=f};
+ document.querySelectorAll("[data-u]").forEach(el=>{const k=el.dataset.u,f=()=>{UI[k]=el.type==="number"?(el.value===""?"":parseFloat(el.value)):el.value;if(k==="hAct"){UI.hPrix=null;UI.hMon=null}if(k==="hg")UI.gt=""};
+  if(el.dataset.live)el.oninput=()=>{f();const p=el.selectionStart;render();const n=document.querySelector('[data-u="'+k+'"]');n.focus();try{n.setSelectionRange(p,p)}catch(e){}};else el.onchange=()=>{f();render()}});
+ document.querySelectorAll("[data-d]").forEach(el=>el.onchange=()=>{const[a,b]=el.dataset.d.split(".");D[a]=D[a]||{};D[a][b]=el.type==="checkbox"?el.checked:(el.type==="number"?(el.value===""?0:parseFloat(el.value)):el.value);save();render()});
+ document.querySelectorAll("[data-act]").forEach(b=>b.onclick=()=>openAct(b.dataset.act));
+ g("#sReset",()=>{q="";UI.scat="all";UI.hs="all";UI.hg="all";render()});
+ g("#bGrp",()=>{const t=curTgt();if(t==="__new"&&!(UI.gn||"").trim())return alert("Saisis d'abord le nom du nouveau groupe.");UI.gt=t;UI.selMode=true;UI.sel=new Set();render();const e=$("#opList");if(e)e.scrollIntoView({behavior:"smooth"})});
+ g("#gAddOps",()=>{UI.gt=UI.gd;UI.selMode=true;UI.sel=new Set();render();const e=$("#opList");if(e)e.scrollIntoView({behavior:"smooth"})});
+ g("#selEnd",()=>{UI.selMode=false;UI.sel=new Set();render()});
+ g("#selNone",()=>{UI.sel=new Set();render()});
+ g("#selAll",()=>{document.querySelectorAll("[data-op]").forEach(b=>UI.sel.add(+b.dataset.op));render()});
+ g("#selUn",()=>{if(!UI.sel.size)return alert("Sélectionne d'abord des opérations.");UI.sel.forEach(i=>{if(D.depenses[i])delete D.depenses[i].groupe});save();UI.sel=new Set();render()});
+ g("#selSave",()=>{if(!UI.sel.size)return alert("Touche d'abord des opérations dans la liste.");const t=curTgt(),name=t==="__new"?(UI.gn||"").trim():t;if(!name)return alert("Saisis un nom de groupe.");
+  assignGroup(name,[...UI.sel],UI.gp);UI.selMode=false;UI.sel=new Set();UI.gd=name;UI.gt="";UI.gn="";UI.gp="";render();const e=$("#grpSec");if(e)e.scrollIntoView({behavior:"smooth"})});
+ document.querySelectorAll("[data-s]").forEach(el=>el.oninput=()=>{UI[el.dataset.s]=el.value});
+ const gpi=$("#gPos");if(gpi)gpi.onchange=()=>gsetpos(UI.gd,parseInt(gpi.value));
+ g("#bAddSG",()=>openSG(-1));
+ g("#sgEdit",()=>openSG((D.sgroupes||[]).findIndex(x=>x.nom===UI.sg)));
+ g("#sgDel",()=>{if(confirm("Supprimer le groupe de groupes « "+UI.sg+" » ? Les groupes et opérations sont conservés.")){D.sgroupes=(D.sgroupes||[]).filter(x=>x.nom!==UI.sg);if(UI.hg==="sg:"+UI.sg)UI.hg="all";UI.sg="";save();render()}});
+ g("#gRen",()=>{const n=(prompt("Nouveau nom du groupe :",UI.gd)||"").trim();if(!n||n===UI.gd)return;D.depenses.forEach(o=>{if(o.groupe===UI.gd)o.groupe=n});D.groupes=(D.groupes||[]).map(x=>x.nom===UI.gd?{nom:n}:x);(D.sgroupes||[]).forEach(x=>{x.groupes=(x.groupes||[]).map(y=>y===UI.gd?n:y)});if(UI.hg===UI.gd)UI.hg=n;UI.gd=n;save();render()});
+ g("#gDel",()=>{if(confirm("Dissoudre le groupe « "+UI.gd+" » ? Les opérations sont conservées.")){D.depenses.forEach(o=>{if(o.groupe===UI.gd)delete o.groupe});if(UI.hg===UI.gd)UI.hg="all";UI.gd="";save();render()}});
+ const ss=$("#sSel");if(ss)ss.onchange=e=>{salY=e.target.value;render()};
+ 
+ document.querySelectorAll("[data-sal]").forEach(b=>b.onclick=()=>openSal(+b.dataset.sal));
+ document.querySelectorAll("[data-rec]").forEach(b=>b.onclick=()=>openRec(+b.dataset.rec));
+ g("#bAddSal",()=>openSal(-1));g("#bAddRec",()=>openRec(-1));g("#bAddInt",()=>openInt(-1));g("#bAddPret",()=>openPret(-1));
+ document.querySelectorAll("[data-pret]").forEach(b=>b.onclick=()=>openPret(+b.dataset.pret));
+ 
+ document.querySelectorAll("[data-int]").forEach(b=>b.onclick=()=>openInt(+b.dataset.int));
+ g("#bImp",()=>$("#file").click());g("#bJ",()=>dl("depenses_"+new Date().toISOString().slice(0,10)+".json",JSON.stringify(stamp(),null,1),"application/json"));
+ g("#bX",()=>dl("depenses.xml",toXml(stamp()),"application/xml"));g("#bC",()=>dl("depenses.csv",toCsv(),"text/csv"));
+ g("#bClr",()=>{if(confirm("Effacer toutes les données du téléphone ?")){D={version:1,depenses:[],recurrentes:[],salaires:[],prets:[]};save();render()}})}
+function stamp(){return{...D,version:1,exporte_le:new Date().toISOString().slice(0,19).replace("T"," ")}}
+function dl(n,c,t){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([c],{type:t+";charset=utf-8"}));a.download=n;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+function xa(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function toXml(p){let s=`<?xml version="1.0" encoding="utf-8"?>\n<ExportDepenses version="${p.version}" exporte_le="${xa(p.exporte_le||"")}">\n`;
+ for(const[k,[par,ch]]of Object.entries(SEC)){s+=`  <${par}>\n`;(p[k]||[]).forEach(r=>{s+=`    <${ch} ${Object.entries(r).map(([a,v])=>`${a}="${xa(v)}"`).join(" ")}/>\n`});s+=`  </${par}>\n`}
+ return s+"</ExportDepenses>\n"}
+function fromXml(raw){const doc=new DOMParser().parseFromString(raw,"application/xml");if(doc.querySelector("parsererror"))throw new Error("XML invalide");
+ const p={version:1,exporte_le:doc.documentElement.getAttribute("exporte_le")||""};
+ for(const[k,[par,ch]]of Object.entries(SEC)){p[k]=[...doc.querySelectorAll(`${par} > ${ch}`)].map(el=>{const r={};for(const a of el.attributes){r[a.name]=NUM.has(a.name)?(parseFloat(a.value)||0):a.value}return r})}return p}
+function toCsv(){const q=v=>'"'+String(v).replace(/"/g,'""')+'"';return"\uFEFFDate;Libelle;Categorie;Montant;Sens;Groupe\n"+D.depenses.map(o=>[o.date,q(o.libelle),q(o.categorie),String(o.montant).replace(".",","),o.sens,q(o.groupe||"")].join(";")).join("\n")}
+function norm(p){const n=x=>parseFloat(x)||0;
+ return{sante:p.sante,fisc:p.fisc,version:1,exporte_le:p.exporte_le||"",
+ groupes:p.groupes?p.groupes.map(g=>({nom:String(g&&g.nom!=null?g.nom:g)})).filter(g=>g.nom):undefined,
+ depenses:(p.depenses||[]).filter(o=>o.date).map(o=>({date:String(o.date).slice(0,10),libelle:String(o.libelle??""),categorie:String(o.categorie??"Divers"),montant:n(o.montant),sens:o.sens||(REV.includes(o.categorie)?"Revenu":"Dépense"),...(o.lien?{lien:String(o.lien)}:{}),...(o.groupe?{groupe:String(o.groupe)}:{})})),
+ recurrentes:(p.recurrentes||[]).map(r=>({libelle:String(r.libelle??""),categorie:String(r.categorie??""),montant:n(r.montant),type:r.type||"Charge",...(r.groupe?{groupe:String(r.groupe)}:{})})),
+ sgroupes:p.sgroupes?p.sgroupes.map(g=>({nom:String(g.nom||""),groupes:(g.groupes||[]).map(String)})).filter(g=>g.nom):undefined,
+ interessement:p.interessement?p.interessement.map(s=>({date:String(s.date||"").slice(0,10),type:String(s.type||"Intéressement"),montant:n(s.montant),brut:n(s.brut),dest:String(s.dest||""),employeur:String(s.employeur||"")})):undefined,
+ salaires:(p.salaires||[]).map(s=>({date:String(s.date||"").slice(0,10),employeur:String(s.employeur??""),type:String(s.type??""),net:n(s.net),impot:n(s.impot),brut:n(s.brut),notes:String(s.notes??""),...(s.lien?{lien:String(s.lien)}:{})})),
+ prets:(p.prets||[]).map(r=>({nom:String(r.nom??""),capital:n(r.capital),taux:n(r.taux),duree:n(r.duree)||240,date_debut:String(r.date_debut||"").slice(0,10),assurance:n(r.assurance),premiere_reelle:n(r.premiere_reelle)}))}}
+/* ---- Lecture Excel (.xlsx) hors connexion : zip + XML, sans bibliothèque ---- */
+async function unzip(buf){const dv=new DataView(buf),u8=new Uint8Array(buf);let e=u8.length-22;while(e>=0&&dv.getUint32(e,true)!==0x06054b50)e--;
+ if(e<0)throw new Error("Fichier .xlsx invalide");const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const out={},td=new TextDecoder();
+ for(let i=0;i<n;i++){const meth=dv.getUint16(p+10,true),cs=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lo=dv.getUint32(p+42,true);
+  const name=td.decode(u8.subarray(p+46,p+46+nl));p+=46+nl+xl+cl;
+  if(!/^xl\/(worksheets\/sheet\d+\.xml|sharedStrings\.xml|workbook\.xml)$/.test(name))continue;
+  const ds=lo+30+dv.getUint16(lo+26,true)+dv.getUint16(lo+28,true),raw=u8.subarray(ds,ds+cs);
+  out[name]=meth===0?td.decode(raw):td.decode(await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer())}
+ return out}
+function colIdx(r){let n=0;for(const c of r.replace(/\d/g,""))n=n*26+c.charCodeAt(0)-64;return n-1}
+function serialIso(v){const d=new Date(Math.round((v-25569)*86400000));return d.toISOString().slice(0,10)}
+async function readXlsx(buf){const z=await unzip(buf),P=s=>new DOMParser().parseFromString(s,"application/xml");
+ const ss=z["xl/sharedStrings.xml"]?[...P(z["xl/sharedStrings.xml"]).getElementsByTagName("si")].map(si=>[...si.getElementsByTagName("t")].map(t=>t.textContent).join("")):[];
+ const sh=z["xl/worksheets/sheet1.xml"]||z[Object.keys(z).find(k=>/worksheets/.test(k))];if(!sh)throw new Error("Feuille introuvable");
+ const rows=[...P(sh).getElementsByTagName("row")].map(r=>{const a=[];for(const c of r.getElementsByTagName("c")){const t=c.getAttribute("t"),v=c.getElementsByTagName("v")[0],i=c.getElementsByTagName("is")[0];let x="";
+  if(t==="s")x=ss[+v.textContent];else if(t==="inlineStr"&&i)x=i.textContent;else if(v){x=t==="str"||t==="d"||t==="e"?v.textContent:parseFloat(v.textContent)}a[colIdx(c.getAttribute("r"))]=x}return a});
+ if(!rows.length)return[];const hd=(rows[0]||[]).map(s=>String(s??"").trim());
+ return rows.slice(1).filter(r=>r.some(x=>x!==undefined&&x!=="")).map(r=>{const o={};hd.forEach((k,j)=>{if(k)o[k]=r[j]===undefined?"":r[j]});return o})}
+function iso(v){if(v===""||v==null)return"";if(typeof v==="number")return serialIso(v);const s=String(v).trim(),m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?`${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`:s.slice(0,10)}
+const nm=v=>typeof v==="number"?v:(parseFloat(String(v).replace(/\s/g,"").replace(",","."))||0);
+function fromRows(rows){const k=rows[0]?Object.keys(rows[0]):[];
+ if(k.includes("Employeur"))return{salaires:rows.map(r=>({date:iso(r.Date),employeur:String(r.Employeur),type:String(r.Type||""),net:nm(r.Montant_Net),impot:nm(r.Impot_Paye||r.Impot||0),brut:nm(r.Montant_Brut),notes:String(r.Notes||"")}))};
+ if(k.includes("Nom_Pret"))return{prets:rows.map(r=>({nom:String(r.Nom_Pret),capital:nm(r.Capital_Emprunte),taux:nm(r.Taux_Annuel),duree:nm(r.Duree_Mois)||240,date_debut:iso(r.Date_Debut),assurance:nm(r.Assurance_Mensuelle),premiere_reelle:nm(r.Premiere_Mensualite_Reelle)}))};
+ if(k.includes("Date")&&k.includes("Montant"))return{depenses:rows.map(r=>{const c=String(r.Categorie||"Divers");return{date:iso(r.Date),libelle:String(r.Libelle||""),categorie:c,montant:nm(r.Montant),sens:r.Sens==="Revenu"||r.Sens==="Dépense"?r.Sens:(REV.includes(c)?"Revenu":"Dépense")}})};
+ if(k.includes("Type")&&k.includes("Montant"))return{recurrentes:rows.map(r=>({libelle:String(r.Libelle||""),categorie:String(r.Categorie||""),montant:nm(r.Montant),type:String(r.Type||"Charge")}))};
+ throw new Error("colonnes non reconnues")}
+$("#file").onchange=async e=>{const files=[...e.target.files];e.target.value="";if(!files.length)return;const log=[];let nd={...D};
+ for(const f of files){try{const low=f.name.toLowerCase();let p;
+  if(low.endsWith(".xlsx")||low.endsWith(".xlsm"))p=fromRows(await readXlsx(await f.arrayBuffer()));
+  else{const raw=await f.text();p=norm(low.endsWith(".xml")||raw.trim().startsWith("<")?fromXml(raw):JSON.parse(raw));p.exporte_le=p.exporte_le||""}
+  for(const k of Object.keys(SEC))if(p[k]&&(p[k].length||low.match(/\.(json|xml)$/))){if(k==="depenses")p[k]=p[k].filter(o=>o.date);nd[k]=p[k];log.push(`${f.name} → ${p[k].length} ${k}`)}
+  if(p.sante)nd.sante=p.sante;if(p.sgroupes)nd.sgroupes=p.sgroupes;if(p.fisc)nd.fisc=p.fisc;
+  if(p.exporte_le)nd.exporte_le=p.exporte_le}catch(err){log.push(`${f.name} : ${err.message}`)}}
+ if(!log.some(l=>l.includes("→")))return alert(log.join("\n"));
+ if(!confirm("Remplacer les données du téléphone par :\n"+log.join("\n")))return;
+ D=nd;save();render();alert("Import terminé :\n"+log.join("\n"))};
+
+/* Ajout d'une opération (un revenu « Salaire » crée aussi la ligne dans Suivi Salaire, reliée par « lien ») */
+const dlg=$("#dlg");let oIdx=-1,oAllow=true,oLink=null,salOn=false;
+function catsFor(s){return CATS.filter(c=>REV.includes(c)===(s==="Revenu"))}
+function lastEmp(){const l=D.salaires.filter(x=>x.date&&x.employeur).sort((a,b)=>a.date.localeCompare(b.date)).pop();return l?l.employeur:""}
+function updA(){const n=parseFloat($("#fNet").value)||0,i=parseFloat($("#fImp").value)||0;$("#fApr").innerHTML=n>0?`Montant enregistré dans les opérations (net après impôts) : <span>${eur2(n-i)}</span>`:""}
+function syncSal(){const on=!!(oAllow&&sens==="Revenu"&&$("#fCat").value==="Salaire");
+ $("#fSalW").classList.toggle("hide",!on);$("#fMtW").classList.toggle("hide",on);
+ $("#fMt").required=!on;["#fEmp","#fBrut","#fNet"].forEach(x=>{$(x).required=on});
+ if(on&&!salOn){if(oLink==null)$("#fLib").value="Salaire";if(!$("#fEmp").value)$("#fEmp").value=lastEmp();
+  $("#emps2").innerHTML=[...new Set(D.salaires.map(x=>x.employeur).filter(Boolean))].map(l=>`<option value="${esc(l)}">`).join("")}
+ salOn=on;updA()}
+function setSens(s){sens=s;$("#sD").style.outline=s==="Dépense"?"2px solid var(--bleu)":"none";$("#sR").style.outline=s==="Revenu"?"2px solid var(--bleu)":"none";$("#fCat").innerHTML=(oIdx<0?'<option value=""></option>':"")+catsFor(s).map(c=>`<option>${esc(c)}</option>`).join("");syncSal()}
+function fillRec(on){const R=D.recurrentes.map((r,i)=>({r,i})).sort((a,b)=>a.r.libelle.localeCompare(b.r.libelle,"fr"));$("#fRecW").classList.toggle("hide",!(on&&R.length));
+ $("#fRec").innerHTML='<option value="">— Saisie libre —</option>'+R.map(x=>`<option value="${x.i}">${esc(x.r.libelle)} · ${eur2(x.r.montant)}${x.r.type==="Revenu"?" (revenu)":""}</option>`).join("")}
+function fillGrp(cur){const L=grpNames();$("#fGrpW").classList.toggle("hide",!L.length);$("#fGrp").innerHTML='<option value="">— Aucun —</option>'+L.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");$("#fGrp").value=cur&&L.includes(cur)?cur:""}
+$("#fab").onclick=()=>{if(tab==="int")return openInt(-1);if(tab==="cred")return openPret(-1);if(tab==="rec")return openRec(-1);$("#fabBg").classList.remove("hide")};
+function newOp(){oIdx=-1;oAllow=true;oLink=null;salOn=false;$("#opTitle").textContent="Nouvelle opération";$("#fDel").classList.add("hide");$("#frm").reset();$("#fDate").value=TODAY();setSens("Dépense");fillGrp(UI.hg!=="all"&&!UI.hg.startsWith("sg:")?UI.hg:"");fillRec(true);
+ $("#libs").innerHTML=[...new Set(D.depenses.slice(-400).map(o=>o.libelle))].map(l=>`<option value="${esc(l)}">`).join("");dlg.showModal()}
+$("#fabBg").onclick=e=>{if(e.target.id==="fabBg")e.target.classList.add("hide")};
+$("#fabO").onclick=()=>{$("#fabBg").classList.add("hide");newOp()};
+$("#fabG").onclick=()=>{$("#fabBg").classList.add("hide");if(tab!=="home"){tab="home";saveTab();render();scrollTo(0,0)}
+ const L=grpNames();$("#frmG").reset();$("#gNPos").innerHTML=Array.from({length:L.length+1},(_,k)=>`<option value="${k+1}">${k+1}${k<L.length?" · avant "+esc(L[k]):" · à la fin"}</option>`).join("");$("#gNPos").value=String(L.length+1);$("#dlgG").showModal()};
+$("#gNCancel").onclick=()=>$("#dlgG").close();
+$("#frmG").onsubmit=e=>{const n=$("#gNNom").value.trim();if(!n){e.preventDefault();return}
+ if(grpNames().some(x=>x.toLowerCase()===n.toLowerCase())){e.preventDefault();alert("Ce groupe existe déjà : ajoute-lui des opérations depuis « Mes groupes ».");return}
+ UI.gt="__new";UI.gn=n;UI.gp=$("#gNPos").value;UI.selMode=true;UI.sel=new Set();render();const l=$("#opList");if(l)l.scrollIntoView({behavior:"smooth"})};
+$("#sD").onclick=()=>setSens("Dépense");$("#sR").onclick=()=>setSens("Revenu");$("#fCancel").onclick=()=>dlg.close();
+$("#fRec").onchange=e=>{const r=D.recurrentes[e.target.value];if(!r)return;setSens(r.type==="Revenu"?"Revenu":"Dépense");const c=$("#fCat");
+ if(r.categorie&&![...c.options].some(o=>o.value===r.categorie))c.insertAdjacentHTML("beforeend",`<option>${esc(r.categorie)}</option>`);c.value=r.categorie||"";
+ $("#fLib").value=r.libelle;$("#fMt").value=r.montant;fillGrp(r.groupe||$("#fGrp").value);syncSal();$("#fLib").value=r.libelle;if(!$("#fSalW").classList.contains("hide"))$("#fNet").value=r.montant;updA()};
+$("#fCat").onchange=syncSal;$("#fNet").oninput=updA;$("#fImp").oninput=updA;
+$("#fLib").onchange=e=>{const m=[...D.depenses].reverse().find(o=>o.libelle.toLowerCase()===e.target.value.toLowerCase());if(m&&oIdx<0){setSens(isRev(m)?"Revenu":"Dépense");$("#fCat").value=m.categorie;syncSal()}};
+$("#frm").onsubmit=e=>{const on=!!(oAllow&&sens==="Revenu"&&$("#fCat").value==="Salaire"),r2=x=>Math.round(x*100)/100,date=$("#fDate").value;
+ if(on){const n=parseFloat($("#fNet").value),im=parseFloat($("#fImp").value)||0,b=parseFloat($("#fBrut").value)||0;
+  if(!(n>0)||!(n-im>0)){e.preventDefault();alert("Le salaire net doit être supérieur à l'impôt payé.");return}
+  const lien=oLink||("s"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)),
+   op={date,libelle:$("#fLib").value.trim()||"Salaire",categorie:"Salaire",montant:r2(n-im),sens:"Revenu",lien},
+   sal={date,employeur:$("#fEmp").value.trim()||"Non renseigné",net:r2(n),impot:r2(im),brut:r2(b),lien},
+   si=D.salaires.findIndex(x=>x.lien===lien);
+  if(oIdx>=0)D.depenses[oIdx]={...D.depenses[oIdx],...op};else D.depenses.push(op);
+  if(si>=0)D.salaires[si]={...D.salaires[si],...sal};else D.salaires.push({type:"Salaire",notes:"",...sal});
+  salY=date.slice(0,4)}
+ else{const m=parseFloat($("#fMt").value);if(!(m>0)){e.preventDefault();return}
+  const o={date,libelle:$("#fLib").value.trim(),categorie:$("#fCat").value,montant:r2(m),sens};
+  if(oIdx>=0){const old=D.depenses[oIdx];
+   if(old.lien){if(!confirm("Cette opération n'est plus un salaire : supprimer aussi le salaire lié dans Suivi Salaire ?")){e.preventDefault();return}
+    D.salaires=D.salaires.filter(x=>x.lien!==old.lien);const nw={...old,...o};delete nw.lien;D.depenses[oIdx]=nw}
+   else D.depenses[oIdx]={...old,...o}}
+  else D.depenses.push(o)}
+ {const gi=oIdx>=0?oIdx:D.depenses.length-1,gv=$("#fGrp").value;if(D.depenses[gi]){if(gv)D.depenses[gi].groupe=gv;else delete D.depenses[gi].groupe}}
+ save();if(oIdx<0)per="m:"+date.slice(0,7);render()};
+function openOp(i){oIdx=i;const o=D.depenses[i];oAllow=!!o.lien;oLink=o.lien||null;salOn=false;$("#frm").reset();$("#opTitle").textContent="Modifier l'opération";setSens(isRev(o)?"Revenu":"Dépense");
+ $("#libs").innerHTML=[...new Set(D.depenses.slice(-400).map(x=>x.libelle))].map(l=>`<option value="${esc(l)}">`).join("");
+ $("#fLib").value=o.libelle;$("#fMt").value=o.montant;
+ if(o.categorie&&![...$("#fCat").options].some(x=>x.value===o.categorie))$("#fCat").insertAdjacentHTML("beforeend",`<option>${esc(o.categorie)}</option>`);
+ $("#fCat").value=o.categorie;$("#fDate").value=o.date;
+ if(o.lien){const s=D.salaires.find(x=>x.lien===o.lien);$("#fEmp").value=s?s.employeur:"";$("#fBrut").value=s&&s.brut!=null?s.brut:"";$("#fNet").value=s?s.net:o.montant;$("#fImp").value=s&&s.impot?s.impot:""}
+ $("#fDel").classList.remove("hide");fillGrp(o.groupe);fillRec(false);syncSal();dlg.showModal()}
+$("#fDel").onclick=()=>{if(oIdx<0)return;const o=D.depenses[oIdx];
+ if(confirm(o.lien?"Supprimer cette opération et le salaire lié dans Suivi Salaire ?":"Supprimer cette opération ?")){if(o.lien)D.salaires=D.salaires.filter(x=>x.lien!==o.lien);D.depenses.splice(oIdx,1);save();dlg.close();render()}};
+/* Groupes de groupes */
+const dlgSG=$("#dlgSG");let sgIdx=-1;
+function openSG(i){sgIdx=i;$("#frmSG").reset();const x=i>=0?D.sgroupes[i]:null,L=grpNames();
+ $("#sgTitle").textContent=x?"🗂 Modifier le groupe de groupes":"🗂 Nouveau groupe de groupes";$("#sgNom").value=x?x.nom:"";
+ $("#sgList").innerHTML=L.map(g=>`<label style="display:flex;align-items:center;gap:10px;margin:0;padding:9px 2px;font-size:.9rem;color:var(--txt);font-weight:500"><input type="checkbox" value="${esc(g)}" ${x&&x.groupes.includes(g)?"checked":""} style="width:22px;height:22px;padding:0;flex:none"> ${esc(g)}</label>`).join("")||'<div class="empty">Aucun groupe disponible</div>';
+ dlgSG.showModal()}
+$("#sgCancel").onclick=()=>dlgSG.close();
+$("#frmSG").onsubmit=e=>{const n=$("#sgNom").value.trim(),m=[...document.querySelectorAll("#sgList input:checked")].map(x=>x.value);
+ if(!n){e.preventDefault();return}
+ if((D.sgroupes||[]).some((x,k)=>k!==sgIdx&&x.nom.toLowerCase()===n.toLowerCase())){e.preventDefault();alert("Ce groupe de groupes existe déjà.");return}
+ if(!m.length){e.preventDefault();alert("Coche au moins un groupe.");return}
+ D.sgroupes=D.sgroupes||[];const old=sgIdx>=0?D.sgroupes[sgIdx].nom:null,o={nom:n,groupes:m};
+ if(sgIdx>=0)D.sgroupes[sgIdx]=o;else D.sgroupes.push(o);
+ if(old&&UI.hg==="sg:"+old)UI.hg="sg:"+n;UI.sg=n;save();render()};
+/* Ajout / modification d'un salaire */
+const dlgS=$("#dlgS");let sIdx=-1;
+function updApr(){const n=parseFloat($("#sNet").value)||0,i=parseFloat($("#sImp").value)||0;$("#sApr").innerHTML=n>0?`Salaire net après impôts : <span>${eur2(n-i)}</span>`:""}
+$("#sNet").oninput=updApr;$("#sImp").oninput=updApr;
+function openSal(i=-1){sIdx=i;$("#frmS").reset();const s=i>=0?D.salaires[i]:null;
+ $("#sTitle").textContent=s?"Modifier le salaire":"Nouveau salaire perçu";$("#sDate").value=s&&s.date?s.date:TODAY();$("#sApr").innerHTML="";
+ const last=D.salaires.filter(x=>x.date).sort((a,b)=>a.date.localeCompare(b.date)).pop(),ref=s||last;
+ if(ref){$("#sEmp").value=ref.employeur||"";
+  if(ref.type&&![...$("#sType").options].some(o=>o.value===ref.type))$("#sType").insertAdjacentHTML("beforeend",`<option>${esc(ref.type)}</option>`);
+  if(ref.type)$("#sType").value=ref.type}
+ if(s){$("#sNet").value=s.net||"";$("#sImp").value=s.impot||"";$("#sBrut").value=s.brut!=null?s.brut:""}
+ $("#emps").innerHTML=[...new Set(D.salaires.map(x=>x.employeur).filter(Boolean))].map(l=>`<option value="${esc(l)}">`).join("");
+ $("#sDel").classList.toggle("hide",!s);dlgS.showModal();updApr()}
+$("#sCancel").onclick=()=>dlgS.close();
+$("#sDel").onclick=()=>{if(sIdx<0)return;const s=D.salaires[sIdx];if(confirm(s.lien?"Supprimer ce salaire et l'opération liée dans la Vue d'ensemble ?":"Supprimer ce salaire ?")){if(s.lien)D.depenses=D.depenses.filter(x=>x.lien!==s.lien);D.salaires.splice(sIdx,1);save();dlgS.close();render()}};
+$("#frmS").onsubmit=e=>{const n=parseFloat($("#sNet").value),b=parseFloat($("#sBrut").value)||0,im=parseFloat($("#sImp").value)||0;if(!(n>0)){e.preventDefault();return}
+ const o={date:$("#sDate").value,employeur:$("#sEmp").value.trim()||"Non renseigné",type:$("#sType").value,net:Math.round(n*100)/100,impot:Math.round(im*100)/100,brut:Math.round(b*100)/100,notes:sIdx>=0?(D.salaires[sIdx].notes||""):""};
+ if(sIdx>=0){const no={...D.salaires[sIdx],...o};D.salaires[sIdx]=no;
+  if(no.lien){const oi=D.depenses.findIndex(x=>x.lien===no.lien);if(oi>=0)D.depenses[oi]={...D.depenses[oi],date:no.date,montant:Math.round((no.net-no.impot)*100)/100}}}
+ else{D.salaires.push(o);salY=o.date.slice(0,4)}
+ save();render()};
+/* Ajout / modification intéressement ou participation */
+const dlgI=$("#dlgI");let iIdx=-1,iType="Intéressement";
+function setIT(t){iType=t;$("#iI").style.outline=t==="Intéressement"?"2px solid var(--bleu)":"none";$("#iP").style.outline=t==="Participation"?"2px solid var(--bleu)":"none";$("#iA").style.outline=t==="Abondement"?"2px solid var(--bleu)":"none";$("#iV").style.outline=t==="PPV"?"2px solid var(--bleu)":"none";$("#iDestW").classList.toggle("hide",t==="Abondement");$("#iAbN").classList.toggle("hide",t!=="Abondement")}
+function openInt(i=-1){iIdx=i;$("#frmI").reset();const s=i>=0?D.interessement[i]:null;
+ /* Liste déroulante : employeurs déjà présents dans l'onglet Salaire (le plus récent en premier) */
+ const emps=[...new Set(D.salaires.filter(x=>x.employeur).sort((a,b)=>(b.date||"").localeCompare(a.date||"")).map(x=>x.employeur))];
+ if(s&&s.employeur&&!emps.includes(s.employeur))emps.push(s.employeur);
+ $("#iEmp").innerHTML='<option value="">— Choisir —</option>'+emps.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join("");
+ if(!s&&emps.length)$("#iEmp").value=emps[0];
+ $("#iTitle").textContent=s?"Modifier la ligne":"Nouvel intéressement / participation / abondement / PPV";setIT(s?s.type:"Intéressement");$("#iDate").value=s&&s.date?s.date:TODAY();
+ if(s){$("#iNet").value=s.montant||"";$("#iBrut").value=s.brut||"";$("#iDest").value=s.dest||$("#iDest").options[0].value;$("#iEmp").value=s.employeur||""}
+ else{const l=(D.interessement||[]).slice(-1)[0];if(l&&emps.includes(l.employeur))$("#iEmp").value=l.employeur}
+ $("#iDel").classList.toggle("hide",!s);dlgI.showModal()}
+$("#iI").onclick=()=>setIT("Intéressement");$("#iP").onclick=()=>setIT("Participation");$("#iA").onclick=()=>setIT("Abondement");$("#iV").onclick=()=>setIT("PPV");$("#iCancel").onclick=()=>dlgI.close();
+$("#iDel").onclick=()=>{if(iIdx>=0&&confirm("Supprimer cette ligne ?")){D.interessement.splice(iIdx,1);save();dlgI.close();render()}};
+$("#frmI").onsubmit=e=>{const m=parseFloat($("#iNet").value);if(!(m>0)){e.preventDefault();return}
+ const o={date:$("#iDate").value,type:iType,montant:Math.round(m*100)/100,brut:Math.round((parseFloat($("#iBrut").value)||0)*100)/100,dest:iType==="Abondement"?$("#iDest").options[1].value:$("#iDest").value,employeur:$("#iEmp").value.trim()};
+ D.interessement=D.interessement||[];if(iIdx>=0)D.interessement[iIdx]=o;else D.interessement.push(o);UI.iy="all";save();render()};
+/* Ajout / modification d'un prêt */
+const dlgP=$("#dlgP");let pIdx=-1;
+function updMens(){const c=parseFloat($("#pCap").value)||0,t=parseFloat($("#pTaux").value)||0,n=parseInt($("#pDur").value)||0,a=parseFloat($("#pAss").value)||0;
+ $("#pMens").innerHTML=c>0&&n>0?`Mensualité calculée : <span>${eur2(pmt(c,t,n))}</span>${a>0?` · avec assurance <span>${eur2(pmt(c,t,n)+a)}</span>`:""}`:""}
+["#pCap","#pTaux","#pDur","#pAss"].forEach(id=>$(id).oninput=updMens);
+function openPret(i=-1){pIdx=i;$("#frmP").reset();const p=i>=0?D.prets[i]:null;
+ $("#pTitle").textContent=p?"Modifier le prêt":"Nouveau prêt";
+ if(p){$("#pNom").value=p.nom||"";$("#pCap").value=p.capital;$("#pTaux").value=p.taux;$("#pDur").value=p.duree;$("#pDeb").value=p.date_debut||"";$("#pAss").value=p.assurance||"";$("#pPrem").value=p.premiere_reelle||""}
+ else $("#pDeb").value=TODAY();
+ $("#pDel").classList.toggle("hide",!p);dlgP.showModal();updMens()}
+$("#pCancel").onclick=()=>dlgP.close();
+$("#pDel").onclick=()=>{if(pIdx>=0&&confirm("Supprimer ce prêt ?")){D.prets.splice(pIdx,1);save();dlgP.close();render()}};
+$("#frmP").onsubmit=e=>{const c=parseFloat($("#pCap").value),n=parseInt($("#pDur").value);if(!(c>0)||!(n>0)){e.preventDefault();return}
+ const o={...(pIdx>=0?D.prets[pIdx]:{}),nom:$("#pNom").value.trim(),capital:Math.round(c*100)/100,taux:parseFloat($("#pTaux").value)||0,duree:n,date_debut:$("#pDeb").value,assurance:parseFloat($("#pAss").value)||0,premiere_reelle:parseFloat($("#pPrem").value)||0};
+ if(pIdx>=0)D.prets[pIdx]=o;else D.prets.push(o);save();render()};
+/* Modification d'un acte de santé (base Sécu, taux Sécu, franchise, prix habituel) */
+const dlgM=$("#dlgM");let mId=null;
+function openAct(id){mId=id;const a=getActs().find(x=>x.id===id);$("#mTitle").textContent=a.nom;$("#mG").textContent=a.t;$("#mBr").value=a.br;$("#mSec").value=a.sec;$("#mPf").value=a.pf||0;$("#mPrix").value=a.prix;dlgM.showModal()}
+$("#mCancel").onclick=()=>dlgM.close();
+$("#mReset").onclick=()=>{if(D.sante&&D.sante.o)delete D.sante.o[mId];save();dlgM.close();render()};
+$("#frmM").onsubmit=()=>{const n=x=>parseFloat($(x).value)||0;D.sante=D.sante||{};D.sante.o=D.sante.o||{};D.sante.o[mId]={br:n("#mBr"),sec:n("#mSec"),pf:n("#mPf"),prix:n("#mPrix")};save();render()};
+/* Ajout / modification d'une récurrence */
+const dlgR=$("#dlgR");let rIdx=-1,rType="Charge";
+function setRT(t){rType=t;$("#rC").style.outline=t==="Charge"?"2px solid var(--bleu)":"none";$("#rV").style.outline=t==="Revenu"?"2px solid var(--bleu)":"none";
+ $("#rCat").innerHTML=catsFor(t==="Revenu"?"Revenu":"Dépense").map(c=>`<option>${esc(c)}</option>`).join("")}
+function openRec(i){rIdx=i;$("#frmR").reset();const r=i>=0?D.recurrentes[i]:null;
+ $("#rTitle").textContent=r?"Modifier la récurrence":"Nouvelle récurrence";setRT(r&&r.type==="Revenu"?"Revenu":"Charge");
+ if(r){$("#rLib").value=r.libelle;$("#rMt").value=r.montant;
+  if(r.categorie&&![...$("#rCat").options].some(o=>o.value===r.categorie))$("#rCat").insertAdjacentHTML("beforeend",`<option>${esc(r.categorie)}</option>`);
+  if(r.categorie)$("#rCat").value=r.categorie}
+ {const L=grpNames();if(r&&r.groupe&&!L.includes(r.groupe))L.push(r.groupe);$("#rGrpW").classList.toggle("hide",!L.length);
+  $("#rGrp").innerHTML='<option value="">— Aucun —</option>'+L.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");$("#rGrp").value=r&&r.groupe?r.groupe:""}
+ $("#rDel").classList.toggle("hide",!r);dlgR.showModal()}
+$("#rC").onclick=()=>setRT("Charge");$("#rV").onclick=()=>setRT("Revenu");$("#rCancel").onclick=()=>dlgR.close();
+$("#rDel").onclick=()=>{if(rIdx>=0&&confirm("Supprimer cette récurrence ?")){D.recurrentes.splice(rIdx,1);save();dlgR.close();render()}};
+$("#frmR").onsubmit=e=>{const m=parseFloat($("#rMt").value);if(!(m>0)){e.preventDefault();return}
+ const r={libelle:$("#rLib").value.trim(),categorie:$("#rCat").value,montant:Math.round(m*100)/100,type:rType};
+ {const gv=$("#rGrp").value;if(gv)r.groupe=gv}
+ if(rIdx>=0)D.recurrentes[rIdx]=r;else D.recurrentes.push(r);save();render()};
+render();
+if("serviceWorker"in navigator){const had=!!navigator.serviceWorker.controller;let rl=0;
+ /* Si une nouvelle version prend le relais d'une ancienne, la page se recharge toute seule une fois. */
+ navigator.serviceWorker.addEventListener("controllerchange",()=>{if(had&&!rl){rl=1;location.reload()}});
+ addEventListener("load",()=>navigator.serviceWorker.register("sw.js").then(r=>r.update()).catch(()=>{}))}
+</script>
+</body>
+</html>
