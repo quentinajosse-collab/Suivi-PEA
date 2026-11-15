@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Vue d'ensemble des CTO</title>
+<style>
+:root{--bg:#f3f5f7;--card:#fff;--ink:#14202b;--mute:#66788a;--line:#e1e6ea;--up:#0d7a4e;--dn:#c23b32;--acc:#1f4d7a;--alt:#f6f8fa}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1220;--card:#131c2e;--ink:#e5edf8;--mute:#94a3b8;--line:#243049;--alt:#0f1829;--acc:#4f8fd0;--up:#34d399;--dn:#f87171}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+#bar{position:sticky;top:0;z-index:30;display:flex;gap:6px;overflow-x:auto;padding:8px 10px;background:var(--card);border-bottom:1px solid var(--line)}
+#bar a{flex:none;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--alt);color:var(--ink);text-decoration:none;font-size:13px;font-weight:600}
+#bar a.on{background:var(--acc);border-color:var(--acc);color:#fff}
+main{max-width:980px;margin:0 auto;padding:14px 12px 28px}
+h1{font-size:1.3rem;margin:0 0 10px}
+h2{font-size:1.05rem;margin:18px 0 8px}
+.up{color:var(--up)}.dn{color:var(--dn)}
+.hero{padding:16px 18px;border-radius:16px;background:linear-gradient(135deg,#1f4d7a,#0f766e);color:#fff}
+.hero small{opacity:.85}.hero .n{font-size:2rem;font-weight:800;letter-spacing:-.02em}
+.hero .r{margin-top:2px;font-weight:700}
+.hero .up{color:#86efac}.hero .dn{color:#fca5a5}
+.k{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
+.k div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
+.k span{display:block;color:var(--mute);font-size:12px}.k b{font-size:1.02rem}
+.g{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+a.c{display:block;color:inherit;text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+a.c h3{margin:0 0 4px;font-size:.98rem}a.c .v{font-size:1.25rem;font-weight:800}a.c .m{color:var(--mute);font-size:12px;margin-top:3px}
+.bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--line)}
+.lg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:12px;color:var(--mute)}.lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
+.tw{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);font-size:13px;white-space:nowrap}
+th{color:var(--mute);font-weight:600;background:var(--alt)}th:first-child,td:first-child{text-align:left}
+td small{display:block;color:var(--mute);font-size:11px}
+tr:last-child td{border-bottom:0}
+.empty{background:var(--card);border:1px dashed var(--line);border-radius:14px;padding:18px;color:var(--mute);text-align:center}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<main><h1>📊 Vue d'ensemble des CTO</h1><div id="out"></div></main>
+<script>
+"use strict";
+const LS={g(k){try{return JSON.parse(localStorage.getItem(k))}catch{return null}}};
+const nf=d=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const fE=(v,d=0)=>isFinite(v)?nf(d).format(v)+' €':'–';
+const fS=(v,d=0)=>isFinite(v)?(v<0?'−':'+')+nf(d).format(Math.abs(v))+' €':'–';
+const fP=v=>isFinite(v)?(v<0?'−':'+')+nf(2).format(Math.abs(v))+' %':'–';
+const cl=v=>!isFinite(v)||Math.abs(v)<.005?'':v>0?'up':'dn';
+const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const r2=x=>Math.round(Number((x*100).toFixed(6)))/100;
+const isCry=r=>/-(EUR|USD|USDT|USDC|GBP)$/i.test(String((r&&(r.Ticker||r.tk))||''));
+function norm(o,i){
+  const n=k=>parseFloat(o[k])||0,D=s=>new Date(String(s).replace(' ','T'));
+  return{i,nom:o.Nom,type:o.Type,tk:o.Ticker,q:n('Quantité'),p:n('Prix Unitaire (€)'),f:n('Frais Totaux (€)'),c:n('Commission (€)'),
+    rompu:n('Rompu'),ttf:n('TTF (€)'),ret:n('Retenue_Source_Etrangere'),remb:n('Remboursement_Capital'),arr:n('Arrondi_Courtier'),
+    d:D(o.Date_Heure),dr:D(o.Date_Rompus||o.Date_Heure)};
+}
+
+/* ---------- Calculs (même logique que app_perso.py) ---------- */
+function addDays(set,a,b){const e=new Date(b.getFullYear(),b.getMonth(),b.getDate());for(let d=new Date(a.getFullYear(),a.getMonth(),a.getDate());d<=e;d.setDate(d.getDate()+1))set.add(d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate())}
+function compute(tx,prices){
+  const now=new Date(),by={},pos=[];let divTot=0,fees=0,cost=0,real=0;
+  tx.forEach(t=>{if(t.type=='ACHAT'||t.type=='VENTE')fees+=t.f;
+    if(t.type!='APPORT'&&t.type!='RETRAIT')(by[t.tk]=by[t.tk]||[]).push(t)});
+  const key=t=>{const d=new Date(t.d);if(t.type=='SPLIT')d.setHours(0,0,0,0);return d.getTime()};
+  for(const tk in by){
+    const g=by[tk].sort((a,b)=>key(a)-key(b));
+    let sh=0,inv=0,ach=0,div=0,rl=0,nb=0,cs=null,secs=0;const ds=new Set(),nom=g[g.length-1].nom;
+    for(const t of g){
+      if(t.type=='ACHAT'){nb++;if(cs==null)cs=t.d;sh+=t.q;inv+=t.q*t.p+t.f;ach+=t.q*t.p+t.f}
+      else if(t.type=='VENTE'){nb++;const rev=t.q*t.p-t.f;if(sh>0){const pru=inv/sh;rl+=rev-t.q*pru;sh-=t.q;inv=sh*pru;if(sh<=1e-4&&cs!=null){addDays(ds,cs,t.d);secs+=Math.max((t.d-cs)/1e3,0);cs=null}}}
+      else if(t.type=='SPLIT'){if(sh>0)sh=sh*t.q;if(t.rompu>0&&t.dr<=now)div+=t.rompu}
+      else if(t.type=='DIVIDENDE'){div+=t.p-t.ret-t.c+t.arr;if(t.remb>0){inv=Math.max(0,inv-t.remb);ach=Math.max(0,ach-t.remb)}}
+    }
+    if(sh>1e-4||Math.abs(rl)>.001||div>.001||ach>0){
+      const open=sh>1e-4,pru=open?inv/sh:0,pr=prices[tk],px=(pr&&pr.p)||pru,val=open?sh*px:0,lat=open?val-inv:0,tot=lat+div+rl;
+      const base=open?(inv>0?inv:1):(ach>0?ach:1);
+      const lv=open&&cs!=null,dd=new Set(ds);if(lv)addDays(dd,cs,now);
+      pos.push({nom,tk,sh,open,pru,px,val,inv,ach,lat,latP:open&&inv>0?lat/inv*100:0,div,rl,tot,perf:tot/base*100,nb,jours:dd.size,secs:secs+(lv?Math.max((now-cs)/1e3,0):0),pc:pr&&pr.pc,
+        day:open&&pr&&pr.pc?(pr.p-pr.pc)*sh:0,live:!!(pr&&pr.p)});
+      divTot+=div;real+=rl;cost+=ach;
+    }
+  }
+  let cash=0;
+  /* Comme la poche espèces du Streamlit (dernière ligne de l'historique, qui s'arrête à aujourd'hui) : une opération datée d'un jour à venir
+     (ex. rompu de split dont la date de versement n'est pas encore passée) n'est pas encore comptée dans le cash. */
+  const eod=new Date(now.getFullYear(),now.getMonth(),now.getDate(),23,59,59,999);
+  tx.map(t=>({t,k:t.type=='SPLIT'?t.dr:t.d})).filter(x=>x.k<=eod).sort((a,b)=>a.k-b.k).forEach(({t})=>{
+    if(t.type=='APPORT')cash=r2(cash+t.q);
+    else if(t.type=='RETRAIT')cash=r2(cash-t.q);
+    else if(t.type=='ACHAT')cash=r2(cash-r2(t.q*t.p+t.f));
+    else if(t.type=='VENTE')cash=r2(cash+r2(t.q*t.p-t.f));
+    else if(t.type=='DIVIDENDE')cash=r2(cash+t.p-t.ret-t.c+t.remb+t.arr);
+    else if(t.type=='SPLIT'&&t.rompu>0)cash=r2(cash+t.rompu);
+  });
+  /* net_divs_total du Streamlit (Vue d'ensemble) : Prix - Commission - Retenue sur chaque DIVIDENDE (sans l'arrondi courtier)
+     + rompus de SPLIT déjà versés ; différent de la somme par ligne (qui, elle, inclut l'arrondi) */
+  let divNet=0;tx.forEach(t=>{if(t.type=='DIVIDENDE')divNet+=t.p-t.c-t.ret;else if(t.type=='SPLIT'&&t.rompu>0&&t.dr<=now)divNet+=t.rompu});
+  const apports=tx.reduce((s,t)=>s+(t.type=='APPORT'?t.q:t.type=='RETRAIT'?-t.q:0),0);
+  const valeur=pos.reduce((s,p)=>s+p.val,0),day=pos.reduce((s,p)=>s+p.day,0);
+  return{pos,cash,apports,valeur,total:valeur+cash,gain:valeur+cash-apports,divTot,divNet,fees,real,day,
+    anyLive:pos.some(p=>p.open&&p.live)};
+}
+
+
+/* Comme la vue CTO : si ce CTO porte aussi la crypto, ses achats/ventes crypto deviennent un retrait/apport (cash juste, crypto absente) */
+function mkTxFor(raw,shr){const out=[];
+  raw.forEach((o,i)=>{const n=norm(o,i);if(!n.type||isNaN(n.d))return;
+    if(!shr||!isCry(o)){out.push(n);return}
+    const V=(type,q)=>({...n,type,tk:type,nom:'Compte Courant',q,p:1,f:0,c:0,ttf:0,ret:0,remb:0,arr:0,rompu:0,virt:1});
+    if(n.type=='ACHAT')out.push(V('RETRAIT',n.q*n.p+n.f));else if(n.type=='VENTE')out.push(V('APPORT',n.q*n.p-n.f))});
+  return out}
+const CRYACC=((((LS.g('hub_acc')||{}).list)||[]).find(a=>a.type==='Crypto')||{}).inCto||'';
+const CTOS=(()=>{const m=new Map(((LS.g('hub_acc')||{}).list||[]).filter(a=>a.type==='CTO').map(a=>[a.id,a]));if(!m.has('cto'))m.set('cto',{id:'cto'});
+  return[...m.values()].sort((a,b)=>a.id.localeCompare(b.id,'fr',{numeric:true})).map(a=>({id:a.id,broker:a.broker||'',l:a.label||(a.id==='cto'?'CTO':'CTO '+a.id.slice(3))}))})();
+const href=c=>c.id==='cto'?'cto.html':'cto.html?a='+c.id+'&l='+encodeURIComponent(c.l);
+$bar();function $bar(){document.getElementById('bar').innerHTML=[['ctos.html','📊 Ensemble',1],...CTOS.map(c=>[href(c),'🏦 '+esc(c.l),0])].map(([h,t,on])=>`<a href="${h}"${on?' class="on"':''}>${t}</a>`).join('')}
+const COL=['#1f4d7a','#0f766e','#b45309','#7c3aed','#be185d','#0369a1','#4d7c0f','#9a3412'];
+function render(){
+  const rows=CTOS.map(c=>{const raw=LS.g(c.id+'_raw')||[];let R=null;try{if(raw.length)R=compute(mkTxFor(raw,c.id===CRYACC),LS.g(c.id+'_prices')||{})}catch(e){}return{c,R}});
+  const ok=rows.filter(x=>x.R);
+  if(!ok.length){document.getElementById('out').innerHTML='<div class="empty">Aucune donnée CTO sur cet appareil : ouvre un CTO une fois pour charger ses transactions.</div>';return}
+  const S=k=>ok.reduce((t,x)=>t+(x.R[k]||0),0),tot=S('total'),gain=S('gain'),app=S('apports'),pc=app>0?gain/app*100:NaN;
+  let h=`<div class="hero"><small>Valeur totale · ${ok.length} CTO</small><div class="n">${fE(tot)}</div><div class="r"><span class="${cl(gain)}">${fS(gain)}</span> · <span class="${cl(pc)}">${fP(pc)}</span> <small>retour total (plus-values latentes et réalisées, dividendes, frais)</small></div></div>`;
+  h+=`<div class="k"><div><span>Titres</span><b>${fE(S('valeur'))}</b></div><div><span>Espèces</span><b>${fE(S('cash'))}</b></div><div><span>Apports nets</span><b>${fE(app)}</b></div><div><span>Variation du jour</span><b class="${cl(S('day'))}">${fS(S('day'))}</b></div><div><span>Dividendes nets</span><b>${fE(S('divNet'))}</b></div><div><span>Plus-values réalisées</span><b class="${cl(S('real'))}">${fS(S('real'))}</b></div><div><span>Frais</span><b>${fE(S('fees'))}</b></div></div>`;
+  h+='<h2>Mes CTO</h2><div class="g">'+rows.map(({c,R},i)=>{const p=R&&R.apports>0?R.gain/R.apports*100:NaN;
+    return`<a class="c" href="${href(c)}"><h3>🏦 ${esc(c.l)}</h3>${R?`<div class="v">${fE(R.total)}</div><div class="m"><b class="${cl(p)}">${fP(p)}</b> · ${tot>0?nf(1).format(R.total/tot*100):0} % de l'ensemble</div>`:'<div class="m">Pas encore de données</div>'}${c.broker?`<div class="m">🏛️ ${esc(c.broker)}</div>`:''}</a>`}).join('')+'</div>';
+  h+='<h2>Répartition</h2><div class="bar">'+ok.map((x,i)=>`<div title="${esc(x.c.l)}" style="width:${tot>0?Math.max(0,x.R.total)/tot*100:0}%;background:${COL[rows.indexOf(x)%COL.length]}"></div>`).join('')+'</div><div class="lg">'+ok.map(x=>`<span><i style="background:${COL[rows.indexOf(x)%COL.length]}"></i>${esc(x.c.l)} ${fE(x.R.total)}</span>`).join('')+'</div>';
+  const M={};ok.forEach(({c,R})=>R.pos.filter(p=>p.open).forEach(p=>{const o=M[p.tk]=M[p.tk]||{nom:p.nom,tk:p.tk,sh:0,val:0,inv:0,lat:0,tot:0,base:0,w:[]};o.sh+=p.sh;o.val+=p.val;o.inv+=p.inv;o.lat+=p.lat;o.tot+=p.tot;o.base+=p.inv>0?p.inv:1;o.w.push(c.l)}));
+  const P=Object.values(M).sort((a,b)=>b.val-a.val);
+  h+='<h2>Positions de tous les CTO</h2>'+(P.length?`<div class="tw"><table><thead><tr><th>Titre</th><th>Qté</th><th>Valeur</th><th>+/- latente</th><th>Perf. totale</th></tr></thead><tbody>`+P.map(o=>{const lp=o.inv>0?o.lat/o.inv*100:NaN,tp=o.tot/o.base*100;
+    return`<tr><td>${esc(o.nom)}<small>${esc(o.tk)}${CTOS.length>1?' · '+o.w.map(esc).join(', '):''}</small></td><td>${new Intl.NumberFormat('fr-FR',{maximumFractionDigits:6}).format(o.sh)}</td><td>${fE(o.val)}</td><td class="${cl(o.lat)}">${fS(o.lat)}<small class="${cl(lp)}">${fP(lp)}</small></td><td class="${cl(tp)}">${fP(tp)}</td></tr>`}).join('')+'</tbody></table></div>':'<div class="empty">Aucune position ouverte.</div>');
+  document.getElementById('out').innerHTML=h}
+render();
+addEventListener('storage',e=>{if(/_raw$|_prices$|^hub_/.test(e.key||''))render()});
+</script>
+</body>
+</html>

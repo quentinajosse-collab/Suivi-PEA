@@ -329,7 +329,18 @@ const ar=v=>Math.abs(v)<.005?'▬':v>0?'▲':'▼';
 const r2=x=>Math.round(Number((x*100).toFixed(6)))/100;
 const LS={g(k){try{return JSON.parse(localStorage.getItem(k))}catch{return null}},s(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
 /* Plusieurs CTO : la page générale ouvre cto.html?a=cto2&l=Nom ; sans paramètre, c'est le compte « cto » d'origine (données inchangées) */
-const _P=new URLSearchParams(location.search),ACC=(_P.get('a')||'cto').replace(/[^a-z0-9_]/gi,''),ACC_L=_P.get('l')||'';
+const _P=new URLSearchParams(location.search),CRY=_P.get('v')==='crypto',
+/* Compte qui porte la crypto (réglé dans ⚙️ Réglages de la page Général) : '' = compte crypto dédié */
+CRYACC=((((LS.g('hub_acc')||{}).list)||[]).find(a=>a.type==='Crypto')||{}).inCto||'',
+ACC=(_P.get('a')||(CRY?(CRYACC||'crypto'):'cto')).replace(/[^a-z0-9_]/gi,''),ACC_L=_P.get('l')||'',
+/* SHR : les opérations crypto sont saisies dans ce CTO ; il les laisse à la page Crypto, qui les affiche (même stockage, deux vues) */
+SHR=CRY?ACC!=='crypto':ACC===CRYACC,
+AX=ACC+(CRY&&SHR?'_cry':''); /* caches propres à chaque vue (cours, historique, réglages) */
+const isCry=r=>/-(EUR|USD|USDT|USDC|GBP)$/i.test(String((r&&(r.Ticker||r.tk))||'')),
+vis=r=>!SHR||(CRY?isCry(r):!isCry(r));
+/* Liste des CTO (réglée dans ⚙️ Réglages de la page Général) : sert au sélecteur en haut quand il y en a plusieurs */
+const CTOS=(()=>{const m=new Map(((LS.g('hub_acc')||{}).list||[]).filter(a=>a.type==='CTO').map(a=>[a.id,a]));if(!m.has('cto'))m.set('cto',{id:'cto'});
+  return[...m.values()].sort((a,b)=>a.id.localeCompare(b.id,'fr',{numeric:true})).map(a=>({id:a.id,l:a.label||(a.id==='cto'?'CTO':'CTO '+a.id.slice(3))}))})();
 
 /* ---------- Données ---------- */
 function parseCSV(t){
@@ -398,11 +409,22 @@ function compute(tx,prices){
 }
 
 /* ---------- État ---------- */
-let S={raw:[],synced:false,editing:null,tx:[],prices:LS.g(ACC+'_prices')||{},url:LS.g('url')||'',tab:'ov'},R=null,CH={};
+let S={raw:[],synced:false,editing:null,tx:[],prices:LS.g(AX+'_prices')||{},url:LS.g('url')||'',tab:'ov'},R=null,CH={};
 const COLS=['Nom','Type','Rompu','Ticker','Quantité','TTF (€)','Date_Heure','Date_Rompus','Arrondi_Courtier','Commission (€)','Frais Totaux (€)','Prix Unitaire (€)','Remboursement_Capital','Retenue_Source_Etrangere'];
 const TXT=['Nom','Type','Ticker','Date_Heure','Date_Rompus'];
 function toRaw(o){const r={};COLS.forEach(k=>r[k]=TXT.includes(k)?(o[k]||null):(parseFloat(o[k])||0));if(!r.Date_Rompus)r.Date_Rompus=r.Date_Heure;return r}
-function rebuild(){S.tx=S.raw.map(norm).filter(x=>x.type&&!isNaN(x.d));R=compute(S.tx,S.prices);try{localStorage.setItem('hub_'+ACC,JSON.stringify({total:R.total,valeur:R.valeur,cash:R.cash,apports:R.apports,gain:R.gain,day:R.day,t:Date.now()}))}catch(e){}}
+/* Vue CTO d'un compte qui porte aussi la crypto : achats/ventes crypto remplacés par un retrait/apport « virtuel » (le cash reste juste, la crypto n'apparaît plus).
+   Vue Crypto : seules les lignes crypto, chaque achat financé par un apport virtuel et chaque vente reversée au CTO par un retrait virtuel (le produit de vente retourne au cash du CTO). Les lignes « virt » ne sont jamais listées. */
+function mkTx(){const out=[];
+  S.raw.forEach((o,i)=>{const n=norm(o,i);if(!n.type||isNaN(n.d))return;
+    if(!SHR){out.push(n);return}
+    const c=isCry(o),V=(type,q)=>({...n,type,tk:type,nom:'Compte Courant',q,p:1,f:0,c:0,ttf:0,ret:0,remb:0,arr:0,rompu:0,virt:1});
+    if(CRY){if(c){if(n.type=='ACHAT')out.push(V('APPORT',n.q*n.p+n.f));out.push(n);if(n.type=='VENTE')out.push(V('RETRAIT',n.q*n.p-n.f))}}
+    else if(!c)out.push(n);
+    else if(n.type=='ACHAT')out.push(V('RETRAIT',n.q*n.p+n.f));
+    else if(n.type=='VENTE')out.push(V('APPORT',n.q*n.p-n.f))});
+  return out}
+function rebuild(){S.tx=mkTx();R=compute(S.tx,S.prices);try{localStorage.setItem(CRY?'hub_crypto':'hub_'+ACC,JSON.stringify({total:R.total,valeur:R.valeur,cash:R.cash,apports:R.apports,gain:R.gain,day:R.day,acc:ACC,cry:CRY?0:(S.raw.some(isCry)?1:0),t:Date.now()}))}catch(e){}}
 function load(){let raw=LS.g(ACC+'_raw');if(!raw){const t=LS.g(ACC+'_csv');raw=t?parseCSV(t).map(toRaw):[]}S.raw=raw;rebuild()}
 const st=m=>{$('#st').textContent=m||''};
 /* ---------- Supabase (API REST, connexion par code e-mail) ---------- */
@@ -433,8 +455,8 @@ const OPL={ACHAT:'🛒  Achat',APPORT:'💰  Apport',RETRAIT:'💸  Retrait',VEN
 const dtl=s=>s?String(s).replace(' ','T'):'';
 const opHeld=n=>R&&R.pos.find(p=>p.nom==n);
 const opOwned=()=>R?R.pos.filter(p=>p.open).map(p=>p.nom).sort():[];
-const opAll=()=>[...new Set(S.raw.map(x=>x.Nom).filter(n=>n&&n!='Compte Courant'))].sort();
-const opTkOf=(n,ach)=>{if(!ach){const h=opHeld(n);if(h&&h.tk)return h.tk}const m=[...S.raw].reverse().find(x=>x.Nom==n&&x.Ticker&&x.Ticker!='APPORT'&&x.Ticker!='RETRAIT');return m?m.Ticker:''};
+const opAll=()=>[...new Set(S.raw.filter(vis).map(x=>x.Nom).filter(n=>n&&n!='Compte Courant'))].sort();
+const opTkOf=(n,ach)=>{if(!ach){const h=opHeld(n);if(h&&h.tk)return h.tk}const m=[...S.raw].filter(vis).reverse().find(x=>x.Nom==n&&x.Ticker&&x.Ticker!='APPORT'&&x.Ticker!='RETRAIT');return m?m.Ticker:''};
 const opLab=(t,h,id)=>`<div class="opl"${id?` id="${id}"`:''}>${t}${h?` <span title="${h.replace(/"/g,'&quot;')}" style="cursor:help;font-size:.85em;color:#64748b">ℹ️</span>`:''}</div>`;
 const opW=(id,inner)=>`<div class="rq" data-rq="${id}">${inner}</div>`;
 const RB_HELP="À renseigner uniquement si une partie de la distribution reçue n'est pas un dividende mais un remboursement de capital (ex. Schneider Electric). Ce montant est ajouté au cash perçu et vient réduire le PRU de la ligne, sans être compté comme un gain.";
@@ -542,10 +564,10 @@ async function commit(){rebuild();draw();await save()}
 async function refreshPrices(){
   if(!S.url||!S.tx.length)return;
   const tks=compute(S.tx,{}).pos.filter(p=>p.open).map(p=>p.tk);
-  const at0=LS.g(ACC+'_pricesAt'),ban=$('#pxban');
+  const at0=LS.g(AX+'_pricesAt'),ban=$('#pxban');
   if(at0&&Object.keys(S.prices).length&&ban){const d=new Date(at0);ban.textContent=`🔄 Actualisation des cours en cours… Les chiffres affichés reposent pour l'instant sur les derniers cours connus (${pad(d.getDate())}/${pad(d.getMonth()+1)} à ${pad(d.getHours())}:${pad(d.getMinutes())}) ; la page se mettra à jour toute seule dans quelques secondes.`;ban.hidden=false}
   try{const r=await fetch(S.url+(S.url.includes('?')?'&':'?')+'t='+encodeURIComponent(tks.join(',')));
-    const j=await r.json();S.prices=j;LS.s(ACC+'_prices',j);LS.s(ACC+'_pricesAt',Date.now());R=compute(S.tx,S.prices);draw()}
+    const j=await r.json();S.prices=j;LS.s(AX+'_prices',j);LS.s(AX+'_pricesAt',Date.now());R=compute(S.tx,S.prices);draw()}
   catch(e){$('#sub').textContent='Cours indisponibles (script Google injoignable)'}
   if(ban)ban.hidden=true;
 }
@@ -555,32 +577,32 @@ const IDX=[['^FCHI','CAC 40'],['^GSPC','S&P 500'],['CW8.PA','MSCI World']];
 const esc=x=>String(x??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const pad=n=>String(n).padStart(2,'0'),dstr=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const la=a=>a[a.length-1],fD=s=>s?s.split('-').reverse().join('/'):'–';
-S.cfg=LS.g(ACC+'_cfg')||{};S.cfgOk=false;S.cfgBusy=false;S.wl={px:LS.g(ACC+'_wlpx')||{},h:LS.g(ACC+'_wlh')||{},f:LS.g(ACC+'_wlf')||{}};S.wlDis=new Set();S.wlAt=0;S.wlHAt=LS.g(ACC+'_wlhAt')||0;S.wlBusy=false;S.wlTry=null;
+S.cfg=LS.g(AX+'_cfg')||{};S.cfgOk=false;S.cfgBusy=false;S.wl={px:LS.g(AX+'_wlpx')||{},h:LS.g(AX+'_wlh')||{},f:LS.g(AX+'_wlf')||{}};S.wlDis=new Set();S.wlAt=0;S.wlHAt=LS.g(AX+'_wlhAt')||0;S.wlBusy=false;S.wlTry=null;
 /* Réglages : même table app_storage, clé « config » (comme config_pea.json côté Streamlit) */
 const cg=(k,d)=>S.cfg[k]!=null?S.cfg[k]:d;
 const n2=x=>{const v=parseFloat(String(x==null?'':x).replace(/[\s\u00a0\u202f]/g,'').replace(',','.'));return isFinite(v)?v:0};
 async function cfgLoad(){if(S.cfgOk||S.cfgBusy)return;if(!connected()){S.cfgOk=true;return}
   S.cfgBusy=true;
-  try{const c=await raw(`/rest/v1/app_storage?select=value&key=eq.config_${ACC}&user_id=eq.${SB.s.uid}`,{},await ensure());
-    S.cfgOk=true;if(c.length&&c[0].value&&typeof c[0].value=='object'){S.cfg=c[0].value;LS.s(ACC+'_cfg',S.cfg);S.wlAt=0;S.cfgBusy=false;draw()}}
+  try{const c=await raw(`/rest/v1/app_storage?select=value&key=eq.config_${AX}&user_id=eq.${SB.s.uid}`,{},await ensure());
+    S.cfgOk=true;if(c.length&&c[0].value&&typeof c[0].value=='object'){S.cfg=c[0].value;LS.s(AX+'_cfg',S.cfg);S.wlAt=0;S.cfgBusy=false;draw()}}
   catch(e){S.cfgOk=false}
   S.cfgBusy=false}
-async function cfgSave(patch){S.cfg={...S.cfg,...patch};LS.s(ACC+'_cfg',S.cfg);if(!connected())return;
+async function cfgSave(patch){S.cfg={...S.cfg,...patch};LS.s(AX+'_cfg',S.cfg);if(!connected())return;
   if(!S.cfgOk)return st('Réglages enregistrés sur cet appareil seulement : la lecture en ligne a échoué, écriture bloquée par sécurité');
   try{await raw('/rest/v1/app_storage?on_conflict=user_id,key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
-    body:JSON.stringify({user_id:SB.s.uid,key:'config_'+ACC,value:S.cfg})},await ensure())}
+    body:JSON.stringify({user_id:SB.s.uid,key:'config_'+AX,value:S.cfg})},await ensure())}
   catch(e){st('Échec de l’enregistrement des réglages : '+e.message)}}
-S.hist=LS.g(ACC+'_hist')||{};S.hbusy=false;S.hmsg='';S.htry=null;
-const histTickers=()=>[...new Set(S.raw.filter(r=>r.Ticker&&r.Ticker!='APPORT').map(r=>r.Ticker))];
+S.hist=LS.g(AX+'_hist')||{};S.hbusy=false;S.hmsg='';S.htry=null;
+const histTickers=()=>[...new Set(S.raw.filter(r=>vis(r)&&r.Ticker&&r.Ticker!='APPORT').map(r=>r.Ticker))];
 async function ensureHist(){
   if(S.hbusy||!S.url||!S.tx.length)return;
   const from=dstr(S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d)),tks=[...new Set([...histTickers(),...IDX.map(x=>x[0])])].sort(),key=tks.join(',')+'|'+from;
   if(S.htry==key)return;
-  if(LS.g(ACC+'_histKey')==key&&Date.now()-(LS.g(ACC+'_histAt')||0)<216e5&&Object.keys(S.hist).length)return;
+  if(LS.g(AX+'_histKey')==key&&Date.now()-(LS.g(AX+'_histAt')||0)<216e5&&Object.keys(S.hist).length)return;
   S.htry=key;S.hbusy=true;S.hmsg='Chargement de l’historique des cours…';draw();
   try{const r=await fetch(S.url+(S.url.includes('?')?'&':'?')+'h='+encodeURIComponent(tks.join(','))+'&from='+from);const j=await r.json(),h={};
     for(const k in j)if(j[k]&&Array.isArray(j[k].d)&&j[k].d.length)h[k]=j[k];
-    if(Object.keys(h).length){S.hist=h;LS.s(ACC+'_hist',h);LS.s(ACC+'_histKey',key);LS.s(ACC+'_histAt',Date.now());S.hmsg=''}
+    if(Object.keys(h).length){S.hist=h;LS.s(AX+'_hist',h);LS.s(AX+'_histKey',key);LS.s(AX+'_histAt',Date.now());S.hmsg=''}
     else S.hmsg='Le script Google n’a pas renvoyé d’historique : colle la nouvelle version (script_google.gs) puis redéploie-la.'}
   catch(e){S.hmsg='Historique indisponible : script Google injoignable ou ancienne version.'}
   S.hbusy=false;draw()}
@@ -618,16 +640,16 @@ const INDS=[['CAC 40','^FCHI','#e11d48',"Indice phare de la bourse de Paris (40 
   ['Nasdaq 100','^NDX','#db2777',"Indice américain axé sur la technologie (100 plus grandes entreprises non financières)."],['Euro Stoxx 50','^STOXX50E','#4f46e5',"Indice vedette de la zone euro (50 plus grandes entreprises de la région)."],
   ['Russell 2000','^RUT','#ea580c',"Indice américain représentant les petites capitalisations (small caps)."],['Emerging Markets','EEM','#0891b2',"Indice mesurant la performance des actions de grands marchés émergents."],
   ['Nikkei 225','^N225','#ca8a04',"Principal indice boursier de la bourse de Tokyo (225 entreprises majeures japonaises)."]];
-S.pf2={per:"Tout l'historique",d1:'',d2:''};S.ih=LS.g(ACC+'_ih')||{};S.ibusy=false;S.itry=null;
+S.pf2={per:"Tout l'historique",d1:'',d2:''};S.ih=LS.g(AX+'_ih')||{};S.ibusy=false;S.itry=null;
 async function ensureIdx(){
   if(S.ibusy||!S.url||!S.tx.length)return;
   const from=dstr(S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d)),tks=INDS.map(x=>x[1]),key=tks.join(',')+'|'+from;
   if(S.itry==key)return;
-  if(LS.g(ACC+'_ihKey')==key&&Date.now()-(LS.g(ACC+'_ihAt')||0)<216e5&&Object.keys(S.ih).length)return;
+  if(LS.g(AX+'_ihKey')==key&&Date.now()-(LS.g(AX+'_ihAt')||0)<216e5&&Object.keys(S.ih).length)return;
   S.itry=key;S.ibusy=true;
   try{const r=await fetch(S.url+(S.url.includes('?')?'&':'?')+'h='+encodeURIComponent(tks.join(','))+'&from='+from+'&adj=1'),j=await r.json(),h={};
     for(const k in j)if(j[k]&&Array.isArray(j[k].d)&&j[k].d.length)h[k]=j[k];
-    if(Object.keys(h).length){S.ih=h;LS.s(ACC+'_ih',h);LS.s(ACC+'_ihKey',key);LS.s(ACC+'_ihAt',Date.now())}}catch(e){}
+    if(Object.keys(h).length){S.ih=h;LS.s(AX+'_ih',h);LS.s(AX+'_ihKey',key);LS.s(AX+'_ihAt',Date.now())}}catch(e){}
   S.ibusy=false;if(S.tab=='perf')draw()}
 const pSgn=v=>(v>=0?'+':'-')+pyN(Math.abs(v),2),pArr=v=>v>.005?'▲':v<-.005?'▼':'▬';
 const pPct=v=>`${pArr(v)} ${pSgn(v)} %`;
@@ -729,7 +751,10 @@ function drawPerf(v){
     scales:{x:{type:'linear',min:xs[0],max:fut+10,grid:{color:'#e2e8f0',borderDash:[2,3]},border:{color:'#cbd5e1'},ticks:{maxTicksLimit:10,minRotation:45,maxRotation:45,callback:x=>fdd(x),color:'#334155'}},
       y:{grid:{color:'#e2e8f0',borderDash:[2,3]},border:{display:false},ticks:{callback:x=>pyN(x,0),color:'#334155'}}}}})}
 
-const getC=()=>{if(!Object.keys(S.hist).length)return null;try{return perfCalc()}catch(e){return null}};
+let _pubS='';
+/* Historique mensuel de la valeur du compte, pour le graphique d'évolution du patrimoine de la page Général */
+const pubHist=(C,key)=>{try{if(!C||!C.D||!C.V||!C.D.length)return;const m=new Map();C.D.forEach((d,i)=>m.set(String(d).slice(0,7),[String(d),Math.round(C.V[i]*100)/100]));const a=[...m.values()].sort((x,y)=>x[0]<y[0]?-1:1),str=JSON.stringify(a);if(str!==_pubS){_pubS=str;localStorage.setItem(key,str)}}catch(e){}};
+const getC=()=>{if(!Object.keys(S.hist).length)return null;try{const C=perfCalc();pubHist(C,(CRY?'hub_crypto':'hub_'+ACC)+'_hist');return C}catch(e){return null}};
 const needHist=()=>`<p class="hint">${S.hbusy?'Chargement de l’historique des cours…':'Historique des cours indisponible : vérifie l’adresse du script Google dans Réglages.'}</p>`;
 function sales(){const by={},out=[];S.tx.forEach(t=>{if(t.type!='APPORT'&&t.type!='RETRAIT')(by[t.tk]=by[t.tk]||[]).push(t)});
   const key=t=>{const d=new Date(t.d);if(t.type=='SPLIT')d.setHours(0,0,0,0);return d.getTime()};
@@ -769,7 +794,7 @@ function omt(label,val,delta,sec,inv){let d='';
 function orelD(a,b){let m=(b.getFullYear()-a.getFullYear())*12+b.getMonth()-a.getMonth();
   const add=k=>{const d=new Date(a.getFullYear(),a.getMonth()+k,1),l=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();d.setDate(Math.min(a.getDate(),l));return d};
   let an=add(m);if(an>b){m--;an=add(m)}return{y:Math.floor(m/12),m:m%12,d:Math.round((b-an)/864e5)}}
-function ovHdr(){const nm=String(cg('user_name','')).trim();$('#ttl').textContent='📊 Tableau de Bord CTO'+(ACC!='cto'&&ACC_L?' · '+ACC_L:'')+(nm?' - '+nm:'');
+function ovHdr(){const nm=String(cg('user_name','')).trim();$('#ttl').textContent=(CRY?'₿ Tableau de Bord Crypto':'📊 Tableau de Bord CTO'+(ACC!='cto'&&ACC_L?' · '+ACC_L:''))+(nm?' - '+nm:'');
   const o=$('#hopen');
   if(S.tx.length){const a=S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d),a0=new Date(a.getFullYear(),a.getMonth(),a.getDate()),n=new Date(),t0=new Date(n.getFullYear(),n.getMonth(),n.getDate()),rd=orelD(a0,t0);
     o.innerHTML=`🗓️ <b>Date d'ouverture du CTO :</b> ${pad(a.getDate())}-${pad(a.getMonth()+1)}-${a.getFullYear()}<br><span style="color:#64748b">(Ancienneté : <b>${rd.y} an(s) ${rd.m} mois ${rd.d} jour(s)</b>)</span>`}
@@ -777,8 +802,8 @@ function ovHdr(){const nm=String(cg('user_name','')).trim();$('#ttl').textConten
   $('#hbro').innerHTML=`🏦 <b>Courtier :</b> <b>${esc(cg('broker','Non renseigné'))}</b>`}
 /* Alertes (comme le Streamlit, au-dessus des onglets) : anomalies TTF puis watchlist */
 S.ttfDis=new Set();
-function ttfAnom(){const ops=S.raw.filter(r=>(r.Type=='ACHAT'||r.Type=='VENTE')&&r.Date_Heure);if(!ops.length)return[];
-  const nm={};S.raw.filter(r=>r.Type!='APPORT'&&r.Type!='RETRAIT'&&r.Ticker).forEach(r=>nm[r.Ticker]=r.Nom);
+function ttfAnom(){const ops=S.raw.filter(r=>vis(r)&&(r.Type=='ACHAT'||r.Type=='VENTE')&&r.Date_Heure);if(!ops.length)return[];
+  const nm={};S.raw.filter(r=>vis(r)&&r.Type!='APPORT'&&r.Type!='RETRAIT'&&r.Ticker).forEach(r=>nm[r.Ticker]=r.Nom);
   const G={};ops.forEach(r=>{const k=r.Ticker+'\u0000'+r.Date_Heure.slice(0,10);(G[k]=G[k]||[]).push(r)});const out=[];
   Object.keys(G).sort().forEach(k=>{const g=G[k],ach=g.filter(r=>r.Type=='ACHAT'&&(+r['TTF (€)']||0)>0);if(!ach.length)return;
     const qa=ach.reduce((s,r)=>s+(+r['Quantité']||0),0),te=ach.reduce((s,r)=>s+(+r['TTF (€)']||0),0);if(qa<=1e-4)return;
@@ -994,7 +1019,7 @@ const selBox=(attr,opts,cur,ph)=>`<div class="sel"><select ${attr}>${ph!=null?`<
 const msel=(k,lab,opts,sel,ph,fmt)=>`<div><label>${lab}</label><details class="msel"><summary>${sel.length?sel.map(o=>`<span class="chip">${esc(fmt(o))}<b data-txrm="${k}" data-v="${esc(o)}">✕</b></span>`).join(''):`<span class="ph">${ph}</span>`}</summary><div class="mp">${opts.map(o=>`<label><input type="checkbox" data-txm="${k}" value="${esc(o)}"${sel.includes(o)?' checked':''}>${esc(fmt(o))}</label>`).join('')}</div></details></div>`;
 function txHTML(){
   if(!S.tx.length)return'<div class="info">Aucune transaction trouvée avec ces critères.</div>';
-  const F=S.txf,all=S.tx,minD=midnight(all.reduce((m,t)=>t.d<m?t.d:m,all[0].d)),maxD=midnight(new Date()),iso=dstr;
+  const F=S.txf,all=S.tx.filter(t=>!t.virt),minD=midnight(all.reduce((m,t)=>t.d<m?t.d:m,all[0].d)),maxD=midnight(new Date()),iso=dstr;
   const noms=[...new Set(all.map(t=>t.nom).filter(n=>n&&n!='Compte Courant'))].sort((a,b)=>a.localeCompare(b,'fr')),types=Object.keys(OPL).filter(t=>all.some(x=>x.type==t));
   const mb=all.map(montantBrut),mn=Math.min(...mb),mx=Math.max(...mb);
   let d1,d2;
@@ -1035,7 +1060,7 @@ function efHTML(f){
   const t=f.type,inp=(k,l,ph)=>`<div><label>${l}</label><div class="din"><input type="text" data-ef="${k}" value="${esc(f[k])}" placeholder="${ph||''}" autocomplete="off"></div></div>`,
     nu=(k,l,step,dec,min,help)=>`<div><label>${l}${help?' '+helpI(help):''}</label>${numIn(`data-ef="${k}"`,f[k],'',step,dec,min)}</div>`;
   let h=`<div><label>Type d'opération</label>${selBox('data-ef="type"',EFT.map(x=>[x,x]),t)}</div>`;
-  if(t=='ACHAT'||t=='VENTE')h+=inp('nom',"Nom de l'action / ETF")+inp('tk','Ticker')+nu('qa','Quantité',.000001,6,0)+nu('pa','Prix unitaire (€)',.0001,4,0)+nu('c','Commission (€)',.01,2,0)+nu('tt','TTF (€)',.01,2,0);
+  if(t=='ACHAT'||t=='VENTE')h+=inp('nom',"Nom de l'action / ETF")+inp('tk','Ticker')+nu('qa','Quantité',.00000001,8,0)+nu('pa','Prix unitaire (€)',.0001,4,0)+nu('c','Commission (€)',.01,2,0)+nu('tt','TTF (€)',.01,2,0);
   else if(t=='APPORT'||t=='RETRAIT')h+=nu('mt','Montant (€)',10,2,0);
   else if(t=='DIVIDENDE')h+=inp('nom',"Nom de l'action / ETF")+inp('tk','Ticker')+nu('qd','Quantité',.000001,6,0)+nu('bd','Montant brut perçu (€)',.01,2,0)+nu('ret','Retenue à la source (div) (€)',.01,2,0)
     +nu('remb','Remboursement de capital inclus (€) — optionnel',.01,2,0,"À renseigner uniquement si une partie de la distribution reçue n'est pas un dividende mais un remboursement de capital. => Cela a pour impact la réduction du PRU de la ligne.")
@@ -1046,7 +1071,7 @@ function efHTML(f){
   else h+=`<div><label>Date</label><div class="din"><input type="date" data-ef="d" value="${esc(f.d)}"></div></div>`;
   return`<div class="tform">${h}<div><button type="button" class="sbtn2" id="mgsave">✅ Valider les modifications</button></div></div>`}
 function mgHTML(){
-  const M=S.mg,rows=[...S.tx].sort((a,b)=>b.d-a.d);if(M.sel!==''&&!S.raw[+M.sel])M.sel='';
+  const M=S.mg,rows=S.tx.filter(t=>!t.virt).sort((a,b)=>b.d-a.d);if(M.sel!==''&&!S.raw[+M.sel])M.sel='';
   let h=`<h4 class="h4">🛠️ Gestion des transactions (Modifier / Supprimer)</h4><div><label>Sélectionner une transaction pour agir dessus :</label>${selBox('data-mg="sel"',rows.map(t=>[String(t.i),`${dmy(t.d)} | ${t.type} | ${t.nom||''}`]),M.sel,'Choisir...')}</div>`;
   if(M.sel!==''){
     h+=`<div class="rrad" role="radiogroup"><span style="flex-basis:100%;font-size:14px;color:#31333f">Action</span>${['Modifier','Supprimer'].map(a=>`<label><input type="radio" name="mgact" data-mg="act" value="${a}"${M.act==a?' checked':''}>${a}</label>`).join('')}</div>`;
@@ -1144,7 +1169,7 @@ function barsAp(id,labels,vals,col,nom){
       plugins:{legend:{display:false},tooltip:extTip(i=>`<b>${labels[i]}</b><br>${nom} : ${pEur(vals[i])}`)},
       scales:{x:{grid:{display:false},border:{display:false}},y:{beginAtZero:true,grace:'8%',border:{display:false},grid:gridY,ticks:{callback:yTick,maxTicksLimit:6}}}}})}
 function appX(v){
-  const mv=S.tx.filter(t=>t.type=='APPORT'||t.type=='RETRAIT').sort((a,b)=>a.d-b.d);
+  const mv=S.tx.filter(t=>!t.virt&&(t.type=='APPORT'||t.type=='RETRAIT')).sort((a,b)=>a.d-b.d);
   if(!mv.length){v.innerHTML='<div class="info">Aucun apport enregistré pour le moment.</div>';return}
   const ap=mv.filter(t=>t.type=='APPORT'),rt=mv.filter(t=>t.type=='RETRAIT'),verse=ap.reduce((a,t)=>a+t.q,0),net=verse-rt.reduce((a,t)=>a+t.q,0);
   const ys=[...new Set(mv.map(t=>t.d.getFullYear()))].sort(),sy=(a,y)=>a.filter(t=>t.d.getFullYear()==y).reduce((x,t)=>x+t.q,0);
@@ -1270,7 +1295,7 @@ const perfCell=v=>{const s=String(v);return s.startsWith('▲')?'color:#16a34a;f
 async function fundFetch(tks){if(!S.url||S.fbusy)return;S.fbusy=true;S.fmsg='';S.fTry=tks.join(',')+'|'+Date.now();draw();
   try{const j=await(await fetch(S.url+(S.url.includes('?')?'&':'?')+'f='+encodeURIComponent(tks.join(',')))).json();let n=0;
     for(const k in j)if(j[k]&&typeof j[k]=='object'&&!j[k].error){j[k]._at=Date.now();S.wl.f[k]=j[k];n++}
-    LS.s(ACC+'_wlf',S.wl.f);S.fmsg=n?'':'old'}
+    LS.s(AX+'_wlf',S.wl.f);S.fmsg=n?'':'old'}
   catch(e){S.fmsg='old'}
   S.fbusy=false;draw()}
 function fondEnsure(tks){const stale=tks.filter(t=>!S.wl.f[t]||Date.now()-(S.wl.f[t]._at||0)>FUND_TTL);
@@ -1444,9 +1469,9 @@ async function wlFetch(force){const W=wlItems().filter(i=>i.ticker);if(!S.url||!
   if(!force&&S.wlTry&&S.wlTry.k==key&&now-S.wlTry.t<6e4)return;
   S.wlTry={k:key,t:now};S.wlBusy=true;const u=q=>S.url+(S.url.includes('?')?'&':'?')+q;
   try{
-    if(needPx){const j=await(await fetch(u('t='+encodeURIComponent(key)))).json();for(const k in j)if(j[k]&&j[k].p!=null)S.wl.px[k]=j[k];S.wlAt=Date.now();LS.s(ACC+'_wlpx',S.wl.px)}
+    if(needPx){const j=await(await fetch(u('t='+encodeURIComponent(key)))).json();for(const k in j)if(j[k]&&j[k].p!=null)S.wl.px[k]=j[k];S.wlAt=Date.now();LS.s(AX+'_wlpx',S.wl.px)}
     if(needH){const j=await(await fetch(u('h='+encodeURIComponent(key)+'&from='+addD(dstr(new Date()),-400)))).json();
-      for(const k in j)if(j[k]&&Array.isArray(j[k].d)&&j[k].d.length)S.wl.h[k]=j[k];S.wlHAt=Date.now();LS.s(ACC+'_wlh',S.wl.h);LS.s(ACC+'_wlhAt',S.wlHAt)}
+      for(const k in j)if(j[k]&&Array.isArray(j[k].d)&&j[k].d.length)S.wl.h[k]=j[k];S.wlHAt=Date.now();LS.s(AX+'_wlh',S.wl.h);LS.s(AX+'_wlhAt',S.wlHAt)}
   }catch(e){}
   S.wlBusy=false;if(S.tab=='wl'||S.tab=='ov')draw()}
 function drawWl(v){wlFetch();
@@ -2052,7 +2077,7 @@ function draw(){TIPS.length=0;
     v.innerHTML=`<section class="empty"><h2>Aucune donnée</h2><p>Importe l'export CSV de tes transactions pour afficher ton portefeuille. Tout reste dans ce navigateur.</p><button id="go">Importer mon CSV</button></section>`;
     $('#go').onclick=()=>{scrollTo(0,0);$('#expop').open=true};return}
   $('#tot').textContent=fE(R.total);
-  const at=LS.g(ACC+'_pricesAt');
+  const at=LS.g(AX+'_pricesAt');
   $('#sub').innerHTML=`<span class="${cl(R.gain)}">${sgn(R.gain)}</span> depuis le début`+(R.anyLive?` · <span class="${cl(R.day)}">${sgn(R.day)}</span> aujourd'hui`:' · cours non connectés, valeur au PRU')
     +(at&&R.anyLive?` · cours de ${new Date(at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`:'');
   const P=R.pos,open=P.filter(p=>p.open);
@@ -2153,7 +2178,7 @@ const xmlOpt=(v,unit)=>xmlNum(v,unit)||'N/A';   /* 0 -> « 0.00 € », absent -
 const xDate=s=>s?String(s).slice(0,10).split('-').reverse().join('/'):'';
 const xHeure=s=>s?String(s).slice(11,19):'';
 const xEsc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const byType=t=>S.raw.filter(r=>r.Type==t).map((r,i)=>[r,i]).sort((a,b)=>String(b[0].Date_Heure).localeCompare(String(a[0].Date_Heure))||a[1]-b[1]).map(x=>x[0]);
+const byType=t=>S.raw.filter(r=>r.Type==t&&vis(r)).map((r,i)=>[r,i]).sort((a,b)=>String(b[0].Date_Heure).localeCompare(String(a[0].Date_Heure))||a[1]-b[1]).map(x=>x[0]);
 const stamp=()=>{const n=new Date();return p2(n.getDate())+'-'+p2(n.getMonth()+1)+'-'+n.getFullYear()+'_'+p2(n.getHours())+'-'+p2(n.getMinutes())+'-'+p2(n.getSeconds())};
 /* chiffres clés de l'export : mêmes définitions que le bloc « _export_* » de Streamlit */
 function expKpi(){const op=R.pos.filter(p=>p.open),inv=op.reduce((s,p)=>s+p.inv,0),ap=R.apports;
@@ -2213,8 +2238,9 @@ $('#expp').onclick=()=>{if(!R)return alert('Aucune donnée à exporter.');
 /* Connexion Supabase et script Google : réglés depuis la page Général (même navigateur, clés « sb » et « url ») */
 let _uid=SB.s.uid;
 addEventListener('storage',e=>{if(e.key==='url'){S.url=LS.g('url')||'';refreshPrices()}
+  if(e.key===ACC+'_raw'&&e.newValue){try{S.raw=JSON.parse(e.newValue);rebuild();draw();refreshPrices()}catch(_){}}
   if(e.key==='sb'){const u=SB.s.uid;const nw=connected()&&u&&u!==_uid;_uid=u;if(nw)pull();else if(!connected())S.synced=false}});
-$('#reset').onclick=()=>{if(confirm('Effacer toutes les données de ce navigateur ?')){[ACC+'_csv',ACC+'_raw',ACC+'_prices',ACC+'_pricesAt',ACC+'_hist',ACC+'_histAt',ACC+'_histKey',ACC+'_cfg',ACC+'_wlh',ACC+'_wlf',ACC+'_wlpx',ACC+'_wlhAt',ACC+'_ih',ACC+'_ihAt',ACC+'_ihKey'].forEach(k=>localStorage.removeItem(k));S.prices={};S.hist={};S.htry=null;load();draw();$('#dlg').close()}};
+$('#reset').onclick=()=>{if(confirm('Effacer toutes les données de ce navigateur ?')){[CRY&&SHR?'':ACC+'_csv',CRY&&SHR?'':ACC+'_raw',AX+'_prices',AX+'_pricesAt',AX+'_hist',AX+'_histAt',AX+'_histKey',AX+'_cfg',AX+'_wlh',AX+'_wlf',AX+'_wlpx',AX+'_wlhAt',AX+'_ih',AX+'_ihAt',AX+'_ihKey'].forEach(k=>localStorage.removeItem(k));S.prices={};S.hist={};S.htry=null;load();draw();$('#dlg').close()}};
 document.addEventListener('change',e=>{const el=e.target,c=el.dataset&&el.dataset.cfg;
   if(c){cfgSave({[c]:el.type=='date'?el.value:c=='yearly_target'?Math.round(n2(el.value)):n2(el.value)}).then(()=>draw());return}
   const k=el.dataset&&el.dataset.sim;if(!k)return;
@@ -2508,6 +2534,11 @@ document.addEventListener('toggle',e=>{if(e.target.id=='imp_d'&&S.imp)S.imp.open
   ['touchend','touchcancel'].forEach(n=>document.addEventListener(n,()=>{clearTimeout(timer);cv=null;on=false},{passive:true}))})();
 /* ---------- Pop-up de premier lancement (reprise de _dialog_premier_lancement) ---------- */
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',draw);
+if(!CRY&&CTOS.length>1){const b=document.createElement('div');b.id='ctosw';
+  b.style.cssText='position:sticky;top:0;z-index:30;display:flex;gap:6px;overflow-x:auto;padding:8px 10px;background:var(--card);border-bottom:1px solid var(--line)';
+  b.innerHTML=[['ctos.html','📊 Ensemble',0],...CTOS.map(c=>[c.id==='cto'?'cto.html':'cto.html?a='+c.id+'&l='+encodeURIComponent(c.l),'🏦 '+c.l.replace(/[&<>"]/g,''),c.id===ACC])]
+    .map(([h,t,on])=>`<a href="${h}" style="flex:none;padding:6px 12px;border-radius:999px;border:1px solid ${on?'var(--acc)':'var(--line)'};background:${on?'var(--acc)':'var(--alt)'};color:${on?'#fff':'var(--ink)'};text-decoration:none;font-size:13px;font-weight:600">${t}</a>`).join('');
+  document.body.insertBefore(b,document.body.firstChild)}
 load();draw();refreshPrices();pull();wlFetch();cfgLoad();
 </script>
 </body>
