@@ -23,7 +23,20 @@ nav .sp{flex:1}
 #dot{width:9px;height:9px;border-radius:50%;background:#16a34a;margin:6px auto 2px}
 #dot.off{background:#f59e0b}
 #dot.err{background:#dc2626}
-#stage{position:fixed;inset:0 0 0 62px}
+#stage{position:fixed;inset:0 0 0 62px;transition:left .2s}
+nav{transition:transform .2s,visibility .2s}
+body.past #tiles,body.past #acc,body.past #sy{display:none}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.dpk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mut);flex-wrap:wrap}
+.dpk input{padding:7px 9px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--txt);font:inherit}
+.dpk button{all:unset;cursor:pointer;padding:7px 11px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-size:12px;color:var(--txt)}
+#asb{background:color-mix(in srgb,#f59e0b 14%,var(--card));border-color:#f59e0b;font-size:13px}
+body.nc nav{transform:translateX(-100%);visibility:hidden}
+body.nc #stage{left:0}
+body.nc .w{max-width:1200px}
+#ntg{all:unset;cursor:pointer;position:fixed;top:50%;left:62px;transform:translateY(-50%);z-index:20;width:22px;height:60px;display:flex;align-items:center;justify-content:center;border-radius:0 14px 14px 0;background:var(--card);border:1px solid var(--line);border-left:0;color:var(--acc);font-size:18px;font-weight:800;box-shadow:2px 2px 10px rgba(15,23,42,.15);opacity:.85;transition:left .2s,opacity .2s}
+#ntg:hover{opacity:1}
+body.nc #ntg{left:0;width:30px;height:64px;background:var(--acc);color:#fff;border-color:var(--acc)}
 iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bg);display:none}
 iframe.on{display:block}
 #home,#soon{position:absolute;inset:0;overflow:auto;padding:calc(16px + env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom));display:none}
@@ -64,17 +77,34 @@ dialog .hint{color:var(--mut);font-size:12px;margin:6px 0 0}
 .cd .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .cd h2{font-size:1rem;margin:0}
 .rg{display:inline-flex;gap:4px;flex:none}.rg button{all:unset;cursor:pointer;padding:3px 10px;border-radius:999px;font-size:12px;color:var(--mut);border:1px solid var(--line)}.rg button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+#rep .rw{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-top:8px}
+#rep svg{width:170px;height:170px;flex:none}
+#rep .lg{flex:1;min-width:200px}
+#rep .li{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px}
+#rep .li:last-child{border-bottom:0}
+#rep .li i{width:11px;height:11px;border-radius:3px;flex:none}
+#rep .li span{flex:1}#rep .li b{font-variant-numeric:tabular-nums}#rep .li em{font-style:normal;color:var(--mut);min-width:48px;text-align:right;font-variant-numeric:tabular-nums}
+#tbw{overflow:auto;max-height:420px;margin-top:8px;border:1px solid var(--line);border-radius:12px}
+#tbw table{border-collapse:collapse;width:100%;min-width:340px}
+#tbw th,#tbw td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--line);font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums}
+#tbw th{position:sticky;top:0;background:var(--card);color:var(--mut);font-weight:600}
+#tbw th:first-child,#tbw td:first-child{text-align:left}
+#tbw tr:last-child td{border-bottom:0}
 #evo svg{width:100%;height:auto;display:block;touch-action:pan-y;margin-top:6px}
 #evt{position:absolute;pointer-events:none;background:var(--txt);color:var(--bg);font-size:12px;padding:5px 8px;border-radius:8px;white-space:nowrap;display:none;transform:translate(-50%,0);z-index:2}
 </style>
 </head>
 <body>
 <nav id="nav"></nav>
+<button id="ntg" type="button" aria-label="Afficher / masquer le menu" title="Afficher / masquer le menu">‹</button>
 <div id="stage">
   <div id="home"><div class="w">
-    <h1>Mon patrimoine</h1><div class="sub" id="date"></div>
+    <div class="top"><div><h1>Mon patrimoine</h1><div class="sub" id="date"></div></div><div class="dpk"><label for="asof">📅 État au</label><input type="date" id="asof"><button id="asoft" type="button">Aujourd’hui</button></div></div>
     <div class="hero"><div class="sw" id="sw"><button data-m="brut">Brut</button><button data-m="net">Net</button></div><div class="n" id="tot">–</div><small id="totsub"></small></div>
+    <div class="cd" id="asb" hidden></div>
     <div class="cd" id="evo"></div>
+    <div class="cd" id="rep"></div>
+    <div class="cd" id="tab"></div>
     <div class="g" id="tiles"></div>
     <div class="bk" id="acc"></div>
     <div id="sy"></div>
@@ -121,6 +151,7 @@ const MODS0=[
  {id:'pea',ic:'📈',lb:'PEA',src:'pea.html'},
  '@cto',
  {id:'epargne',ic:'🎁',lb:'Épargne salariale',src:'depenses.html?m=epargne'},
+ {id:'livrets',ic:'🐖',lb:'Épargne',src:'depenses.html?m=livrets'},
  {id:'immo',ic:'🏡',lb:'Immobilier',src:'depenses.html?m=immo'},
  {id:'crypto',ic:'₿',lb:'Crypto'},
  {id:'sante',ic:'🩺',lb:'Santé',src:'depenses.html?m=sante'}
@@ -150,8 +181,11 @@ let DOT=['','Synchronisation'];
 function renderNav(){nav.innerHTML=MODS.map(m=>`<button data-id="${m.id}"><b>${m.ic}</b>${esc(m.lb)}</button>`).join('')+'<div class="sp"></div><button id="gear"><b>⚙️</b>Réglages</button><div id="dot"></div>';
   const d=$('#dot');d.className=DOT[0]||'';d.title=DOT[1];nav.querySelectorAll('button[data-id]').forEach(b=>b.classList.toggle('on',b.dataset.id===cur))}
 renderNav();
-nav.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.id==='gear')openCfg();else if(b.dataset.id)go(b.dataset.id)};
-function go(id,sub){
+function navSet(c){document.body.classList.toggle('nc',c);const b=$('#ntg');b.textContent=c?'☰':'‹';b.title=c?'Afficher le menu des modules':'Masquer le menu (pleine largeur)';LS.s('hub_nc',c?1:0)}
+$('#ntg').onclick=()=>navSet(!document.body.classList.contains('nc'));
+navSet(!!LS.g('hub_nc'));
+nav.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.id==='gear')openCfg();else if(b.dataset.id)go(b.dataset.id,undefined,true)};
+function go(id,sub,reset){
   if(/^cto\d+$/.test(id)&&MODS.some(m=>m.id==='cto')){sub=sub||id;id='cto'}
   document.querySelectorAll('iframe').forEach(f=>{const m=MODS.find(x=>x.id===f.dataset.id);if(!m||m.src!==f.dataset.base||(/^ctos?\.html/.test(m.src)&&f.dataset.cry!==cryAcc()))f.remove()});
   if(!MODS.some(m=>m.id===id))id='home';
@@ -167,6 +201,7 @@ function go(id,sub){
     const f=document.createElement('iframe');f.dataset.id=id;f.dataset.base=m.src;f.dataset.cry=cryAcc();if(m.src.startsWith('depenses'))f.dataset.dep=1;f.src=id==='cto'&&sub?ctoSrc(sub):m.src;f.className='on';$('#stage').appendChild(f);
   }
   else if(id==='cto'&&sub){const f=document.querySelector('iframe[data-id="cto"]'),w=ctoSrc(sub);if(f&&f.getAttribute('src')!==w)f.src=w}
+  if(reset&&id!=='home'&&!sub){const f=document.querySelector(`iframe[data-id="${id}"]`);try{f&&f.contentWindow&&f.contentWindow.postMessage({hubHome:1},'*')}catch(e){}} /* chaque module s'ouvre sur sa page générale */
 }
 addEventListener('hashchange',()=>go(location.hash.slice(1)));
 
@@ -185,8 +220,19 @@ function crdPrets(D){const T=new Date(),P=(D.prets||[]).filter(p=>p.date_debut&&
     crd+=c;ip+=Math.max(0,k*m-(p.capital-c));ass+=k*(+p.assurance||0)});
   const cap=P.reduce((t,p)=>t+p.capital,0);return{crd,n:P.length,cap,paid:Math.max(0,cap-crd),ip,ass}}
 const CF={get v(){return LS.g('hub_cfg')||{mode:'brut',immo:0}},set v(x){LS.s('hub_cfg',x)}};
-function epargne(D){const L=(D.interessement||[]).filter(s=>s.date),P=s=>String(s.dest||'').startsWith('Placé'),tp=L.filter(P).reduce((a,s)=>a+(s.montant||0),0),tc=L.filter(s=>!P(s)).reduce((a,s)=>a+(s.montant||0),0),sv=D.solde_epargne,tr=(D.retraits_epargne||[]).reduce((a,r)=>a+(r.montant||0),0);
-  return{n:L.length,tp,tc,tr,has:!!(sv&&sv.valeur>=0),cur:sv&&sv.valeur>=0?sv.valeur:Math.max(0,tp-tr)}}
+function epargne(D){const L=(D.interessement||[]).filter(s=>s.date),P=s=>String(s.dest||'').startsWith('Placé'),tp=L.filter(P).reduce((a,s)=>a+(s.montant||0),0),tc=L.filter(s=>!P(s)).reduce((a,s)=>a+(s.montant||0),0),sv=D.solde_epargne,RT=D.retraits_epargne||[],tr=RT.reduce((a,r)=>a+(r.montant||0),0);
+  /* PEE et PERCO séparés : montant réel saisi par plan, sinon versements placés − retraits du plan */
+  const ks=['PEE','PERCO'];[...L.filter(P),...RT].forEach(x=>{const k=x.plan||'';if(!ks.includes(k))ks.push(k)});
+  const plans={};ks.forEach(k=>{const pl=L.filter(s=>P(s)&&(s.plan||'')===k).reduce((a,s)=>a+(s.montant||0),0),rt=RT.filter(r=>(r.plan||'')===k).reduce((a,r)=>a+(r.montant||0),0),ent=k==='PEE'?(sv&&sv.pee!=null?sv.pee:null):k==='PERCO'?(sv&&sv.perco!=null?sv.perco:null):null;plans[k]=ent!=null?ent:Math.max(0,pl-rt)});
+  const per=!!(sv&&(sv.pee!=null||sv.perco!=null)),leg=!!(sv&&!per&&sv.valeur>=0);
+  return{n:L.length,tp,tc,tr,has:per||leg,plans,cur:leg?sv.valeur:per?Object.values(plans).reduce((a,v)=>a+v,0):Math.max(0,tp-tr)}}
+/* Livrets : intérêts en cours (même calcul que le module Épargne : relevé / taux / intérêts crédités) */
+function livAcc(D,a){const T=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10),dd=(x,y)=>Math.round((Date.parse(y+'T12:00:00Z')-Date.parse(x+'T12:00:00Z'))/864e5),
+  L=(D.livrets_lignes||[]).filter(l=>l.acc===a.id&&l.date).sort((x,y)=>x.date<y.date?-1:x.date>y.date?1:0),bal=+a.balance||0,
+  tx=d=>{let t=null;L.forEach(l=>{if(l.type==='taux'&&l.date<=d)t=l.v});if(t==null){const f=L.find(l=>l.type==='taux');t=f?f.v:null}return t},
+  ib=(f,t)=>{if(!(t>f))return 0;const cuts=[...new Set(L.filter(l=>l.type==='taux'&&l.date>f&&l.date<t).map(l=>l.date))].sort(),p=[f,...cuts,t];let r=0;for(let k=0;k<p.length-1;k++){const q=tx(p[k]);if(q!=null)r+=bal*q/100*dd(p[k],p[k+1])/365}return r},
+  cr=L.filter(l=>l.type==='cred'&&l.date<=T).pop(),c0=cr?cr.date:T.slice(0,4)+'-01-01',rel=L.filter(l=>l.type==='rel'&&l.date<=T&&l.date>=c0).pop(),taux=tx(T);
+  return{taux,acc:taux==null?0:(rel?rel.v:0)+ib(rel?rel.date:c0,T)}}
 /* ---------- Évolution du patrimoine ---------- */
 const MOIS=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'],mlab=d=>MOIS[+d.slice(5,7)-1]+' '+d.slice(2,4);
 const serAt=(s,d)=>{let v=0;if(s)for(const x of s){if(x[0]<=d)v=x[1];else break}return v};
@@ -228,6 +274,40 @@ function drawEvo(all){
     const x=X(i),y=Y(pts[i][1]);ln.setAttribute('x1',x);ln.setAttribute('x2',x);ci.setAttribute('cx',x);ci.setAttribute('cy',y);ln.style.display=ci.style.display='';
     tp.innerHTML=`${i===pts.length-1?'Aujourd’hui':mlab(pts[i][0])} · <b>${eur(pts[i][1])}</b>`;tp.style.display='block';const er=el.getBoundingClientRect();tp.style.left=Math.max(60,Math.min(er.width-60,r.left-er.left+x/W*r.width))+'px';tp.style.top=(r.top-er.top+4)+'px'};
   sv.onpointermove=mv;sv.onpointerdown=mv;sv.onpointerleave=()=>{tp.style.display='none';ln.style.display=ci.style.display='none'}}
+/* ---------- Répartition du patrimoine par actif ---------- */
+const RCOL=['#0284c7','#7c3aed','#f59e0b','#16a34a','#0d9488','#ec4899','#64748b'];
+function drawRep(items,net_){
+  const el=$('#rep'),L=items.map((x,i)=>({n:x[0],ic:x[1],v:x[2],c:RCOL[i%RCOL.length]})).filter(x=>x.v>0.5),T=L.reduce((s,x)=>s+x.v,0);
+  if(!T){el.innerHTML='<div class="hd"><h2>🥧 Répartition du patrimoine</h2></div><div class="sub" style="margin-top:6px">Pas encore de données.</div>';return}
+  const r=62,C=2*Math.PI*r;let off=0;
+  const arcs=L.map(x=>{const f=x.v/T,d=f*C,s=`<circle cx="85" cy="85" r="${r}" fill="none" stroke="${x.c}" stroke-width="26" stroke-dasharray="${Math.max(0,d-(L.length>1?1.5:0)).toFixed(2)} ${(C-d+(L.length>1?1.5:0)).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 85 85)"><title>${esc(x.n)} ${eur(x.v)}</title></circle>`;off+=d;return s}).join('');
+  el.innerHTML=`<div class="hd"><div><h2>🥧 Répartition du patrimoine</h2><div class="sub">Par actif · ${net_?'valeur nette':'valeur brute'}</div></div></div>
+   <div class="rw"><svg viewBox="0 0 170 170" role="img" aria-label="Répartition du patrimoine par actif">${arcs}<text x="85" y="82" text-anchor="middle" font-size="11" fill="var(--mut)">Total</text><text x="85" y="100" text-anchor="middle" font-size="14" font-weight="800" fill="var(--txt)">${cmp(T)}</text></svg>
+   <div class="lg">${L.sort((a,b)=>b.v-a.v).map(x=>`<div class="li"><i style="background:${x.c}"></i><span>${x.ic} ${esc(x.n)}</span><b>${eur(x.v)}</b><em>${(x.v/T*100).toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1})} %</em></div>`).join('')}</div></div>`}
+/* ---------- Récapitulatif du patrimoine : 31 décembre de chaque année / fin de chaque mois ---------- */
+let TBM=LS.g('hub_tbm')||'an';
+const MOISL=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+function drawTab(all){
+  const el=$('#tab');
+  if(all.length<2){el.innerHTML='<div class="hd"><h2>🗓️ Récapitulatif du patrimoine</h2></div><div class="sub" style="margin-top:6px">Pas encore assez de données.</div>';return}
+  const last=all.length-1;let rows;
+  if(TBM==='an'){rows=[];all.forEach((q,i)=>{const y=q[0].slice(0,4),isDec=q[0].slice(5,7)==='12';if(i===last)rows.push([i===last&&!isDec?'Aujourd’hui ('+mlab(q[0])+')':'31 déc. '+y+' (aujourd’hui)',q[1]]);else if(isDec)rows.push(['31 décembre '+y,q[1]])})}
+  else rows=all.map((q,i)=>[i===last?'Aujourd’hui ('+mlab(q[0])+')':'Fin '+MOISL[+q[0].slice(5,7)-1].toLowerCase()+' '+q[0].slice(0,4),q[1]]);
+  const body=rows.map((r,i)=>{const pv=i?rows[i-1][1]:null,d=pv==null?null:r[1]-pv,p=pv>0?d/pv*100:null,c=d==null?'':d>0?'up':d<0?'dn':'';
+    return`<tr><td>${esc(r[0])}</td><td><b>${eur(r[1])}</b></td><td class="${c}">${d==null?'–':(d<0?'−':'+')+eur(Math.abs(d))}</td><td class="${c}">${p==null||!isFinite(p)?'–':(p<0?'−':'+')+Math.abs(p).toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1})+' %'}</td></tr>`}).reverse().join('');
+  el.innerHTML=`<div class="hd"><div><h2>🗓️ Récapitulatif du patrimoine</h2><div class="sub">${TBM==='an'?'Au 31 décembre de chaque année':'À la fin de chaque mois'} · le plus récent en haut</div></div><div class="rg"><button data-t="an"${TBM==='an'?' class="on"':''}>Années</button><button data-t="mois"${TBM==='mois'?' class="on"':''}>Mois</button></div></div>
+   <div id="tbw"><table><thead><tr><th>Date</th><th>Patrimoine</th><th>Variation</th><th>%</th></tr></thead><tbody>${body}</tbody></table></div>
+   <div class="sub" style="margin-top:6px">Les mois passés sont reconstitués (historique des cours, épargne salariale, immobilier, soldes actuels des comptes) ; les instantanés enregistrés à chaque ouverture les remplacent peu à peu.</div>`;
+  el.onclick=e=>{const b=e.target.closest('[data-t]');if(b){TBM=b.dataset.t;LS.s('hub_tbm',TBM);drawTab(all)}}}
+/* ---------- État du patrimoine à une date passée (reconstitué) ---------- */
+const todayI=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+function stateAt(ao,A,D,cf,net_){
+  const pea=A.some(a=>a.type==='PEA')?serAt(LS.g('hub_pea_hist'),ao):0,cto=A.filter(a=>a.type==='CTO').reduce((t,a)=>t+serAt(LS.g('hub_'+a.id+'_hist'),ao),0),cry=A.some(a=>a.type==='Crypto')?serAt(LS.g('hub_crypto_hist'),ao):0,
+    pl=(D.interessement||[]).filter(s=>s.date&&s.date<=ao&&String(s.dest||'').startsWith('Placé')).reduce((t,s)=>t+(s.montant||0),0),rt=(D.retraits_epargne||[]).filter(r=>r.date&&r.date<=ao).reduce((t,r)=>t+(r.montant||0),0),
+    sb=A.filter(a=>a.type==='Compte bancaire').reduce((t,a)=>t+bal(a),0),sl=A.filter(a=>a.type==='Livret').reduce((t,a)=>t+bal(a),0),
+    im=D.immo||{},ia=+im.apport||0,iv=D.immo!=null?(+im.valeur||0):(cf.immo||0),noLoan=!(D.prets||[]).some(p=>p.date_debut&&p.capital),lo=loanAt(D,ao.slice(0,7)),st=lo.st>0||noLoan,imm=st?(net_?ia+lo.paid:(iv||ia+lo.cap)):0;
+  const items=[['PEA','📈',pea],['CTO','🏦',cto],['Crypto','₿',cry],['Épargne salariale','🎁',Math.max(0,pl-rt)],['Comptes bancaires','🏧',sb],['Livrets','🐖',sl],['Immobilier','🏡',imm]];
+  return{items,total:items.reduce((t,x)=>t+x[2],0)}}
 function renderHome(){
   $('#date').textContent=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const A=accs(),ctos=A.filter(a=>a.type==='CTO'),AB=t=>A.find(a=>a.type===t),bk=a=>{const b=a&&brokerOf(a,A);return b?`<div class="m">🏛️ ${esc(b)}</div>`:''};
@@ -252,17 +332,25 @@ function renderHome(){
 
    ['pea','📈','PEA',acct(p)],
    ...ctos.map((a,i)=>ctoTile(a,cd[i])),
-   ['epargne','🎁','Épargne salariale',de.n?`<div class="v">${eur(de.cur)}</div>`+pct(de.has&&de.tp>0?(de.cur+de.tr-de.tp)/de.tp*100:null):'<div class="m">Aucun versement saisi</div>'],
+   ['epargne','🎁','Épargne salariale',de.n?`<div class="v">${eur(de.cur)}</div>`+((de.plans.PEE||de.plans.PERCO)?`<div class="m">PEE ${eur(de.plans.PEE||0)} · PERCO ${eur(de.plans.PERCO||0)}</div>`:'')+pct(de.has&&de.tp>0?(de.cur+de.tr-de.tp)/de.tp*100:null):'<div class="m">Aucun versement saisi</div>'],
    ...(bkA.length?[['depenses','🏧','Comptes bancaires',`<div class="v">${eur(sb)}</div>`+bkA.map(a=>`<div class="m">${esc(nm(a))}${brokerOf(a,A)?' · '+esc(brokerOf(a,A)):''} : <b>${eur(bal(a))}</b></div>`).join('')]]:[]),
-   ...(lvA.length?[['depenses','🐖','Livrets',`<div class="v">${eur(sl)}</div>`+lvA.map(a=>`<div class="m">${esc(nm(a))}${brokerOf(a,A)?' · '+esc(brokerOf(a,A)):''} : <b>${eur(bal(a))}</b></div>`).join('')]]:[]),
-   ['immo','🏡','Immobilier',(di.n||iv||ia)?`<div class="v">${eur(iv||immoBrut)}</div>`+(imR==null?(iv?'':'<div class="m">Valeur estimée à saisir</div>'):pct(imR)):'<div class="m">Aucun bien ni prêt saisi</div>'],
+   ...(lvA.length?[['livrets','🐖','Livrets',`<div class="v">${eur(sl)}</div>`+(()=>{const li=lvA.map(a=>livAcc(D,a)),ok=li.some(x=>x.taux!=null),ti=li.reduce((t,x)=>t+x.acc,0);return ok?`<div class="m">Intérêts en cours : <b class="up">+${ti.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €</b></div>`:''})()+lvA.map(a=>`<div class="m">${esc(nm(a))}${brokerOf(a,A)?' · '+esc(brokerOf(a,A)):''} : <b>${eur(bal(a))}</b></div>`).join('')]]:[]),
+   ['immo','🏡',im.nom?esc(im.nom):'Immobilier',(di.n||iv||ia)?`<div class="v">${eur(iv||immoBrut)}</div>`+(im.type?`<div class="m">${esc(im.type)}${+im.loyer>0?' · loyers '+eur(+im.loyer)+'/mois':''}</div>`:'')+(imR==null?(iv?'':'<div class="m">Valeur estimée à saisir</div>'):pct(imR)):'<div class="m">Aucun bien ni prêt saisi</div>'],
    ['crypto','₿','Crypto',acct(cr)],
    ];
   $('#tiles').innerHTML=T.map(([id,ic,t,b])=>`<button class="t${b.includes('À venir')?' soon':''}" data-go="${id}"><h3>${ic} ${t}</h3>${b}</button>`).join('');
   /* instantané du jour (points réels du graphique) */
   if(p&&ct&&brut>0){const td=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10),sn=LS.g('hub_snap')||{},o=sn[td],b=Math.round(brut),n=Math.round(net);
     if(!o||o.b!==b||o.n!==n){sn[td]={b,n};const ks=Object.keys(sn).sort();while(ks.length>900)delete sn[ks.shift()];LS.s('hub_snap',sn)}}
-  drawEvo(evoPoints(net_,A,D,cf,net_?net:brut));
+  const EP=evoPoints(net_,A,D,cf,net_?net:brut);drawEvo(EP);drawTab(EP);
+  const tI=todayI(),ai=$('#asof');if(!ai.value||ai.value>tI)ai.value=tI;const ao=ai.value,past=ao<tI;document.body.classList.toggle('past',past);
+  let items=[['PEA','📈',p?p.total:0],['CTO','🏦',ct?ct.total:0],['Crypto','₿',cr?cr.total:0],['Épargne salariale','🎁',de.cur],['Comptes bancaires','🏧',sb],['Livrets','🐖',sl],['Immobilier','🏡',net_?immoNet:immoBrut]];
+  const asb=$('#asb');
+  if(past){const ST=stateAt(ao,A,D,cf,net_),dl=new Date(ao+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});items=ST.items;
+    $('#tot').textContent=eur(ST.total);$('#totsub').textContent='Patrimoine au '+dl+' ('+(net_?'net':'brut')+') · '+ST.items.filter(x=>x[2]>0.5).map(x=>x[0]+' '+eur(x[2])).join(' · ');
+    asb.hidden=false;asb.innerHTML='📅 <b>Vue au '+dl+'</b> : valeurs reconstituées à partir de l’historique des cours, de l’épargne salariale (versements − retraits) et de l’immobilier. Les soldes des comptes bancaires et livrets sont ceux d’aujourd’hui.'}
+  else asb.hidden=true;
+  drawRep(items,net_);
   /* par courtier */
   const G={};A.forEach(a=>{const b=brokerOf(a,A).trim();(G[b]=G[b]||[]).push(a)});
   const val=a=>isBk(a)?bal(a):a.type==='PEA'?(p?p.total:null):a.type==='CTO'?(LS.g('hub_'+a.id)||{}).total:a.type==='Épargne salariale'?(de.n?de.cur:null):a.type==='Crypto'?(cr?cr.total:null):null;
@@ -271,8 +359,9 @@ function renderHome(){
     return `<div class="bc"><div class="bh"><span>${k?esc(k):'Courtier non renseigné'}</span><span>${eur(tot)}</span></div>`+L.map(a=>{const v=val(a);
       const r=v==null?'–':eur(v);
       return `<div class="br"><span>${TYI[a.type]} ${esc(nm(a))}</span><span>${r}</span></div>`}).join('')+'</div>'}).join('')+'<div class="sub">Courtiers et comptes : ⚙️ Réglages.</div>';
+  $('#asof').onchange=renderHome;$('#asoft').onclick=()=>{$('#asof').value=todayI();renderHome()};
   $('#sw').onclick=e=>{const b=e.target.closest('button');if(b){CF.v={...CF.v,mode:b.dataset.m};renderHome()}};
-  $('#tiles').onclick=e=>{const b=e.target.closest('[data-go]');if(b){const[i,sb]=b.dataset.go.split('@');go(i,sb)}};
+  $('#tiles').onclick=e=>{const b=e.target.closest('[data-go]');if(b){const[i,sb]=b.dataset.go.split('@');go(i,sb,true)}};
 }
 
 /* ---------- Synchronisation des dépenses (Supabase, table app_storage, clé « depenses ») ----------
@@ -407,7 +496,7 @@ $('#bkf').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)r
   catch(err){bkst('Import impossible : '+err.message)}};
 
 if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').then(r=>r.update()).catch(()=>{}));
-go(location.hash.slice(1)||'home');
+go('home'); /* on arrive toujours sur la page générale du patrimoine */
 if(!navigator.onLine)dot('off','Hors connexion');
 later(800);
 </script>

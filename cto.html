@@ -298,7 +298,7 @@ canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 <nav id="tabs" role="tablist"></nav>
 <div id="view"></div>
 </main>
-<div id="opsbar"><button id="add" type="button">➕ Nouvelle opération</button><button id="simb" type="button" style="display:none">🧪 Simulation</button></div>
+<div id="opsbar"><button id="add" type="button">➕ Nouvelle opération</button><button id="simb" type="button">🧪 Simulation</button></div>
 
 <dialog id="dlg">
   <form method="dialog">
@@ -1587,7 +1587,7 @@ function simIn(){
     h+=fld(pos?`Quantité (Nombre détenu dans le portefeuille : ${fq(pos.sh)})`:'Quantité')+`<div class="rq" data-req="qte">${sInp('qte',SM.qte,'0','s_q')}</div>`;
     const pb=ach?"Prix d'achat (€)":'Prix de vente (€)';
     h+=fld(pos?`${pb} (PRU actuel : ${fPD(pos.pru)})`:pb)+`<div class="rq" data-req="prix">${sInp('prix',SM.prix,'0,0000','s_p')}</div>`;
-    if(ach)h+=ckb('ttf',SM.ttf,'☑️ Éligible TTF (taxe sur les transactions financières)');
+    if(ach&&!CRY)h+=ckb('ttf',SM.ttf,'☑️ Éligible TTF (taxe sur les transactions financières)');
     h+=ckb('exo',SM.exo,'🚫 Exonération des commissions courtier')}
   else if(T=='Achat/Vente'){const a=SM.av,q=a.saisie=='qte';
     h+=`<div class="bx">${sStep(1,'Achat','#1d4ed8','Que voulez-vous simuler ?')}<div class="rad"><span style="color:var(--mute)">Je renseigne :</span>${[['montant','💶 Un montant à investir'],['qte',"🔢 Un nombre d'actions"]].map(([v,l])=>`<label><input type="radio" name="s_sa" value="${v}" data-s="av.saisie" ${a.saisie==v?'checked':''}>${l}</label>`).join('')}</div>
@@ -2540,6 +2540,7 @@ if(!CRY&&CTOS.length>1){const b=document.createElement('div');b.id='ctosw';
     .map(([h,t,on])=>`<a href="${h}" style="flex:none;padding:6px 12px;border-radius:999px;border:1px solid ${on?'var(--acc)':'var(--line)'};background:${on?'var(--acc)':'var(--alt)'};color:${on?'#fff':'var(--ink)'};text-decoration:none;font-size:13px;font-weight:600">${t}</a>`).join('');
   document.body.insertBefore(b,document.body.firstChild)}
 load();draw();refreshPrices();pull();wlFetch();cfgLoad();
+addEventListener('message',e=>{if(e.source===parent&&e.data&&e.data.hubHome){document.querySelectorAll('dialog[open]').forEach(d=>{try{d.close()}catch(_){}});if(S.tab!=='ov'){S.tab='ov';draw()}scrollTo(0,0)}}); /* retour à la page générale quand le hub le demande */
 </script>
 </body>
 </html>
