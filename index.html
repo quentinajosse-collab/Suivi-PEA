@@ -157,7 +157,7 @@ button{border-radius:10px;font-weight:600;transition:all .15s ease-in-out}
 .mtr{background:#fff;border:1px solid #e2e8f0;border-left:3px solid #0284c7;padding:12px 16px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.05);transition:all .2s ease-in-out;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;min-width:0}
 .mtr:hover{box-shadow:0 6px 14px -4px rgba(0,0,0,.12);border-color:#cbd5e1;transform:translateY(-2px)}
 .mtr.cap{border-left-color:#0284c7}.mtr.perf{border-left-color:#7c3aed}.mtr.gain{border-left-color:#0d9488}
-.mtr.tp{cursor:pointer}.mtr.tp .mtl p::after{content:" ⓘ";opacity:.45;font-size:.85em}
+.mtr.tp{cursor:pointer}.mtr.tp .mtl p::after,.mtr.tp .ml::after{content:" ⓘ";opacity:.45;font-size:.85em}
 .mtl{width:100%}.mtl p{margin:0;font-size:.8rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.01em;line-height:1.4}
 .mtv{font-family:'Manrope','Inter',system-ui,sans-serif;font-variant-numeric:tabular-nums lining-nums;font-weight:800;letter-spacing:-.035em;color:#0f172a;font-size:1.55rem;line-height:1.25;white-space:nowrap;max-width:100%}
 .mtd{display:flex;align-items:center;gap:.15rem;width:fit-content;max-width:100%;font-family:'Manrope','Inter',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:-.025em}
@@ -262,6 +262,10 @@ button{border-radius:10px;font-weight:600;transition:all .15s ease-in-out}
 .opl{font-size:.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin:10px 0 8px}
 #op .err{background:rgba(255,43,43,.1);color:#7d353b;border-radius:.5rem;padding:12px 14px;font-size:.9rem;margin-top:10px}
 #op select{width:100%}
+canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#imp_box{margin:6px 0 10px}#imp_box details{border:1px solid var(--line);border-radius:10px;padding:8px 12px}#imp_box summary{cursor:pointer;font-weight:600;font-size:.9rem}
+.imp-in{margin-top:8px}.imp-in input[type=file]{width:100%;margin:2px 0 6px}.imp-hd{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 0}
+
 #toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:99999;background:#fff;color:#14202b;border:1px solid #e2e8f0;border-radius:.5rem;padding:12px 18px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:.92rem;max-width:90vw}
 </style>
 </head>
@@ -277,9 +281,12 @@ button{border-radius:10px;font-weight:600;transition:all .15s ease-in-out}
       <button type="button" id="expx">📤 Exporter les données (XML)</button>
       <button type="button" id="expp">🧾 Exporter les données (PDF)</button>
       <button type="button" id="exp">📄 Exporter les données (CSV)</button>
-      <hr><p><b>📥 Import (CSV)</b></p>
-      <p class="cp">Le fichier doit avoir exactement les mêmes colonnes que l'export CSV.</p>
-      <input type="file" id="csv" accept=".csv,text/csv">
+      <hr><p><b>📥 Import (CSV ou Excel)</b></p>
+      <p class="cp">Formats acceptés : CSV, Excel (.xlsx, .xls). Le fichier doit avoir exactement les mêmes colonnes que l'export CSV.</p>
+      <div class="warn" style="font-size:.8rem;padding:8px 10px">⚠️ <b>L'import peut écraser tes données.</b> Avec « Remplacer entièrement », toutes tes transactions actuelles sont supprimées puis remplacées par le contenu du fichier. Fais d'abord un export CSV si tu veux une sauvegarde.</div>
+      <p class="cp">Une fois le fichier envoyé, choisis l'option ci-dessous puis appuie sur le bouton « OK » qui apparaît juste en dessous.</p>
+      <input type="file" id="csv" accept=".csv,.xlsx,.xls,text/csv">
+      <div id="impcsv"></div>
     </div></details>
     <button type="button" class="gbtn" id="cfg">⚙️ Réglages</button>
   </div>
@@ -287,6 +294,7 @@ button{border-radius:10px;font-weight:600;transition:all .15s ease-in-out}
   <div class="hint" id="st"></div>
 </header>
 <div id="alerts"></div>
+<div id="pxban" class="info" hidden style="margin:8px 0"></div>
 <nav id="tabs" role="tablist"></nav>
 <div id="view"></div>
 </main>
@@ -453,6 +461,7 @@ const AR_HELP="À renseigner lorsque le courtier applique un arrondi tel que Mon
 function buildOp(){
   const num=(id,ph,step,dec,min)=>numIn(`id="${id}"`,'',ph,step,dec,min);
   $('#opf').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px"><h2 id="opt" style="margin:0;font-size:1.2rem;font-weight:800;letter-spacing:-.02em">📝 Nouvelle opération</h2><button type="button" id="o_no" aria-label="Fermer">✕</button></div>
+  <div id="imp_box"></div>
   <div class="cap" id="o_cap">Sélectionnez un type d'opération pour afficher le formulaire correspondant.</div>
   <select id="o_type"><option value="" selected disabled hidden>Choisissez un type d'opération...</option>${['ACHAT','APPORT','RETRAIT','VENTE','DIVIDENDE','SPLIT'].map(t=>`<option value="${t}">${OPL[t]}</option>`).join('')}</select>
   <div id="o_body" hidden>
@@ -520,7 +529,7 @@ function opNameChanged(){const t=$v('#o_type'),a=t=='ACHAT',nm=a?$('#o_nom').val
   if(t=='SPLIT')$('#o_q').value=h?(Math.round(h.sh*1e6)/1e6):1.1;
   fields()}
 function opClear(){['o_nom','o_tk','o_q','o_p','o_c','o_t','o_r','o_b','o_ar','o_ro','o_dr','o_dd','o_hh'].forEach(i=>{$('#'+i).value=''});opSelFill(null,'')}
-function openOp(i){S.editing=i==null?null:i;const r=i==null?null:S.raw[i];
+function openOp(i){S.editing=i==null?null:i;const r=i==null?null:S.raw[i];if(S.imp)S.imp.cur=null;$('#imp_box').hidden=!!r;impRender();
   $('#opt').textContent=r?'✏️ Modifier l’opération':'📝 Nouvelle opération';$('#o_del').hidden=!r;
   $('#dl_nom').innerHTML=opAll().map(n=>`<option value="${n.replace(/"/g,'&quot;')}">`).join('');
   opClear();$('#o_err').innerHTML='';
@@ -552,9 +561,12 @@ async function commit(){rebuild();draw();await save()}
 async function refreshPrices(){
   if(!S.url||!S.tx.length)return;
   const tks=compute(S.tx,{}).pos.filter(p=>p.open).map(p=>p.tk);
+  const at0=LS.g('pricesAt'),ban=$('#pxban');
+  if(at0&&Object.keys(S.prices).length&&ban){const d=new Date(at0);ban.textContent=`🔄 Actualisation des cours en cours… Les chiffres affichés reposent pour l'instant sur les derniers cours connus (${pad(d.getDate())}/${pad(d.getMonth()+1)} à ${pad(d.getHours())}:${pad(d.getMinutes())}) ; la page se mettra à jour toute seule dans quelques secondes.`;ban.hidden=false}
   try{const r=await fetch(S.url+(S.url.includes('?')?'&':'?')+'t='+encodeURIComponent(tks.join(',')));
     const j=await r.json();S.prices=j;LS.s('prices',j);LS.s('pricesAt',Date.now());R=compute(S.tx,S.prices);draw()}
   catch(e){$('#sub').textContent='Cours indisponibles (script Google injoignable)'}
+  if(ban)ban.hidden=true;
 }
 
 /* ---------- Performance : historique des cours + courbe vs indices ---------- */
@@ -747,6 +759,9 @@ function sales(){const by={},out=[];S.tx.forEach(t=>{if(t.type!='APPORT'&&t.type
     else if(t.type=='DIVIDENDE'&&t.remb>0)inv=Math.max(0,inv-t.remb)})}
   return out}
 /* ===== Vue d'ensemble & Objectif : reprise exacte de l'onglet 1 du Streamlit (app_perso.py) ===== */
+const OMT_V={"PER pondéré":"Moyenne harmonique du PER (cours ÷ bénéfice par action, 12 derniers mois) des lignes, pondérée par leur valeur actuelle. ETF et valeurs sans bénéfice exclus.",
+"P/B pondéré":"Moyenne harmonique du ratio cours ÷ valeur comptable par action, pondérée par la valeur actuelle des lignes. ETF et valeurs sans donnée exclus.",
+"PEG pondéré":"Moyenne harmonique du PEG (PER ÷ croissance attendue des bénéfices), pondérée par la valeur actuelle des lignes. Valeurs sans PEG exclues."};
 const OMT={"Performance Globale":"% = gains cumulés (plus-values latentes + actées + dividendes) ÷ total des apports nets.",
 "Performance YTD":"% = gain depuis le 1er janvier (latent + actée + dividendes) ÷ valeur du portefeuille au 31 décembre précédent.",
 "Performance du Mois":"% = gain depuis le 1er du mois ÷ valeur du portefeuille à la fin du mois précédent.",
@@ -1291,7 +1306,7 @@ function fondX(){
   let o='';
   if(FOND_SRC=='Portefeuille'){
     const tot=ok.reduce((s,u)=>s+(u.val||0),0),pond=k=>{let n=0,d=0;ok.forEach(u=>{const x=u.d[k];if(u.val&&x&&x>0){n+=u.val;d+=u.val/x}});return[d>0?n/d:null,n]};let cov=0;
-    const c3=[['PER pondéré','per'],['P/B pondéré','pb'],['PEG pondéré','peg']].map(([l,k])=>{const[v,c]=pond(k);cov=Math.max(cov,c);return`<div class="mtr"><div class="ml">${l}</div><div class="mv">${v!=null?fr(v,1):'N/A'}</div></div>`}).join('');
+    const c3=[['PER pondéré','per'],['P/B pondéré','pb'],['PEG pondéré','peg']].map(([l,k])=>{const[v,c]=pond(k);cov=Math.max(cov,c);return`<div class="mtr tp" data-mt="${esc(OMT_V[l])}"><div class="ml">${l}</div><div class="mv">${v!=null?fr(v,1):'N/A'}</div></div>`}).join('');
     o+=exp('📐 Valorisation pondérée du portefeuille',`<div class="c3m">${c3}</div>`+(tot>0?`<div class="cap">Calculés sur ${(cov/tot*100).toFixed(0)} % de la valeur du portefeuille (ETF et valeurs sans donnée exclus).</div>`:''))}
   /* 26. Qualité financière par ligne */
   const NIV=['background-color:rgba(239,68,68,.14);color:#b91c1c;font-weight:700;','background-color:rgba(245,158,11,.16);color:#92400e;font-weight:700;','background-color:rgba(34,197,94,.16);color:#15803d;font-weight:700;'];
@@ -2046,7 +2061,10 @@ function drawSim(v){
 /* ---------- Affichage ---------- */
 const TABS=[['ov',"📊 Vue d'ensemble & Objectif"],['pos','📌 Positions & Transactions'],['app','💰 Apports'],['cla','🏆 Classements'],['sai','🗓️ Saisonnalité'],['perf','📈 Performances & Indices'],['his','📅 Historique'],['div','💶 Dividendes & Cartographie'],['fra','🔍 Frais'],['wl','👁️ Watchlist'],['sim','🧮 Simulateurs']];
 function chart(id,cfg){if(CH[id])CH[id].destroy();const el=document.getElementById(id);if(!el||!window.Chart)return;
-  Chart.defaults.color='#334155';Chart.defaults.font.family='Manrope, Inter, sans-serif';CH[id]=new Chart(el,cfg)}
+  Chart.defaults.color='#334155';Chart.defaults.font.family='Manrope, Inter, sans-serif';
+  /* comme Streamlit (spikemode « across ») : trait pointillé vertical sous le curseur sur tous les graphiques à axe des x (lignes et barres verticales) */
+  if((cfg.type=='line'||(cfg.type=='bar'&&(cfg.options||{}).indexAxis!='y'))&&!(cfg.plugins||[]).some(q=>q.id=='spike'))cfg.plugins=[...(cfg.plugins||[]),spikeP];
+  CH[id]=new Chart(el,cfg)}
 const sgn=(v,d=2)=>`${ar(v)} ${fS(v,d)}`;
 
 function draw(){TIPS.length=0;setTimeout(welcomeCheck,0);
@@ -2081,8 +2099,54 @@ document.addEventListener('click',e=>{
   const wx=e.target.closest('[data-wldis]');if(wx){S.wlDis.add(wx.dataset.wldis);draw();return}
 });
 $('#cfg').onclick=()=>{$('#url').value=S.url;const s=SB.s;$('#sbu').value=s.url||'';$('#sbk').value=s.key||'';$('#sbe').value=s.email||'';$('#sbst').textContent=connected()?'Connecté ('+(s.email||'')+')':'';$('#dlg').showModal()};
-$('#csv').onchange=async e=>{const f=e.target.files[0];if(!f)return;S.raw=parseCSV(await f.text()).map(toRaw);LS.s('raw',S.raw);rebuild();draw();refreshPrices();$('#dlg').close();
-  if(connected()&&S.synced&&confirm('Envoyer ces données vers Supabase ? Cela remplace les transactions en ligne.'))save()};
+/* ---------- Import CSV / Excel : même parcours que Streamlit (colonnes exigées, Ajouter / Remplacer, confirmation) ---------- */
+const IMP_COLS=['Date_Heure','Type','Nom','Ticker','Quantité','Prix Unitaire (€)','Commission (€)','TTF (€)','Frais Totaux (€)','Rompu','Retenue_Source_Etrangere','Remboursement_Capital','Arrondi_Courtier','Date_Rompus'];
+const XLSX_URL='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+let xlsxP=null;const xlsxLoad=()=>xlsxP||(xlsxP=new Promise((ok,ko)=>{if(window.XLSX)return ok(window.XLSX);const sc=document.createElement('script');sc.src=XLSX_URL;sc.onload=()=>ok(window.XLSX);sc.onerror=()=>{xlsxP=null;ko(new Error('bibliothèque Excel (SheetJS) non chargée : connexion internet requise'))};document.head.appendChild(sc)}));
+const p2=n=>String(n).padStart(2,'0');
+/* date -> 'AAAA-MM-JJ HH:MM:SS' (nombre Excel, texte ISO, JJ/MM/AAAA…) ; null si illisible */
+function impDate(v,X){if(v==null||v==='')return null;
+  if(typeof v=='number'&&X){const d=X.SSF.parse_date_code(v);if(!d)return null;return`${d.y}-${p2(d.m)}-${p2(d.d)} ${p2(d.H)}:${p2(d.M)}:${p2(Math.floor(d.S))}`}
+  const t=String(v).trim();let m=t.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+  if(m)return`${m[1]}-${m[2]}-${m[3]} ${m[4]?m[4]+':'+m[5]+':'+(m[6]||'00'):'00:00:00'}`;
+  m=t.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?/);
+  if(m)return`${m[3]}-${m[2]}-${m[1]} ${m[4]?m[4]+':'+m[5]+':'+(m[6]||'00'):'00:00:00'}`;
+  const d=new Date(t);return isNaN(d)?null:`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`}
+/* lignes [{colonne:valeur}] -> {rows} ou {err} */
+function impCsvRows(objs,X){
+  const have=new Set(objs.length?Object.keys(objs[0]):[]),miss=IMP_COLS.filter(c=>!have.has(c));
+  if(miss.length)return{err:'Colonnes manquantes dans le fichier : '+miss.join(', ')};
+  const rows=[];
+  for(let i=0;i<objs.length;i++){const o=objs[i],r={};
+    const dh=impDate(o.Date_Heure,X);if(!dh)return{err:`Erreur lors de la lecture du fichier : date invalide à la ligne ${i+2} (« ${o.Date_Heure} »).`};
+    IMP_COLS.forEach(k=>{r[k]=o[k]});r.Date_Heure=dh;r.Date_Rompus=impDate(o.Date_Rompus,X);
+    rows.push(toRaw(Object.fromEntries(Object.entries(r).map(([k,v])=>[k,typeof v=='number'?String(v):v]))))}
+  return{rows}}
+S.impc=null;
+function impcRender(){const b=$('#impcsv'),I=S.impc;if(!b)return;
+  if(!I){b.innerHTML='';return}
+  if(I.err){b.innerHTML=`<div class="err">${esc(I.err)}</div>`;return}
+  const n=I.rows.length,o=S.raw.length,add=I.mode=='add';
+  b.innerHTML=`<p style="margin-top:10px">📄 ${n} lignes détectées dans le fichier (tu as actuellement ${o} transactions enregistrées).</p>
+    <p class="cp" style="margin-bottom:2px">Que faire de ces lignes ?</p>
+    <label style="display:block;font-size:14px"><input type="radio" name="impm" value="add"${add?' checked':''}> Ajouter à mes transactions existantes</label>
+    <label style="display:block;font-size:14px;margin-bottom:6px"><input type="radio" name="impm" value="rep"${add?'':' checked'}> Remplacer entièrement mes transactions</label>
+    ${add?`<div class="warn" style="font-size:.8rem;padding:8px 10px">Les ${n} lignes seront ajoutées à tes ${o} transactions. Si ce fichier vient de ton propre export, elles apparaîtront en double : choisis plutôt « Remplacer entièrement ».</div>`
+         :`<div class="err" style="font-size:.8rem;padding:8px 10px">⚠️ Cela va ÉCRASER tes ${o} transactions actuelles : elles seront supprimées et remplacées par les ${n} lignes de ce fichier. Action définitive.</div>`}
+    <button type="button" id="impok" class="sbtn primary">${add?`✅ OK — ajouter ces ${n} lignes`:`✅ OK — écraser mes ${o} transactions`}</button>`}
+$('#csv').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+  try{let objs;
+    if(/\.(xlsx|xls)$/i.test(f.name)){let X;try{X=await xlsxLoad()}catch(er){S.impc={err:'Lecture Excel impossible : '+er.message};impcRender();return}
+      const wb=X.read(await f.arrayBuffer(),{type:'array'}),ws=wb.Sheets[wb.SheetNames[0]],a=X.utils.sheet_to_json(ws,{header:1,raw:true,defval:null}),h=(a.shift()||[]).map(x=>String(x??'').trim());
+      objs=a.filter(r=>r.some(c=>c!=null&&c!=='')).map(r=>Object.fromEntries(h.map((k,i)=>[k,r[i]])));
+      const res=impCsvRows(objs,X);S.impc=res.err?{err:res.err}:{rows:res.rows,mode:'add'}}
+    else{objs=parseCSV(await f.text());const res=impCsvRows(objs,null);S.impc=res.err?{err:res.err}:{rows:res.rows,mode:'add'}}}
+  catch(er){S.impc={err:'Erreur lors de la lecture du fichier : '+er.message}}
+  impcRender()};
+document.addEventListener('change',e=>{if(e.target.name=='impm'&&S.impc){S.impc.mode=e.target.value;impcRender()}});
+document.addEventListener('click',async e=>{if(!e.target.closest('#impok')||!S.impc||!S.impc.rows)return;
+  const n=S.impc.rows.length;S.raw=S.impc.mode=='add'?[...S.raw,...S.impc.rows]:S.impc.rows;S.impc=null;$('#csv').value='';
+  await commit();refreshPrices();impcRender();toast(`${n} transactions importées.`)});
 buildOp();
 $('#add').onclick=()=>openOp(null);$('#o_no').onclick=()=>$('#op').close();
 $('#o_type').onchange=()=>{opClear();opSelFill($v('#o_type'),'');$('#o_err').innerHTML='';fields()};
@@ -2091,20 +2155,82 @@ $('#o_nom').onchange=opNameChanged;
 $('#opf').addEventListener('input',()=>{opFrames();if($v('#o_type')=='ACHAT')gShow('tk',!oEmpty('o_nom'))});
 $('#opf').addEventListener('change',opFrames);
 $('#opf').onsubmit=async e=>{const r=readOp();if(!r){e.preventDefault();return}
-  if(S.editing!=null)S.raw[S.editing]=r;else S.raw.push(r);await commit();toast('✅ Opération enregistrée avec succès !')};
+  if(S.editing!=null)S.raw[S.editing]=r;else S.raw.push(r);await commit();toast('✅ Opération enregistrée avec succès !');
+  if(S.editing==null&&await impDone(r)){S.imp.open=true;setTimeout(()=>{if(!$('#op').open)openOp(null);S.imp.open=true;impRender()},0)}};
 $('#o_del').onclick=async()=>{if(confirm('Supprimer cette opération ?')){S.raw.splice(S.editing,1);$('#op').close();await commit()}};
 $('#exp').onclick=()=>{const q=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
   const csv='\uFEFF'+COLS.join(',')+'\n'+S.raw.map(r=>COLS.map(k=>q(r[k])).join(',')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='transactions_'+new Date().toISOString().slice(0,10)+'.csv';a.click()};
 const dl=(n,t,m)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:m}));a.download=n;a.click()},today=()=>new Date().toISOString().slice(0,10);
-$('#expx').onclick=()=>{const tg=k=>k.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9_]+/g,'_').replace(/_+$/,'');
-  dl('transactions_'+today()+'.xml','<?xml version="1.0" encoding="UTF-8"?>\n<transactions>\n'+S.raw.map(r=>'  <operation>\n'+COLS.map(k=>`    <${tg(k)}>${esc(r[k])}</${tg(k)}>`).join('\n')+'\n  </operation>').join('\n')+'\n</transactions>\n','application/xml')};
-$('#expp').onclick=()=>{const w=window.open('','_blank');if(!w)return alert('Autorise les fenêtres pop-up pour exporter en PDF.');
-  const P=R.pos.filter(p=>p.open),T=[...S.tx].sort((a,b)=>a.d-b.d),qf=x=>nf(x%1?4:0).format(x);
-  w.document.write(`<!doctype html><meta charset="utf-8"><title>PEA ${today()}</title><style>body{font:12px system-ui,sans-serif;margin:18px;color:#14202b}h1{font-size:18px}h2{font-size:14px;margin:18px 0 6px}table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #ccd;padding:3px 5px;text-align:right}th:first-child,td:first-child{text-align:left}th{background:#eef2f6}</style>
-  <h1>Portefeuille PEA, ${new Date().toLocaleDateString('fr-FR')}</h1><p>Valeur totale ${fE(R.total)}, apports ${fE(R.apports,0)}, plus-value ${fS(R.gain)}</p>
-  <h2>Positions</h2><table><tr><th>Valeur</th><th>Qté</th><th>PRU</th><th>Cours</th><th>Valeur</th><th>+/- latente</th></tr>${P.map(p=>`<tr><td>${esc(p.nom)}</td><td>${qf(p.sh)}</td><td>${fE(p.pru)}</td><td>${fE(p.px)}</td><td>${fE(p.val)}</td><td>${fS(p.lat)}</td></tr>`).join('')}</table>
-  <h2>Opérations</h2><table><tr><th>Date</th><th>Type</th><th>Valeur</th><th>Qté</th><th>Prix</th><th>Frais</th></tr>${T.map(t=>`<tr><td>${t.d.toLocaleDateString('fr-FR')}</td><td>${esc(t.type)}</td><td>${esc(t.nom)}</td><td>${qf(t.q)}</td><td>${fE(t.p)}</td><td>${fE(t.f)}</td></tr>`).join('')}</table>`);
+/* ---------- Exports XML / PDF : mêmes données et même mise en page que generate_transactions_xml / _pdf (app_perso.py) ---------- */
+const xDyn=v=>{const s=(+v).toFixed(4);return s.endsWith('00')?(+v).toFixed(2):s.endsWith('0')?(+v).toFixed(3):s};
+const xQty=v=>{v=+v;return v%1==0?String(Math.trunc(v)):v.toFixed(4).replace(/0+$/,'').replace(/\.$/,'')};
+const xDec=s=>s.includes('.')?s.split('.')[1].length:0;
+/* nombre -> '1 000.00' (point décimal, espace pour les milliers) ; '' si absent */
+function xmlNum(v,unit,o={}){if(v==null||v===''||!isFinite(+v))return'';
+  const d=o.qty?xDec(xQty(v)):o.dyn?xDec(xDyn(v))||2:2,t=(+v).toFixed(d),neg=t[0]=='-',[i,f]=t.replace('-','').split('.'),
+    n=(neg?'-':'')+i.replace(/\B(?=(\d{3})+(?!\d))/g,' ')+(f?'.'+f:'');
+  return unit?(n+' '+unit).trim():n}
+const xmlOpt=(v,unit)=>xmlNum(v,unit)||'N/A';   /* 0 -> « 0.00 € », absent -> N/A */
+const xDate=s=>s?String(s).slice(0,10).split('-').reverse().join('/'):'';
+const xHeure=s=>s?String(s).slice(11,19):'';
+const xEsc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const byType=t=>S.raw.filter(r=>r.Type==t).map((r,i)=>[r,i]).sort((a,b)=>String(b[0].Date_Heure).localeCompare(String(a[0].Date_Heure))||a[1]-b[1]).map(x=>x[0]);
+const stamp=()=>{const n=new Date();return p2(n.getDate())+'-'+p2(n.getMonth()+1)+'-'+n.getFullYear()+'_'+p2(n.getHours())+'-'+p2(n.getMinutes())+'-'+p2(n.getSeconds())};
+/* chiffres clés de l'export : mêmes définitions que le bloc « _export_* » de Streamlit */
+function expKpi(){const op=R.pos.filter(p=>p.open),inv=op.reduce((s,p)=>s+p.inv,0),ap=R.apports;
+  return{valeur:R.valeur,cash:R.cash,total_apport:ap,performance:ap>0?(R.valeur+R.cash-ap)/ap*100:0,pvl:R.valeur-inv,div:R.divNet,frais:R.fees}}
+function buildXml(){const K=expKpi(),n=new Date(),o=[];
+  const el=(ind,tag,txt)=>o.push('  '.repeat(ind)+`<${tag}>${xEsc(txt===''||txt==null?'N/A':txt)}</${tag}>`);
+  const open=(ind,tag)=>o.push('  '.repeat(ind)+`<${tag}>`),close=(ind,tag)=>o.push('  '.repeat(ind)+`</${tag}>`);
+  o.push('<?xml version="1.0" encoding="utf-8"?>');open(0,'Extrait_PEA');
+  el(1,'Date',p2(n.getDate())+'-'+p2(n.getMonth()+1)+'-'+n.getFullYear());el(1,'Heure',p2(n.getHours())+'-'+p2(n.getMinutes())+'-'+p2(n.getSeconds()));
+  el(1,'Valeur',xmlNum(K.valeur,'€'));el(1,'Cash',xmlNum(K.cash,'€'));el(1,'TotalApport',xmlNum(K.total_apport,'€'));el(1,'Performance',xmlNum(K.performance,'%'));
+  el(1,'PlusValueLatente',xmlNum(K.pvl,'€'));el(1,'Dividende',xmlNum(K.div,'€'));el(1,'Frais',xmlNum(K.frais,'€'));
+  open(1,'Liste_Transactions');
+  const sec=(list,item,fn)=>{const L=byType(fn.t);if(!L.length){o.push('      '.slice(0,4)+`<${list}/>`);return}open(2,list);L.forEach(r=>{open(3,item);fn.f(r);close(3,item)});close(2,list)},
+    nm=r=>String(r.Nom||''),q=r=>xmlNum(r['Quantité'],'titres',{qty:1}),px=r=>xmlNum(r['Prix Unitaire (€)'],'€',{dyn:1});
+  sec('Liste_Apports','Apport',{t:'APPORT',f:r=>{el(4,'Date',xDate(r.Date_Heure));el(4,'Montant',xmlNum(r['Quantité'],'€'))}});
+  sec('Liste_Achats','Achat',{t:'ACHAT',f:r=>{el(4,'Date',xDate(r.Date_Heure));el(4,'Heure',xHeure(r.Date_Heure));el(4,'Nom',nm(r));el(4,'Quantite',q(r));el(4,'Prix',px(r));
+    el(4,'Commission',xmlNum(r['Commission (€)'],'€'));el(4,'TTF',xmlOpt(r['TTF (€)'],'€'))}});
+  sec('Liste_Ventes','Vente',{t:'VENTE',f:r=>{el(4,'Date',xDate(r.Date_Heure));el(4,'Heure',xHeure(r.Date_Heure));el(4,'Nom',nm(r));el(4,'Quantite',q(r));el(4,'Prix',px(r));
+    el(4,'Commission',xmlNum(r['Commission (€)'],'€'))}});
+  sec('Liste_Dividendes','Dividende',{t:'DIVIDENDE',f:r=>{el(4,'Date',xDate(r.Date_Heure));el(4,'Nom',nm(r));el(4,'Quantite',q(r));el(4,'MontantBrut',xmlNum(r['Prix Unitaire (€)'],'€'));
+    el(4,'RetenueSourceEtrangere',xmlOpt(r.Retenue_Source_Etrangere,'€'));el(4,'RemboursementCapital',xmlOpt(r.Remboursement_Capital,'€'))}});
+  sec('Liste_Splits','Split',{t:'SPLIT',f:r=>{el(4,'Date',xDate(r.Date_Heure));el(4,'Nom',nm(r));el(4,'Ratio',xmlNum(r['Quantité'],'',{dyn:1}));
+    el(4,'Rompu',xmlOpt(r.Rompu,'€'));el(4,'DateRompu',+r.Rompu>0&&r.Date_Rompus?xDate(r.Date_Rompus):'N/A')}});
+  sec('Liste_Retraits','Retrait',{t:'RETRAIT',f:r=>{el(4,'Date',xDate(r.Date_Heure));el(4,'Montant',xmlNum(r['Quantité'],'€'))}});
+  close(1,'Liste_Transactions');close(0,'Extrait_PEA');return o.join('\n')+'\n'}
+$('#expx').onclick=()=>{if(!R)return alert('Aucune donnée à exporter.');dl('ExportXML_'+stamp()+'.xml',buildXml(),'application/xml')};
+/* PDF : page imprimable A4 paysage (vue d'ensemble, positions actives, puis une table par type, chacune sur sa page) */
+const pdE=(v,o={})=>{if(v==null||v===''||!isFinite(+v))return'N/A';const d=o.qty?xDec(xQty(v)):o.dyn?xDec(xDyn(v))||2:2,t=(+v).toFixed(d),neg=t[0]=='-',[i,f]=t.replace('-','').split('.');
+  return(neg?'-':'')+i.replace(/\B(?=(\d{3})+(?!\d))/g,' ')+(f?','+f:'')};
+const pDate=s=>s?xDate(s):'N/A',pHeure=s=>s?xHeure(s):'N/A',pOpt=(v,u)=>{const t=pdE(v);return t=='N/A'?t:t+' '+u};
+$('#expp').onclick=()=>{if(!R)return alert('Aucune donnée à exporter.');
+  const w=window.open('','_blank');if(!w)return alert('Autorise les fenêtres pop-up pour exporter en PDF.');
+  const K=expKpi(),n=new Date(),st=stamp(),broker=String(cg('broker','')||'').trim(),dts=S.raw.map(r=>String(r.Date_Heure).slice(0,10)).sort(),ouv=dts.length?xDate(dts[0]):'';
+  let sub='Généré le '+p2(n.getDate())+'/'+p2(n.getMonth()+1)+'/'+n.getFullYear()+' à '+p2(n.getHours())+':'+p2(n.getMinutes())+':'+p2(n.getSeconds());
+  if(broker)sub+=' — Courtier : '+broker;if(ouv)sub+=' — Ouverture du PEA : '+ouv;
+  const tbl=(cols,rows)=>`<table><thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`,
+    sec=(title,t,cols,fn)=>{const rows=byType(t).map(fn);return`<section><h2>${title}</h2>${rows.length?tbl(cols,rows):'<p class="empty">Aucune opération de ce type.</p>'}</section>`};
+  const ov=[['Valeur du portefeuille (actions)',pdE(K.valeur)+' €'],['Cash disponible',pdE(K.cash)+' €'],['Total des apports',pdE(K.total_apport)+' €'],['Performance globale',pdE(K.performance)+' %'],
+    ['Plus-value latente',pdE(K.pvl)+' €'],['Dividendes cumulés',pdE(K.div)+' €'],['Frais cumulés',pdE(K.frais)+' €']];
+  const act=R.pos.filter(p=>p.open&&p.sh>.0001).sort((a,b)=>b.latP-a.latP);
+  const body=`<h1>Export PEA — Vue d'ensemble</h1><p class="sub">${esc(sub)}</p>
+    <table class="big"><thead><tr><th>Indicateur</th><th>Valeur</th></tr></thead><tbody>${ov.map(r=>`<tr><td>${esc(r[0])}</td><td><b>${esc(r[1])}</b></td></tr>`).join('')}</tbody></table>
+    <section><h2>Détail des positions actives</h2>${act.length?tbl(['Nom','Ticker','Quantité','PRU Net','Prix Actuel','Valeur Actuelle','Gain Latent','Performance'],
+      act.map(p=>[p.nom,p.tk,pdE(p.sh,{qty:1}),pdE(p.pru,{dyn:1})+' €',pdE(p.px,{dyn:1})+' €',pdE(p.val)+' €',pdE(p.lat)+' €',pdE(p.latP)+' %'])):'<p class="empty">Aucune position active.</p>'}</section>`
+    +sec('Liste des Apports','APPORT',['Date','Montant'],r=>[pDate(r.Date_Heure),pdE(r['Quantité'])+' €'])
+    +sec('Liste des Achats','ACHAT',['Date','Heure','Nom','Quantité','Prix','Commission','TTF'],r=>[pDate(r.Date_Heure),pHeure(r.Date_Heure),r.Nom||'',pdE(r['Quantité'],{qty:1}),pdE(r['Prix Unitaire (€)'],{dyn:1})+' €',pdE(r['Commission (€)'])+' €',pOpt(r['TTF (€)'],'€')])
+    +sec('Liste des Ventes','VENTE',['Date','Heure','Nom','Quantité','Prix','Commission'],r=>[pDate(r.Date_Heure),pHeure(r.Date_Heure),r.Nom||'',pdE(r['Quantité'],{qty:1}),pdE(r['Prix Unitaire (€)'],{dyn:1})+' €',pdE(r['Commission (€)'])+' €'])
+    +sec('Liste des Dividendes','DIVIDENDE',['Date','Nom','Quantité','Montant Brut','Retenue Source','Remb. Capital'],r=>[pDate(r.Date_Heure),r.Nom||'',pdE(r['Quantité'],{qty:1}),pdE(r['Prix Unitaire (€)'])+' €',pOpt(r.Retenue_Source_Etrangere,'€'),pOpt(r.Remboursement_Capital,'€')])
+    +sec('Liste des Splits','SPLIT',['Date','Nom','Ratio','Rompu','Date Rompu'],r=>[pDate(r.Date_Heure),r.Nom||'',pdE(r['Quantité'],{dyn:1}),pOpt(r.Rompu,'€'),+r.Rompu>0&&r.Date_Rompus?pDate(r.Date_Rompus):'N/A'])
+    +sec('Liste des Retraits','RETRAIT',['Date','Montant'],r=>[pDate(r.Date_Heure),pdE(r['Quantité'])+' €']);
+  const css='@page{size:A4 landscape;margin:1.5cm}body{font:8pt/10pt Helvetica,Arial,sans-serif;color:#14202b;margin:0}h1{font-size:22pt;text-align:center;color:#0f172a;margin:0 0 6pt}.sub{font-size:9pt;color:#64748b;text-align:center;margin:0 0 20pt}'
+    +'h2{font-size:17pt;line-height:20pt;color:#1d4ed8;margin:0 0 8pt}section{break-before:page}table{border-collapse:collapse;width:100%}th,td{border:.5pt solid #cbd5e1;padding:4pt 5pt;text-align:center;vertical-align:middle}'
+    +'thead{display:table-header-group}th{background:#0284c7;color:#fff}tbody tr:nth-child(even){background:#f8fafc}tr{break-inside:avoid}.empty{font-size:9pt;color:#94a3b8}'
+    +'.big{width:18cm;margin:0 auto}.big th{background:#1d4ed8;font-size:13pt;line-height:16pt;padding:10pt 8pt}.big td{font-size:14pt;line-height:18pt;padding:10pt 8pt}';
+  w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>ExportPDF_${st}</title><style>${css}</style></head><body>${body}</body></html>`);
   w.document.close();w.focus();setTimeout(()=>w.print(),300)};
 $('#sbsend').onclick=async()=>{SB.s={...SB.s,url:$v('#sbu').trim().replace(/\/$/,''),key:$v('#sbk').trim(),email:$v('#sbe').trim()};
   try{await raw('/auth/v1/otp',{method:'POST',body:JSON.stringify({email:SB.s.email,create_user:false})});$('#sbcode').hidden=false;$('#sbst').textContent='Code envoyé : vérifie ta boîte mail (et les spams).'}
@@ -2120,6 +2246,291 @@ document.addEventListener('change',e=>{const el=e.target,c=el.dataset&&el.datase
   const x=el.type=='checkbox'?el.checked:n2(el.value);S.sim[k]=x;
   const C={ap:'apport_mensuel_projection',n:'horizon_projection_annees',pa:'perf_annuelle_projection',ps:'taux_prelevements_sociaux'};
   if(C[k])cfgSave({[C[k]]:(k=='ap'||k=='n')?Math.round(x):x});draw()});
+/* ===== 📎 Importer un document : port de doc_import.py + _import_render_section (app_perso.py) =====
+   Tout se passe dans le navigateur (PDF.js chargé à la demande) : le PDF n'est envoyé nulle part.
+   Reconnu (Boursorama) : avis d'opéré, relevé de coupons/dividendes, avis d'opération sur titres
+   (attribution gratuite / regroupement), virements d'un relevé de compte espèces. */
+const IMP_PDFJS='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js',IMP_WORKER='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+const impNorm=s=>String(s||'').normalize('NFKD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+const impClean=s=>String(s||'').replace(/Ø/g,'é').replace(/Ł/g,'è').replace(/ß/g,'û');   // PDF Boursorama 2026 : table de caractères défectueuse
+const IMP_NUM=/-?\d{1,3}(?:[  .]\d{3})*,\d+|-?\d+,\d+/g;
+const impNum=s=>parseFloat(String(s).replace(/ /g,'').replace(/ /g,'').replace(/\./g,'').replace(',','.'));
+const impNums=l=>(String(l).match(IMP_NUM)||[]).map(impNum);
+const impD=s=>{const m=s.split('/');return m[2]+'-'+m[1]+'-'+m[0]};
+const impFr=iso=>iso?iso.split('-').reverse().join('/'):'?';
+const impR2=x=>Math.round((x+Number.EPSILON)*100)/100;
+const impG=x=>String(+Number(x).toPrecision(6));
+const IMP_QTY='(\\d{1,3}(?:[ \\u00a0]\\d{3})+(?:,\\d+)?|\\d+(?:,\\d+)?)',IMP_ISIN='[A-Z]{2}[A-Z0-9]{9}\\d';
+const IMP_LABELS={avis_opere:"Avis d'opéré",coupons:'Relevé de coupons / dividendes',ost:"Avis d'opération sur titres",ost_realisation:'Avis de réalisation (opération sur titres)',releve_especes:'Relevé de compte espèces',releve_titres:'Relevé de compte titres',releve_frais:'Relevé annuel de frais',inconnu:'Document non reconnu'};
+const impOp=o=>Object.assign({type:'',date:null,time:null,name:'',isin:'',quantity:null,price:null,commission:null,ttf:null,amount:null,withholding:null,capital_repayment:null,factor:null,label:'',notes:[]},o);
+const impRes=(t,o)=>Object.assign({doc_type:t,doc_label:IMP_LABELS[t]||t,ops:[],warnings:[],method:'regles',recognized:true},o||{});
+
+/* --- extraction du texte : reproduit pdfplumber (x_tolerance=1) à partir des éléments PDF.js --- */
+let impLib=null;
+function impLoadLib(){if(impLib)return impLib;
+  impLib=new Promise((ok,ko)=>{
+    if(window.pdfjsLib){ok(window.pdfjsLib);return}
+    const s=document.createElement('script');s.src=IMP_PDFJS;
+    s.onload=()=>{try{window.pdfjsLib.GlobalWorkerOptions.workerSrc=IMP_WORKER}catch(e){}ok(window.pdfjsLib)};
+    s.onerror=()=>{impLib=null;ko(new Error('PDF.js n’a pas pu être chargé (connexion internet requise)'))};
+    document.head.appendChild(s)});
+  return impLib}
+/* pages = [{lines:[str], rows:[[mot]], words:[mot]}] ; mot = {text,x0,x1,y} */
+async function impExtract(buf,lib){
+  const L=lib||await impLoadLib(),pdf=await L.getDocument({data:buf.slice(0)}).promise,pages=[];
+  for(let n=1;n<=pdf.numPages;n++){
+    const pg=await pdf.getPage(n),tc=await pg.getTextContent(),items=[];
+    for(const it of tc.items){
+      if(typeof it.str!='string'||!it.str.length)continue;
+      items.push({s:impClean(it.str),x:it.transform[4],y:it.transform[5],w:it.width||0})}
+    /* mots : on découpe sur les espaces, on recolle les morceaux contigus (écart <= 1 pt) */
+    const words=[];
+    for(const it of items){
+      const per=it.s.length?it.w/it.s.length:0;let i=0;
+      const parts=it.s.split(/(\s+)/);
+      for(const p of parts){
+        if(p===''){continue}
+        if(/^\s+$/.test(p)){i+=p.length;continue}
+        const x0=it.x+i*per,x1=x0+p.length*per;i+=p.length;
+        words.push({text:p,x0,x1,y:it.y,gl:i-p.length==0,gr:i==it.s.length})}}
+    /* lignes : tri par y décroissant, regroupement chaîné (tolérance 3 pt), puis par x */
+    words.sort((a,b)=>b.y-a.y||a.x0-b.x0);
+    const rows=[];let cur=null,last=null;
+    for(const w of words){if(cur&&last-w.y<=3){cur.push(w)}else{cur=[w];rows.push(cur)}last=w.y}
+    const outRows=rows.map(r=>{r.sort((a,b)=>a.x0-b.x0);const m=[];
+      for(const w of r){const p=m[m.length-1];
+        if(p&&p.gr&&w.gl&&w.x0-p.x1<=1&&w.x0-p.x1>=-1){p.text+=w.text;p.x1=w.x1;p.gr=w.gr}
+        else m.push({...w})}
+      return m});
+    pages.push({rows:outRows,words:outRows.flat(),lines:outRows.map(r=>r.map(w=>w.text).join(' ')).filter(l=>!l.includes('(cid:'))})}
+  return pages}
+const impText=pages=>pages.map(p=>p.lines.join('\n')).join('\n');
+
+/* --- classification --- */
+function impClassify(text){const n=impNorm(text);
+  if(n.includes('OPERATIONDEBOURSE'))return'avis_opere';
+  if(n.includes('COUPONSREMBOURSEMENTS'))return'coupons';
+  if(n.includes('AVISDEREALISATION'))return'ost_realisation';
+  if(n.includes('AVISDOPERATIONSURTITRES')||n.includes('AVISDOPERATIONSURTITRE'))return'ost';
+  if(n.includes('RELEVECOMPTEESPECES')||n.includes('EXTRAITDEVOTRECOMPTEENEUR'))return'releve_especes';
+  if(n.includes('RELEVECOMPTETITRES'))return'releve_titres';
+  if(n.includes('MIFID')&&n.includes('FRAIS'))return'releve_frais';
+  return'inconnu'}
+
+/* --- avis d'opéré --- */
+function impAvisOpere(pages){
+  const res=impRes('avis_opere'),lines=pages.flatMap(p=>p.lines),tn=impNorm(lines.join('\n')),
+    EXEC=new RegExp('^(\\d{2}/\\d{2}/\\d{4})\\s+'+IMP_QTY+'\\s+(.+?)\\s+R[ée]f[ée]rence\\s*:','i'),
+    COURS=/Cours\s*ex[ée]cut[ée]\s*:\s*(\d+(?:[ .]\d{3})*(?:,\d+)?)\s*([A-Z]{3})?/i;
+  let type;
+  if(tn.includes('VENTECOMPTANT'))type='VENTE';else if(tn.includes('ACHATCOMPTANT'))type='ACHAT';
+  else{res.recognized=false;res.warnings.push("Avis d'opéré reconnu, mais ni achat ni vente comptant détecté (autre type d'ordre ?).");return res}
+  const op=impOp({type});
+  for(let i=0;i<lines.length;i++){const m=lines[i].match(EXEC);
+    if(m){op.date=impD(m[1]);op.quantity=impNum(m[2]);op.name=m[3].replace(/^[ .]+|[ .]+$/g,'');
+      for(let j=i;j<Math.min(i+4,lines.length);j++){const mt=lines[j].match(/\b(\d{2}:\d{2}:\d{2})\b/);if(mt){op.time=mt[1];break}}
+      break}}
+  for(const l of lines){const mi=l.match(new RegExp('\\b('+IMP_ISIN+')\\b'));
+    if(mi&&impNorm(l).includes('ISIN'))op.isin=mi[1];
+    const mc=l.match(COURS);
+    if(mc){op.price=impNum(mc[1]);if(mc[2]&&mc[2]!='EUR')op.notes.push(`Cours exprimé en ${mc[2]} : vérifiez le prix unitaire en euros.`)}}
+  let net=null;
+  for(let i=0;i<lines.length;i++)if(impNorm(lines[i]).includes('MONTANTNETAU')){
+    const c=i+1<lines.length?impNums(lines[i+1]):[];if(c.length){net=c[c.length-1];break}}
+  if(net===null){res.recognized=false;res.warnings.push("Montant net introuvable dans l'avis d'opéré.");return res}
+  let comm=0,ttf=0;
+  for(let i=0;i<lines.length;i++){const n=impNorm(lines[i]);
+    if(n.startsWith('MONTANTBRUTCOMMISSION')){const nums=i+1<lines.length?impNums(lines[i+1]):[];
+      if(nums.length==4){comm=nums[1];ttf=nums[2]}else if(nums.length==3){comm=nums[1];ttf=0}break}
+    if(n.startsWith('COMMISSIONFRAISDIVERS')){const nums=i+1<lines.length?impNums(lines[i+1]):[];
+      if(nums.length>=2)comm=nums[0]+nums[1];break}}
+  op.commission=impR2(comm);op.ttf=impR2(ttf);
+  if(op.quantity&&op.price){const brut=impR2(op.quantity*op.price+1e-9),frais=op.commission+op.ttf,
+      att=type=='ACHAT'?impR2(brut+frais):impR2(brut-frais);
+    if(Math.abs(att-net)>0.011)op.notes.push(`Écart de cohérence : quantité × cours ± frais = ${att.toFixed(2)} € alors que l'avis indique ${net.toFixed(2)} €. Vérifiez les champs avant d'enregistrer.`)}
+  if(!(op.date&&op.quantity&&op.price)){res.recognized=false;res.warnings.push("Avis d'opéré : date, quantité ou cours introuvable.");return res}
+  op.label=`${type[0]+type.slice(1).toLowerCase()} ${impG(op.quantity)} × ${op.name} — ${impFr(op.date)}`;
+  res.ops.push(op);return res}
+
+/* --- relevé de coupons / dividendes --- */
+function impCoupons(pages){
+  const res=impRes('coupons'),lines=pages.flatMap(p=>p.lines),
+    CR=new RegExp('^(\\d{2}/\\d{2}/\\d{4})\\s+'+IMP_QTY+'\\s+(.+?)\\s*\\(('+IMP_ISIN+')\\)\\s+(.*)$'),
+    RR=new RegExp('^(\\d{2}/\\d{2}/\\d{4})\\s+(.+?)\\s*\\(('+IMP_ISIN+')\\)\\s+(.*)$');
+  let sec=null;const coupons=[],rembs=[];
+  for(const l of lines){const n=impNorm(l);
+    if(n.startsWith('DETAILCOUPONS')){sec='coupons';continue}
+    if(n.startsWith('DETAILREMBOURSEMENTS')){sec='remb';continue}
+    if(sec=='coupons'){const m=l.match(CR);if(m){const nums=impNums(m[5]);if(nums.length<2)continue;coupons.push([m[1],impNum(m[2]),m[3].trim(),m[4],nums])}}
+    else if(sec=='remb'){const m=l.match(RR);if(m){const nums=impNums(m[4]);if(nums.length)rembs.push([m[1],m[2].trim(),m[3],nums])}}}
+  for(const[dt,qty,name,isin,nums]of coupons){
+    const brut=nums[0],netC=nums[nums.length-1],ret=impR2(brut-netC),
+      op=impOp({type:'DIVIDENDE',date:impD(dt),name,isin,quantity:qty,amount:impR2(brut),withholding:Math.max(ret,0)});
+    if(ret<-0.005)op.notes.push('Net crédité supérieur au brut : vérifiez les montants.');
+    if(ret>0.005)op.notes.push(`Retenue = brut − net crédité = ${ret.toFixed(2)} € (retenue étrangère / crédit d'impôt). Vérifiez qu'elle correspond à votre convention.`);
+    op.label=`Dividende ${name} (${impG(qty)} titres) — ${dt}`;res.ops.push(op)}
+  for(const[dt,name,isin,nums]of rembs){const mt=nums[nums.length-1],tg=res.ops.find(o=>o.isin==isin&&o.capital_repayment==null);
+    if(tg){tg.capital_repayment=impR2(mt);tg.notes.push(`Inclut le remboursement de capital de ${mt.toFixed(2)} € versé le ${dt}.`)}
+    else{const op=impOp({type:'DIVIDENDE',date:impD(dt),name,isin,amount:0,capital_repayment:impR2(mt)});
+      op.notes.push('Remboursement de capital seul (pas de coupon associé) : renseignez la quantité.');op.label=`Remboursement de capital ${name} — ${dt}`;res.ops.push(op)}}
+  if(!res.ops.length){res.recognized=false;res.warnings.push('Aucune ligne de coupon trouvée dans ce relevé.')}
+  return res}
+
+/* --- avis d'opération sur titres --- */
+function impOst(pages){
+  const res=impRes('ost'),lines=pages.flatMap(p=>p.lines),joined=lines.join('\n'),n=impNorm(joined),
+    md=joined.match(/\bLe\s*(\d{2}\/\d{2}\/\d{4})/),mi=joined.match(new RegExp('Code\\s*Valeur\\s*:\\s*('+IMP_ISIN+')'));
+  let name='';
+  for(let i=0;i<lines.length;i++)if(impNorm(lines[i]).startsWith('CODEVALEUR')&&i>0){name=lines[i-1].trim();break}
+  if(n.includes('ATTRIBUTIONGRATUITE')){
+    const m=joined.match(/proportion\s*de\s*:\s*(\d+)\s*action[s]?\s*nouvelle[s]?.*?pour\s*(\d+)\s*action[s]?\s*ancienne/is);
+    if(m&&md){const nw=+m[1],old=+m[2],factor=Math.round((1+nw/old)*1e6)/1e6,mq=joined.match(/Nombre\s*de\s*titres\s*:\s*(\d+)/),
+        op=impOp({type:'SPLIT',date:impD(md[1]),name,isin:mi?mi[1]:'',quantity:mq?+mq[1]:null,factor});
+      op.label=`Attribution gratuite ${nw} pour ${old} sur ${name} — ${md[1]}`;
+      op.notes.push(`Attribution gratuite ${nw} nouvelle(s) pour ${old} anciennes → facteur ${impG(factor)}. Les rompus (fractions) sont indemnisés en espèces plus tard : saisissez-les via le champ « Rompu versé en cash » une fois crédités.`);
+      res.ops.push(op);return res}}
+  if(n.includes('REGROUPEMENT')||n.includes('DIVISION')){
+    const m=joined.match(/(\d+)\s*action[s]?\s*nouvelle[s]?.*?(?:pour|contre)\s*(\d+)\s*action[s]?\s*ancienne/is);
+    if(m&&md){const nw=+m[1],old=+m[2],op=impOp({type:'SPLIT',date:impD(md[1]),name,isin:mi?mi[1]:'',factor:Math.round(nw/old*1e6)/1e6});
+      op.label=`Split/Regroupement ${nw} pour ${old} sur ${name} — ${md[1]}`;res.ops.push(op);return res}}
+  res.recognized=false;res.warnings.push("Type d'opération sur titres non pris en charge par les règles automatiques.");return res}
+
+/* --- relevé de compte espèces : virements (apports / retraits) --- */
+function impAmountFromRight(ws){if(!ws.length)return[null,[]];const last=ws[ws.length-1].text;
+  if(/^(?:\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})$/.test(last)){const used=[ws[ws.length-1]];
+    if(ws.length>=2&&/^\d{3},\d{2}$/.test(last)&&/^\d{1,3}$/.test(ws[ws.length-2].text)){const g=ws[ws.length-1].x0-ws[ws.length-2].x1;if(g>=0&&g<6)used.unshift(ws[ws.length-2])}
+    return[impNum(used.map(w=>w.text).join(' ')),used]}
+  return[null,[]]}
+function impReleveEspeces(pages){
+  const res=impRes('releve_especes');let ignored=0;
+  for(const p of pages){const cw=p.words.find(w=>impNorm(w.text)=='CREDIT'),creX=cw?cw.x0:null;
+    for(const ws of p.rows){const line=ws.map(w=>w.text).join(' '),m=line.match(/^(\d{2}\/\d{2}\/\d{4})\s+(.*)$/);if(!m)continue;
+      const nb=impNorm(m[2]);
+      if(/^(ANCIENSOLDE|NOUVEAUSOLDE|SOLDEAU|NOUVEAU)/.test(nb))continue;
+      if(!nb.startsWith('VIR')){if(/^(ACHAT|VENTE|COUPON|LIQUID|REMBOURSEMENT|SOUSCRIPTION)/.test(nb))ignored++;continue}
+      const[amount,used]=impAmountFromRight(ws);if(amount===null)continue;
+      const lw=used[used.length-1];let sens=null;const notes=[];
+      if(creX!==null)sens=lw.x1>creX?'APPORT':'RETRAIT';
+      if(sens===null){sens='APPORT';notes.push("Sens (débit/crédit) non déterminé : vérifiez s'il s'agit d'un apport ou d'un retrait.")}
+      let lib=ws.slice(1,ws.length-used.length).map(w=>w.text).join(' ').replace(/^VIR\s*/i,'').trim().replace(/\b\d{2}\/\d{2}\/\d{4}\b/g,'').trim();
+      const op=impOp({type:sens,date:impD(m[1]),amount,notes});
+      op.label=`${sens=='APPORT'?'Apport':'Retrait'} de ${amount.toFixed(2)} € — ${m[1]} (${lib.slice(0,40)})`;res.ops.push(op)}}
+  if(ignored)res.warnings.push(`${ignored} ligne(s) d'achat/vente/coupon ignorée(s) : le relevé espèces ne donne pas le détail (commission, cours…). Utilisez l'avis d'opéré ou le relevé de coupons correspondant.`);
+  if(!res.ops.length){res.recognized=ignored>0;res.warnings.push('Aucun virement (apport/retrait) trouvé dans ce relevé.')}
+  return res}
+
+async function impParse(buf,lib){
+  let pages;
+  try{pages=await impExtract(buf,lib)}
+  catch(e){return impRes('illisible',{doc_label:'Fichier illisible',recognized:false,warnings:['Impossible de lire le PDF : '+e.message]})}
+  const text=impText(pages);
+  if(text.trim().length<40)return impRes('scan',{doc_label:'PDF sans texte (scan/image)',recognized:false,warnings:['Ce PDF ne contient pas de texte exploitable (scan ou photo).']});
+  const kind=impClassify(text),P={avis_opere:impAvisOpere,coupons:impCoupons,ost:impOst,releve_especes:impReleveEspeces};
+  if(P[kind]){try{return P[kind](pages)}catch(e){return impRes(kind,{recognized:false,warnings:["Erreur d'analyse : "+e.message]})}}
+  const res=impRes(kind,{recognized:false});
+  if(kind=='releve_titres'||kind=='releve_frais')res.warnings.push("Ce document ne contient pas d'opération à saisir (photographie du portefeuille / frais).");
+  else if(kind=='ost_realisation')res.warnings.push('Avis de réalisation (échange/offre) : cas particulier, à saisir manuellement.');
+  else res.warnings.push('Format non reconnu par les règles automatiques.');
+  return res}
+
+/* --- rapprochement des noms (difflib.SequenceMatcher.ratio) --- */
+function impRatio(a,b){
+  const lm=(alo,ahi,blo,bhi)=>{let bi=alo,bj=blo,bk=0,pr=new Array(bhi-blo+1).fill(0);
+    for(let i=alo;i<ahi;i++){const cu=new Array(bhi-blo+1).fill(0);
+      for(let j=blo;j<bhi;j++)if(a[i]==b[j]){const k=(pr[j-blo]||0)+1;cu[j-blo+1]=k;if(k>bk){bk=k;bi=i-k+1;bj=j-k+1}}
+      pr=cu}
+    return[bi,bj,bk]};
+  const rec=(alo,ahi,blo,bhi)=>{if(alo>=ahi||blo>=bhi)return 0;const[i,j,k]=lm(alo,ahi,blo,bhi);if(!k)return 0;return k+rec(alo,i,blo,j)+rec(i+k,ahi,j+k,bhi)};
+  const t=a.length+b.length;return t?2*rec(0,a.length,0,b.length)/t:1}
+function impMatchName(name,known){const t=impNorm(name);if(!t)return[null,0];let best=null,bs=0;
+  for(const k of known){const kn=impNorm(k);if(!kn)continue;if(kn==t)return[k,1];
+    let sc=impRatio(t,kn);if(kn.includes(t)||t.includes(kn))sc=Math.max(sc,Math.min(kn.length,t.length)>=4?.85:0);
+    if(sc>bs){best=k;bs=sc}}
+  return bs>=.72?[best,bs]:[null,bs]}
+
+/* --- doublons --- */
+function impDup(op,known){if(!op.date||!S.raw.length)return null;
+  const same=S.raw.filter(r=>r.Type==op.type),dd=r=>String(r.Date_Heure).slice(0,10),ab=(x,y,e)=>Math.abs((+x||0)-y)<e;let hit;
+  if(op.type=='ACHAT'||op.type=='VENTE'){if(!known||op.quantity==null||op.price==null)return null;hit=same.find(r=>dd(r)==op.date&&r.Nom==known&&ab(r['Quantité'],op.quantity,1e-6)&&ab(r['Prix Unitaire (€)'],op.price,1e-3))}
+  else if(op.type=='DIVIDENDE'){if(!known||op.amount==null)return null;const t0=Date.parse(op.date);
+    hit=same.find(r=>Math.abs(Date.parse(dd(r))-t0)<=7*864e5&&r.Nom==known&&ab(r['Prix Unitaire (€)'],op.amount,.02))}
+  else if(op.type=='SPLIT'){if(!known)return null;hit=same.find(r=>dd(r)==op.date&&r.Nom==known)}
+  else if(op.type=='APPORT'||op.type=='RETRAIT'){if(op.amount==null)return null;hit=same.find(r=>dd(r)==op.date&&ab(r['Quantité'],op.amount,.005))}
+  return hit?`${hit.Type} du ${impFr(dd(hit))}`+(hit.Nom?` — ${hit.Nom}`:''):null}
+
+/* --- interface : encart en haut de « Nouvelle opération » --- */
+S.imp=null;   /* {id,name,res,done:Set,idx,open,busy,cur} */
+const impAlias=n=>((S.cfg||{}).import_aliases||{})[impNorm(n)];
+function impHash(u8){let h=2166136261>>>0;for(let i=0;i<u8.length;i++){h^=u8[i];h=Math.imul(h,16777619)>>>0}return h.toString(16)+'-'+u8.length}
+function impNames(type){return type=='ACHAT'?opAll():opOwned()}
+function impKnown(op){const a=impAlias(op.name),pool=impNames(op.type);
+  return op.type=='APPORT'||op.type=='RETRAIT'?null:(a&&pool.includes(a.nom)?a.nom:impMatchName(op.name,pool)[0])}
+function impRender(){const box=$('#imp_box');if(!box)return;const I=S.imp;
+  const cap=`<div class="cap">Reconnu automatiquement : avis d'opéré, relevé de coupons/dividendes, avis d'opération sur titres (attribution gratuite), virements d'un relevé espèces (Boursorama). Le PDF est lu dans ton navigateur, il n'est envoyé nulle part. Les autres courtiers ne sont pas pris en charge.</div>`;
+  let h=`<details id="imp_d"${I&&I.open?' open':''}><summary>📎 Importer un document (avis d'opéré, dividendes, virement, split…)</summary><div class="imp-in"><input type="file" id="imp_f" accept="application/pdf,.pdf" aria-label="Document PDF du courtier">`;
+  if(!I)h+=cap;
+  else if(I.busy)h+=`<div class="cap">Lecture du document…</div>`;
+  else{const R_=I.res;
+    h+=`<div class="imp-hd"><span class="cap" style="margin:0">📄 ${esc(I.name)} — ${esc(R_.doc_label)}</span><button type="button" id="imp_forget" class="sbtn2" style="height:32px;padding:0 12px;font-size:.85rem">Oublier</button></div>`;
+    R_.warnings.forEach(w=>h+=`<div class="warn" style="margin:6px 0">${esc(w)}</div>`);
+    if(R_.ops.length){const ops=R_.ops,pend=ops.map((_,i)=>i).filter(i=>!I.done.has(i));
+      if(I.idx==null||I.idx>=ops.length)I.idx=pend.length?pend[0]:0;
+      const op=ops[I.idx],kn=impKnown(op),dup=impDup(op,kn);
+      h+=`<label class="cap" for="imp_idx">${ops.length} opération(s) détectée(s)</label><select id="imp_idx" style="width:100%">${ops.map((o,i)=>`<option value="${i}"${i==I.idx?' selected':''}>${I.done.has(i)?'✅ ':''}${esc(o.label||o.type)}</option>`).join('')}</select>`;
+      if(dup)h+=`<div class="warn" style="margin:6px 0">⚠️ Une opération très proche est déjà enregistrée : ${esc(dup)}.</div>`;
+      if(I.done.has(I.idx))h+=`<div class="cap">✅ Déjà saisie depuis ce document.</div>`;
+      op.notes.forEach(n=>h+=`<div class="cap">• ${esc(n)}</div>`);
+      h+=`<button type="button" id="imp_apply" class="sbtn primary">✨ Pré-remplir le formulaire</button>`}}
+  box.innerHTML=h+`</div></details>`}
+async function impFile(f){if(!f)return;
+  S.imp={id:'',name:f.name,res:null,done:new Set(),idx:null,open:true,busy:true,cur:null};impRender();
+  try{const buf=await f.arrayBuffer(),id=impHash(new Uint8Array(buf)),res=await impParse(buf);
+    S.imp={id,name:f.name,res,done:new Set(),idx:null,open:true,busy:false,cur:null}}
+  catch(e){S.imp={id:'',name:f.name,res:impRes('illisible',{doc_label:'Fichier illisible',recognized:false,warnings:[e.message]}),done:new Set(),idx:null,open:true,busy:false,cur:null}}
+  impRender()}
+function impApply(){const I=S.imp,op=I.res.ops[I.idx],t=op.type,a=t=='ACHAT',ap=t=='APPORT'||t=='RETRAIT',al=impAlias(op.name),pool=impNames(t),
+    nm=ap?null:(al&&pool.includes(al.nom)?al.nom:impMatchName(op.name,pool)[0]),set=(id,v)=>{$('#'+id).value=v==null?'':String(v)};
+  opClear();$('#o_err').innerHTML='';$('#o_type').value=t;opSelFill(t,'');
+  if(!ap){
+    if(a){set('o_nom',nm||(al&&al.nom)||op.name);set('o_tk',nm?opTkOf(nm,true):(al&&al.ticker)||'')}
+    else if(nm){opSelFill(t,nm);set('o_tk',opTkOf(nm,false));const h=opHeld(nm);if(h&&t=='DIVIDENDE')set('o_q',Math.round(h.sh*1e6)/1e6);if(h&&t=='SPLIT')set('o_q',Math.round(h.sh*1e6)/1e6)}
+    else{opSelFill(t,OPNEW);set('o_nom',(al&&al.nom)||op.name);set('o_tk',(al&&al.ticker)||'')}}
+  if(t=='ACHAT'){set('o_q',op.quantity);set('o_p',op.price);set('o_c',op.commission||0);set('o_t',op.ttf||'')}
+  else if(t=='VENTE'){set('o_q',op.quantity);set('o_p',op.price);set('o_c',impR2((op.commission||0)+(op.ttf||0)))}
+  else if(t=='DIVIDENDE'){if(op.quantity!=null)set('o_q',op.quantity);set('o_p',op.amount||0);set('o_r',op.withholding||'');set('o_b',op.capital_repayment||'')}
+  else if(t=='SPLIT'){if(op.factor!=null)set('o_q',op.factor)}
+  else set('o_q',op.amount);
+  set('o_dd',op.date);if(a||t=='VENTE')set('o_hh',op.time||'');
+  I.cur={idx:I.idx,type:t,broker:op.name};fields();$('#o_type').scrollIntoView({block:'center'})}
+/* appelé après l'enregistrement d'une opération : coche l'opération importée et mémorise l'alias courtier → nom/ticker */
+async function impDone(r){const I=S.imp;if(!I||!I.cur||I.cur.type!=r.Type){return false}
+  const cur=I.cur;I.cur=null;I.done.add(cur.idx);
+  if(['ACHAT','VENTE','DIVIDENDE','SPLIT'].includes(r.Type)&&r.Nom&&cur.broker){
+    try{const al={...((S.cfg||{}).import_aliases||{})};al[impNorm(cur.broker)]={nom:r.Nom,ticker:r.Ticker||''};await cfgSave({import_aliases:al})}catch(e){}}
+  const rest=I.res.ops.map((_,i)=>i).filter(i=>!I.done.has(i));
+  if(rest.length){I.idx=rest[0];return true}
+  return false}
+document.addEventListener('change',e=>{if(e.target.id=='imp_f'){impFile(e.target.files[0]);return}
+  if(e.target.id=='imp_idx'&&S.imp){S.imp.idx=+e.target.value;impRender()}});
+document.addEventListener('click',e=>{
+  if(e.target.closest('#imp_apply')&&S.imp&&S.imp.res){impApply();return}
+  if(e.target.closest('#imp_forget')){S.imp=null;impRender();return}});
+document.addEventListener('toggle',e=>{if(e.target.id=='imp_d'&&S.imp)S.imp.open=e.target.open},true);
+
+/* « doigt maintenu » (~0,25 s) sur un graphique : l'infobulle suit ensuite le doigt sans faire défiler la page ; un glissement immédiat reste un défilement normal (comme _SCRUB_JS de Streamlit) */
+(function(){const HOLD=250,TOL=10;let timer=null,on=false,sx=0,sy=0,cv=null;
+  const chOf=c=>window.Chart&&Chart.getChart?Chart.getChart(c):null,
+  follow=t=>{try{const ch=chOf(cv);if(!ch||!ch.chartArea)return;const r=cv.getBoundingClientRect(),a=ch.chartArea,
+      x=Math.min(Math.max(t.clientX-r.left,a.left),a.right),y=Math.min(Math.max(t.clientY-r.top,a.top),a.bottom),
+      els=ch.getElementsAtEventForMode({x,y,native:true,type:'mousemove'},'index',{intersect:false,axis:'x'},true);
+      ch.setActiveElements(els);if(ch.tooltip)ch.tooltip.setActiveElements(els,{x,y});ch.update('none')}catch(e){}};
+  document.addEventListener('touchstart',e=>{const c=e.target&&e.target.closest?e.target.closest('canvas'):null;clearTimeout(timer);on=false;cv=null;
+    if(!c||e.touches.length>1||!chOf(c))return;cv=c;sx=e.touches[0].clientX;sy=e.touches[0].clientY;
+    timer=setTimeout(()=>{on=true;try{navigator.vibrate&&navigator.vibrate(10)}catch(_){}follow({clientX:sx,clientY:sy})},HOLD)},{passive:true});
+  document.addEventListener('touchmove',e=>{if(!cv)return;const t=e.touches[0];
+    if(on){if(e.cancelable)e.preventDefault();follow(t);return}
+    if(Math.abs(t.clientX-sx)>TOL||Math.abs(t.clientY-sy)>TOL){clearTimeout(timer);cv=null}},{passive:false});
+  ['touchend','touchcancel'].forEach(n=>document.addEventListener(n,()=>{clearTimeout(timer);cv=null;on=false},{passive:true}))})();
 /* ---------- Pop-up de premier lancement (reprise de _dialog_premier_lancement) ---------- */
 function welcomeCheck(){const d=$('#welcome');if(!d||d.open||!S.cfgOk||String(cg('user_name','')).trim())return;
   $('#wel_err').hidden=true;d.showModal()}
