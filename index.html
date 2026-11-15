@@ -1889,7 +1889,7 @@ function saiBar(id,labels,vals,cnt,fs){
       plugins:{legend:{display:false},tooltip:extTip(i=>`<span style="color:${vals[i]>=0?'#16a34a':'#dc2626'}"><b>${pEur(vals[i])}</b></span><br>${cnt[i]} vente(s) actée(s)`)},
       scales:{x:{offset:true,grid:{display:true,offset:false,color:'#e2e8f0',borderDash:[2,3],drawTicks:false},border:{display:false},ticks:{autoSkip:false,minRotation:0,maxRotation:90,font:{size:10},color:'#475569',padding:6}},
         y:{min:bot,max:top,title:{display:true,text:'Plus-value actée (€)',color:'#334155',font:{size:13}},border:{color:'#cbd5e1',display:false},grid:{color:'#e2e8f0',borderDash:[2,3]},
-          ticks:{maxTicksLimit:7,callback:v=>Math.abs(v)>=1000?String(parseFloat((v/1000).toFixed(2))).replace('.',',')+'k':String(v).replace('.',','),color:'#334155'}}}}})}
+          ticks:{includeBounds:false,maxTicksLimit:7,callback:v=>Math.abs(v)>=1000?String(parseFloat((v/1000).toFixed(2))).replace('.',',')+'k':String(v).replace('.',','),color:'#334155'}}}}})}
 function drawSai(v){
   const sl=sales(),none='<div class="info">Aucune vente enregistrée pour le moment.</div>',Q=[],cv=id=>`<div class="cv" style="height:380px"><canvas id="${id}"></canvas></div>`;
   const grp=(n,ix)=>{const g=Array(n).fill(0),c=Array(n).fill(0);sl.forEach(x=>{const i=ix(x.d);if(i>=0&&i<n){g[i]+=x.g;c[i]++}});return[g,c]};
