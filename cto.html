@@ -417,7 +417,7 @@ function compute(tx,prices){
 }
 
 /* ---------- État ---------- */
-let S={raw:[],synced:false,editing:null,tx:[],prices:LS.g('prices')||{},url:LS.g('url')||'',tab:'ov'},R=null,CH={};
+let S={raw:[],synced:false,editing:null,tx:[],prices:LS.g('cto_prices')||{},url:LS.g('url')||'',tab:'ov'},R=null,CH={};
 const COLS=['Nom','Type','Rompu','Ticker','Quantité','TTF (€)','Date_Heure','Date_Rompus','Arrondi_Courtier','Commission (€)','Frais Totaux (€)','Prix Unitaire (€)','Remboursement_Capital','Retenue_Source_Etrangere'];
 const TXT=['Nom','Type','Ticker','Date_Heure','Date_Rompus'];
 function toRaw(o){const r={};COLS.forEach(k=>r[k]=TXT.includes(k)?(o[k]||null):(parseFloat(o[k])||0));if(!r.Date_Rompus)r.Date_Rompus=r.Date_Heure;return r}
@@ -561,10 +561,10 @@ async function commit(){rebuild();draw();await save()}
 async function refreshPrices(){
   if(!S.url||!S.tx.length)return;
   const tks=compute(S.tx,{}).pos.filter(p=>p.open).map(p=>p.tk);
-  const at0=LS.g('pricesAt'),ban=$('#pxban');
+  const at0=LS.g('cto_pricesAt'),ban=$('#pxban');
   if(at0&&Object.keys(S.prices).length&&ban){const d=new Date(at0);ban.textContent=`🔄 Actualisation des cours en cours… Les chiffres affichés reposent pour l'instant sur les derniers cours connus (${pad(d.getDate())}/${pad(d.getMonth()+1)} à ${pad(d.getHours())}:${pad(d.getMinutes())}) ; la page se mettra à jour toute seule dans quelques secondes.`;ban.hidden=false}
   try{const r=await fetch(S.url+(S.url.includes('?')?'&':'?')+'t='+encodeURIComponent(tks.join(',')));
-    const j=await r.json();S.prices=j;LS.s('prices',j);LS.s('pricesAt',Date.now());R=compute(S.tx,S.prices);draw()}
+    const j=await r.json();S.prices=j;LS.s('cto_prices',j);LS.s('cto_pricesAt',Date.now());R=compute(S.tx,S.prices);draw()}
   catch(e){$('#sub').textContent='Cours indisponibles (script Google injoignable)'}
   if(ban)ban.hidden=true;
 }
@@ -574,7 +574,7 @@ const IDX=[['^FCHI','CAC 40'],['^GSPC','S&P 500'],['CW8.PA','MSCI World']];
 const esc=x=>String(x??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const pad=n=>String(n).padStart(2,'0'),dstr=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const la=a=>a[a.length-1],fD=s=>s?s.split('-').reverse().join('/'):'–';
-S.cfg=LS.g('cto_cfg')||{};S.cfgOk=false;S.cfgBusy=false;S.wl={px:LS.g('cto_wlpx')||{},h:LS.g('cto_wlh')||{},f:LS.g('cto_wlf')||{}};S.wlDis=new Set();S.wlAt=0;S.wlHAt=LS.g('wlhAt')||0;S.wlBusy=false;S.wlTry=null;
+S.cfg=LS.g('cto_cfg')||{};S.cfgOk=false;S.cfgBusy=false;S.wl={px:LS.g('cto_wlpx')||{},h:LS.g('cto_wlh')||{},f:LS.g('cto_wlf')||{}};S.wlDis=new Set();S.wlAt=0;S.wlHAt=LS.g('cto_wlhAt')||0;S.wlBusy=false;S.wlTry=null;
 /* Réglages : même table app_storage, clé « config » (comme config_pea.json côté Streamlit) */
 const cg=(k,d)=>S.cfg[k]!=null?S.cfg[k]:d;
 const n2=x=>{const v=parseFloat(String(x==null?'':x).replace(/[\s\u00a0\u202f]/g,'').replace(',','.'));return isFinite(v)?v:0};
@@ -595,11 +595,11 @@ async function ensureHist(){
   if(S.hbusy||!S.url||!S.tx.length)return;
   const from=dstr(S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d)),tks=[...new Set([...histTickers(),...IDX.map(x=>x[0])])].sort(),key=tks.join(',')+'|'+from;
   if(S.htry==key)return;
-  if(LS.g('histKey')==key&&Date.now()-(LS.g('histAt')||0)<216e5&&Object.keys(S.hist).length)return;
+  if(LS.g('cto_histKey')==key&&Date.now()-(LS.g('cto_histAt')||0)<216e5&&Object.keys(S.hist).length)return;
   S.htry=key;S.hbusy=true;S.hmsg='Chargement de l’historique des cours…';draw();
   try{const r=await fetch(S.url+(S.url.includes('?')?'&':'?')+'h='+encodeURIComponent(tks.join(','))+'&from='+from);const j=await r.json(),h={};
     for(const k in j)if(j[k]&&Array.isArray(j[k].d)&&j[k].d.length)h[k]=j[k];
-    if(Object.keys(h).length){S.hist=h;LS.s('cto_hist',h);LS.s('histKey',key);LS.s('histAt',Date.now());S.hmsg=''}
+    if(Object.keys(h).length){S.hist=h;LS.s('cto_hist',h);LS.s('cto_histKey',key);LS.s('cto_histAt',Date.now());S.hmsg=''}
     else S.hmsg='Le script Google n’a pas renvoyé d’historique : colle la nouvelle version (script_google.gs) puis redéploie-la.'}
   catch(e){S.hmsg='Historique indisponible : script Google injoignable ou ancienne version.'}
   S.hbusy=false;draw()}
@@ -642,11 +642,11 @@ async function ensureIdx(){
   if(S.ibusy||!S.url||!S.tx.length)return;
   const from=dstr(S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d)),tks=INDS.map(x=>x[1]),key=tks.join(',')+'|'+from;
   if(S.itry==key)return;
-  if(LS.g('ihKey')==key&&Date.now()-(LS.g('ihAt')||0)<216e5&&Object.keys(S.ih).length)return;
+  if(LS.g('cto_ihKey')==key&&Date.now()-(LS.g('cto_ihAt')||0)<216e5&&Object.keys(S.ih).length)return;
   S.itry=key;S.ibusy=true;
   try{const r=await fetch(S.url+(S.url.includes('?')?'&':'?')+'h='+encodeURIComponent(tks.join(','))+'&from='+from+'&adj=1'),j=await r.json(),h={};
     for(const k in j)if(j[k]&&Array.isArray(j[k].d)&&j[k].d.length)h[k]=j[k];
-    if(Object.keys(h).length){S.ih=h;LS.s('cto_ih',h);LS.s('ihKey',key);LS.s('ihAt',Date.now())}}catch(e){}
+    if(Object.keys(h).length){S.ih=h;LS.s('cto_ih',h);LS.s('cto_ihKey',key);LS.s('cto_ihAt',Date.now())}}catch(e){}
   S.ibusy=false;if(S.tab=='perf')draw()}
 const pSgn=v=>(v>=0?'+':'-')+pyN(Math.abs(v),2),pArr=v=>v>.005?'▲':v<-.005?'▼':'▬';
 const pPct=v=>`${pArr(v)} ${pSgn(v)} %`;
@@ -1172,15 +1172,14 @@ function appX(v){
   for(;cur<=end;cur=new Date(cur.getFullYear(),cur.getMonth(),cur.getDate()+1)){c+=day[dstr(cur)]||0;D.push(cur);V.push(c)}
   const open=S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d),CY='#06b6d4';
   const ex=(k,t,b)=>exp2(k,t,b),cv='<div class="cv" style="height:340px"><canvas id="%"></canvas></div>';
-  let h=ex('aj','🎯 Jauge de versements du PEA','<div id="jauge"><svg viewBox="0 0 300 190"></svg><div class="jtip"></div></div>')
-    +ex('ac','📈 Évolution des apports cumulés',cv.replace('%','c4'))+ex('aa','📊 Versements par année',cv.replace('%','c9'));
+  let h=ex('ac','📈 Évolution des apports cumulés',cv.replace('%','c4'))+ex('aa','📊 Versements par année',cv.replace('%','c9'));
   if(ap.length)h+=ex('ah','🗓️ Cartographie mensuelle des versements',heat(ap.map(t=>({d:t.d,v:t.q})),{cs:['#ecfeff','#0891b2'],open}));
   if(rt.length)h+=ex('ra','📊 Retraits par année',cv.replace('%','c10'))+ex('rh','🗓️ Cartographie mensuelle des retraits',heat(rt.map(t=>({d:t.d,v:t.q})),{cs:['#fef2f2','#dc2626'],open}));
   v.innerHTML=h;jaugeInit(verse);
-  const fd=d=>`${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`,showPl=net>=.6*PLAFOND;
+  const fd=d=>`${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`,showPl=false;
   const pl={id:'plaf',afterDatasetsDraw(ch){const{ctx,chartArea:a,scales:{y}}=ch;if(!showPl||PLAFOND>y.max||PLAFOND<y.min)return;const py=y.getPixelForValue(PLAFOND);
     ctx.save();ctx.strokeStyle='#d97706';ctx.lineWidth=1.5;ctx.setLineDash([2,3]);ctx.beginPath();ctx.moveTo(a.left,py);ctx.lineTo(a.right,py);ctx.stroke();
-    ctx.setLineDash([]);ctx.fillStyle='#d97706';ctx.font='12px Manrope, Inter, sans-serif';ctx.textAlign='left';ctx.fillText('Plafond PEA',a.left+4,py-5);ctx.restore()}};
+    ctx.setLineDash([]);ctx.fillStyle='#d97706';ctx.font='12px Manrope, Inter, sans-serif';ctx.textAlign='left';ctx.fillText('Plafond',a.left+4,py-5);ctx.restore()}};
   chart('c4',{type:'line',data:{labels:D.map(fd),datasets:[{data:V,stepped:'after',fill:'origin',borderColor:CY,borderWidth:3,pointRadius:0,pointHoverRadius:0,
       backgroundColor:x=>{const a=x.chart.chartArea;if(!a)return CY+'2e';const g=x.chart.ctx.createLinearGradient(0,a.top,0,a.bottom);g.addColorStop(0,CY+'6b');g.addColorStop(1,CY+'00');return g}}]},
     plugins:[spikeP,pl],options:{maintainAspectRatio:false,interaction:{intersect:false,mode:'index',axis:'x'},layout:{padding:{right:8}},
@@ -1466,7 +1465,7 @@ async function wlFetch(force){const W=wlItems().filter(i=>i.ticker);if(!S.url||!
   try{
     if(needPx){const j=await(await fetch(u('t='+encodeURIComponent(key)))).json();for(const k in j)if(j[k]&&j[k].p!=null)S.wl.px[k]=j[k];S.wlAt=Date.now();LS.s('cto_wlpx',S.wl.px)}
     if(needH){const j=await(await fetch(u('h='+encodeURIComponent(key)+'&from='+addD(dstr(new Date()),-400)))).json();
-      for(const k in j)if(j[k]&&Array.isArray(j[k].d)&&j[k].d.length)S.wl.h[k]=j[k];S.wlHAt=Date.now();LS.s('cto_wlh',S.wl.h);LS.s('wlhAt',S.wlHAt)}
+      for(const k in j)if(j[k]&&Array.isArray(j[k].d)&&j[k].d.length)S.wl.h[k]=j[k];S.wlHAt=Date.now();LS.s('cto_wlh',S.wl.h);LS.s('cto_wlhAt',S.wlHAt)}
   }catch(e){}
   S.wlBusy=false;if(S.tab=='wl'||S.tab=='ov')draw()}
 function drawWl(v){wlFetch();
@@ -1527,6 +1526,8 @@ $('#wldlg').addEventListener('close',()=>{if(S.tab=='wl')draw()});
 
 /* ===== Simulation nouvelle opération — port de dialog_simulation_operation (app_perso.py) ===== */
 const fg=v=>isFinite(v)?String(parseFloat(Number(v).toPrecision(6))):'0';
+/* CTO : quantités fractionnées (jusqu'à 6 décimales) */
+const fq=v=>isFinite(v)?String(parseFloat(Number(v).toFixed(6))):'0',fl6=x=>Math.floor(x*1e6+1e-7)/1e6;
 const fPD=v=>{if(!isFinite(v))return'N/A';const s=v.toFixed(4);return nf(s.endsWith('00')?2:s.endsWith('0')?3:4).format(v)+' €'};
 const fx2=v=>(isFinite(v)?v:0).toFixed(2).replace('.',',');
 const GRN='#16a34a',RED='#dc2626',GRY='#64748b',NEW='➕ Nouvelle valeur...';
@@ -1577,7 +1578,7 @@ function simIn(){
   if(T=='Achat'||T=='Vente'){
     const ach=T=='Achat',key=T+'|'+SM.choice;if(SM.pxKey!==key){SM.prix=defPx(pos);SM.pxKey=key}
     h+=sStep(1,ach?'Achat':'Vente',ach?'#1d4ed8':'#7c3aed');
-    h+=fld(pos?`Quantité (Nombre détenu dans le portefeuille : ${fg(pos.sh)})`:'Quantité')+`<div class="rq" data-req="qte">${sInp('qte',SM.qte,'0','s_q')}</div>`;
+    h+=fld(pos?`Quantité (Nombre détenu dans le portefeuille : ${fq(pos.sh)})`:'Quantité')+`<div class="rq" data-req="qte">${sInp('qte',SM.qte,'0','s_q')}</div>`;
     const pb=ach?"Prix d'achat (€)":'Prix de vente (€)';
     h+=fld(pos?`${pb} (PRU actuel : ${fPD(pos.pru)})`:pb)+`<div class="rq" data-req="prix">${sInp('prix',SM.prix,'0,0000','s_p')}</div>`;
     if(ach)h+=ckb('ttf',SM.ttf,'☑️ Éligible TTF (taxe sur les transactions financières)');
@@ -1599,14 +1600,14 @@ function simAV(){
   const det=[];if(com>0)det.push('commission '+fE(com));else if(exo)det.push('commission exonérée');if(ttf>0)det.push('TTF '+fE(ttf));
   const detS=det.length?det.join(' + '):'aucun frais',net=q>0?tot/q:0;let h='';
   if(q>0&&p>0){const c=ach?'#1d4ed8':'#7c3aed';
-    h+=sStep(2,ach?"Ordre d'achat":"Ordre de vente",c)+sTicket(ach?"À saisir dans l'ordre d'achat":"À saisir dans l'ordre de vente",fg(q),fPD(p),c);
+    h+=sStep(2,ach?"Ordre d'achat":"Ordre de vente",c)+sTicket(ach?"À saisir dans l'ordre d'achat":"À saisir dans l'ordre de vente",fq(q),fPD(p),c);
     h+=sDuo([[ach?'Total payé':'Total perçu',fE(tot),ach?'frais inclus':'frais déduits',true,ach?'#d97706':GRN],['Frais',fE(frais),detS,false,GRY],['Prix net / action',fPD(net),ach?'frais compris':'frais déduits',false,'#0891b2']])}
   h+='<hr class="sh" style="margin:14px 0">';
   if(!nom||q<=0||p<=0)return h+ph('🧪','Renseignez une valeur, une quantité et un prix pour lancer la simulation');
   const qA=pos?pos.sh:0,invA=pos?pos.inv:0,pruA=pos?pos.pru:0,vpA=pos?pos.val:0,cashA=R.cash,mop=q*p;let gr=null,cashP,qP,invP,pruP,cost=0;
   if(ach){if(mop+frais>cashA)h+=`<div class="warn">⚠️ Ce montant (${fE(mop+frais)}) dépasse la poche espèces disponible (${fE(cashA)}) — la simulation suppose malgré tout que le versement est disponible.</div>`;
     cashP=cashA-mop-frais;qP=qA+q;invP=invA+mop+frais;pruP=qP>1e-4?invP/qP:0}
-  else{if(q>qA)h+=`<div class="err">⚠️ Vous ne détenez que ${fg(qA)} unité(s) de ${esc(nom)} — impossible de simuler une vente de ${fg(q)}.</div>`;
+  else{if(q>qA)h+=`<div class="err">⚠️ Vous ne détenez que ${fq(qA)} unité(s) de ${esc(nom)} — impossible de simuler une vente de ${fq(q)}.</div>`;
     const qe=Math.min(q,qA);cost=qe*pruA;gr=mop-frais-cost;cashP=cashA+mop-frais;qP=Math.max(0,qA-q);invP=qP*pruA;pruP=pruA}
   const vtA=R.valeur+cashA,vpP=qP*p,vtP=vtA-frais,glA=vpA-invA,glP=vpP-invP,pwA=vtA>0?vpA/vtA*100:0,pwP=vtP>0?vpP/vtP*100:0;
   let n=3;
@@ -1617,14 +1618,14 @@ function simAV(){
       else{let pn=Math.ceil(Number((cout/(1-tx)/qn*10000).toFixed(6)))/10000;
         for(let i=0;i<500;i++){const m=r2(qn*pn);if(r2(m-r2(m*tx))>=cout-1e-9)break;pn=Math.round((pn+.0001)*1e4)/1e4}
         const cours=pos.px,ec=cours>0?(pn/cours-1)*100:0,ecT=(ec>.005?'+':'')+nf(2).format(ec)+' %',col=ec<=0?GRN:'#d97706';
-        h+=sStep(3,'Revente neutre','#0891b2')+sTicket('À saisir pour revendre en neutre',fg(qn),fPD(pn),'#0891b2');
+        h+=sStep(3,'Revente neutre','#0891b2')+sTicket('À saisir pour revendre en neutre',fq(qn),fPD(pn),'#0891b2');
         h+=sDuo([['PRU net',fPD(pruA),"coût d'achat par action",false,'#0891b2'],['Cours actuel',fPD(cours),'',false,GRY],['Écart avec le cours',ecT,ec<=0?'déjà en gain':'hausse à attendre',true,col]]);n=4}}}
   h+=sStep(n,'Impact sur le portefeuille','#0f766e');
   if(gr!==null){const c=gr>=0?GRN:RED,gp=cost>0?gr/cost*100:0;
     h+=sDuo([['Plus-value réalisée',fE(gr),'sur cette vente',true,c],['Performance',(gp>.005?'▲':gp<-.005?'▼':'▬')+' '+(gp>=0?'+':'')+nf(2).format(gp)+' %',"sur le coût d'achat des titres vendus",false,c]])}
-  const[dC,cC]=dEur(cashP-cashA),dq=qP-qA,dqc=dq>0?GRN:dq<0?RED:GRY,dqs=`${dq>1e-9?'▲':dq<-1e-9?'▼':'▬'} ${dq>0?'+':''}${fg(dq)} titre(s)`;
+  const[dC,cC]=dEur(cashP-cashA),dq=qP-qA,dqc=dq>0?GRN:dq<0?RED:GRY,dqs=`${dq>1e-9?'▲':dq<-1e-9?'▼':'▬'} ${dq>0?'+':''}${fq(dq)} titre(s)`;
   const[dP,cP]=dPrix(pruP-pruA),[dV,cV]=dEur(vpP-vpA),[dG,cG]=dEur(glP-glA),[dW,cW]=dPct(pwP-pwA);
-  const l1=[['💰 Poche espèces',fE(cashA),fE(cashP),dC,cC],['📦 Quantité détenue',fg(qA),fg(qP),dqs,dqc]];
+  const l1=[['💰 Poche espèces',fE(cashA),fE(cashP),dC,cC],['📦 Quantité détenue',fq(qA),fq(qP),dqs,dqc]];
   if(ach)l1.push(['🎯 PRU net',fPD(pruA),fPD(pruP),dP,cP]);
   h+=sBA(l1)+'<div style="height:10px"></div>'+sBA([['📊 Valeur de la ligne',fE(vpA),fE(vpP),dV,cV],['💹 Gain latent sur la ligne',fE(glA),fE(glP),dG,cG],['⚖️ Poids dans le portefeuille',nf(2).format(pwA)+' %',nf(2).format(pwP)+' %',dW,cW]]);
   if(ach||q<=qA+1e-9)h+=`<hr class="sh" style="margin:14px 0"><div class="cap">La simulation vous semble cohérente ? Transférez-la vers une vraie ${ach?"opération d'achat":'opération de vente'} : quantité, prix, commission${ach?' et TTF':''} seront déjà renseignés, il ne restera qu'à saisir la date et l'heure.</div><button class="sbtn primary" data-a="transfer">➡️ Transférer vers une vraie ${ach?"opération d'achat":'opération de vente'}</button>`;
@@ -1632,25 +1633,25 @@ function simAV(){
 
 /* --- Achat/Vente : aller-retour achat puis revente --- */
 function simRT(){
-  const a=SM.av,pa=n2(a.prix),tc=a.exo?0:SM.rc/100,tt=a.ttf?SM.rt/100:0,byQ=a.saisie=='qte',mont=n2(a.montant),qs=Math.floor(n2(a.qte));
+  const a=SM.av,pa=n2(a.prix),tc=a.exo?0:SM.rc/100,tt=a.ttf?SM.rt/100:0,byQ=a.saisie=='qte',mont=n2(a.montant),qs=fl6(n2(a.qte));
   rec(['step',1,'Achat','#1d4ed8']);
-  rec(['inputs',[["Prix d'une action",pa?fPD(pa):'-'],byQ?["Nombre d'actions",String(qs||0)]:['Montant à investir',mont?fE(mont):'-'],['Commission courtier',a.exo?'exonérée':fg(SM.rc).replace('.',',')+' %'],['TTF',a.ttf?fg(SM.rt).replace('.',',')+' %':'non applicable']]]);
-  let q=0;if(byQ)q=qs;else if(pa>0&&mont>0){q=Math.floor(mont/(pa*(1+tc+tt)));
-    while(q>0){const mb=r2(q*pa),c=a.exo?0:r2(mb*tc),t=a.ttf?r2(mb*tt):0;if(r2(mb+c+t)<=mont+1e-9)break;q--}}
-  if(!pa||q<1)return{B:ph('💱',"Renseignez un prix d'achat et un montant à investir (ou un nombre d'actions) pour lancer la simulation"),C:null,D:''};
+  rec(['inputs',[["Prix d'une action",pa?fPD(pa):'-'],byQ?["Nombre d'actions",fq(qs||0)]:['Montant à investir',mont?fE(mont):'-'],['Commission courtier',a.exo?'exonérée':fg(SM.rc).replace('.',',')+' %'],['TTF',a.ttf?fg(SM.rt).replace('.',',')+' %':'non applicable']]]);
+  let q=0;if(byQ)q=qs;else if(pa>0&&mont>0){q=fl6(mont/(pa*(1+tc+tt)));
+    while(q>0){const mb=r2(q*pa),c=a.exo?0:r2(mb*tc),t=a.ttf?r2(mb*tt):0;if(r2(mb+c+t)<=mont+1e-9)break;q=Math.round((q-1e-6)*1e6)/1e6}}
+  if(!pa||!(q>0))return{B:ph('💱',"Renseignez un prix d'achat et un montant à investir (ou un nombre d'actions) pour lancer la simulation"),C:null,D:''};
   const mb=r2(q*pa),com=a.exo?0:r2(mb*tc),ttf=a.ttf?r2(mb*tt):0,frais=r2(com+ttf),cap=r2(mb+frais),net=cap/q;
   const det=[];if(com>0)det.push('commission '+fE(com));else if(a.exo)det.push('commission exonérée');if(ttf>0)det.push('TTF '+fE(ttf));
-  const B=sStep(2,"Ordre d'achat",'#1d4ed8')+sTicket("À saisir dans l'ordre d'achat",fg(q),fPD(pa),'#1d4ed8',"Le prix limite est le prix affiché de l'action, hors frais : les frais s'ajoutent ensuite.")
+  const B=sStep(2,"Ordre d'achat",'#1d4ed8')+sTicket("À saisir dans l'ordre d'achat",fq(q),fPD(pa),'#1d4ed8',"Le prix limite est le prix affiché de l'action, hors frais : les frais s'ajoutent ensuite.")
     +sDuo([['Total débité',fE(cap),'frais inclus',true,'#d97706'],["Frais d'achat",fE(frais),det.length?det.join(' + '):'aucun frais',false,GRY],['Coût réel / action',fPD(net),'frais compris',false,'#0891b2']]);
   const mode=a.mode;let C='<div class="c3sp"></div>'+sStep(3,'Revente','#7c3aed','Que voulez-vous savoir ?')
     +`<div class="c3">${[['objectif','🎯 Prix pour un gain visé','Objectif de gain à la revente : prix de vente nécessaire pour atteindre un gain visé.'],['prix','💹 Gain à un prix donné','Gain si je vends à un prix donné.'],['neutre','⚖️ Prix pour ne rien perdre',"Prix pour revendre neutre : prix de vente à partir duquel on ne perd rien (frais d'achat et de vente couverts)."]].map(([m,l,t])=>`<button class="sbtn${mode==m?' primary':''}" style="margin:0" data-a="avmode" data-m="${m}" title="${esc(t)}">${l}</button>`).join('')}</div>`;
   let D='';
   if(mode==null){C+='<div class="cap">Touchez l\'une des trois questions ci-dessus : le simulateur calcule la réponse juste en dessous.</div>'}
   else{
-    const tcv=a.exoV?0:SM.rc/100,qvs=Math.floor(n2(a.qv)),qv=qvs?Math.min(qvs,q):q;
-    C+=`<div class="c2"><div><label for="s_qv">Nombre d'actions à vendre</label>${sInp('av.qv',a.qv,'Toutes ('+fg(q)+')','s_qv')}</div><div style="padding-top:1.7rem">${ckb('av.exoV',a.exoV,'🚫 Sans commission (vente)')}</div></div>`;
-    if(qvs>q)D+=`<div class="cap">Vous ne pouvez pas vendre plus que les ${fg(q)} actions achetées : calcul sur ${fg(q)}.</div>`;
-    const capB=r2(cap*qv/q),mbB=r2(mb*qv/q);a.cap=capB;rec(['inputs',[['Actions à vendre',`${fg(qv)} sur ${fg(q)}`]]]);
+    const tcv=a.exoV?0:SM.rc/100,qvs=fl6(n2(a.qv)),qv=qvs?Math.min(qvs,q):q;
+    C+=`<div class="c2"><div><label for="s_qv">Nombre d'actions à vendre</label>${sInp('av.qv',a.qv,'Toutes ('+fq(q)+')','s_qv')}</div><div style="padding-top:1.7rem">${ckb('av.exoV',a.exoV,'🚫 Sans commission (vente)')}</div></div>`;
+    if(qvs>q)D+=`<div class="cap">Vous ne pouvez pas vendre plus que les ${fq(q)} actions achetées : calcul sur ${fq(q)}.</div>`;
+    const capB=r2(cap*qv/q),mbB=r2(mb*qv/q);a.cap=capB;rec(['inputs',[['Actions à vendre',`${fq(qv)} sur ${fq(q)}`]]]);
     const warn100='<div class="warn">⚠️ Taux de commission de 100% invalide pour le calcul du prix de vente.</div>';
     if(mode=='objectif'){
       if(a.capPrev==null)a.capPrev=capB;
@@ -1659,14 +1660,14 @@ function simRT(){
       const g=a.gEur;rec(['inputs',[['Gain visé',(g>.005?'+':'')+fE(g)]]]);
       if(Math.abs(1-tcv)<1e-9)D+=warn100;
       else{const cible=g+capB,pb=cible/qv,mr=cible/(1-tcv),pn=mr/qv;
-        D+=sStep(4,'Ordre de vente','#7c3aed')+sTicket("À saisir dans l'ordre de vente",fg(qv),fPD(pn),'#7c3aed');
+        D+=sStep(4,'Ordre de vente','#7c3aed')+sTicket("À saisir dans l'ordre de vente",fq(qv),fPD(pn),'#7c3aed');
         D+=sDuo([['Gain net visé',(g>.005?'+':'')+fE(g),'après tous les frais',true,g>=0?GRN:RED],['Montant total de vente',fE(mr),'avant commission de vente',false,'#7c3aed'],['Prix sans commission de vente',fPD(pb),'à titre indicatif',false,'#0891b2']])}}
     else if(mode=='neutre'){
       if(Math.abs(1-tcv)<1e-9)D+=warn100;
       else{const pb=capB/qv;let pn=Math.ceil(Number((capB/(1-tcv)/qv*10000).toFixed(6)))/10000;
         for(let i=0;i<500;i++){const m=r2(qv*pn),c=r2(m*tcv);if(r2(m-c)>=capB-1e-9)break;pn=Math.round((pn+.0001)*1e4)/1e4}
         const mt=r2(qv*pn),hs=pa>0?(pn/pa-1)*100:0,hT=(hs>.005?'+':'')+nf(2).format(hs)+' %';
-        D+=sStep(4,'Ordre de vente','#7c3aed')+sTicket("À saisir dans l'ordre de vente",fg(qv),fPD(pn),'#7c3aed');
+        D+=sStep(4,'Ordre de vente','#7c3aed')+sTicket("À saisir dans l'ordre de vente",fq(qv),fPD(pn),'#7c3aed');
         D+=sDuo([['Hausse nécessaire',hT,"par rapport au prix d'achat",true,'#d97706'],['Montant total de vente',fE(mt),'avant commission de vente',false,'#7c3aed'],['Prix sans commission de vente',fPD(pb),'à titre indicatif',false,'#0891b2']])}}
     else if(mode=='prix'){
       C+=`<label for="s_pv">Prix de vente d'une action (€)</label>${sInp('av.pv',a.pv,'Ex : 14,00','s_pv')}`;
@@ -1687,9 +1688,9 @@ function simSplit(){
   const pos=simPos();if(!pos)return'';
   const f=n2(SM.sp.f),rp=n2(SM.sp.r),qA=pos.sh,pruA=pos.pru,invA=pos.inv,pxA=pos.px,cashA=R.cash;
   const qP=qA*f,invP=Math.max(invA-rp,0),pruP=qP>1e-4?invP/qP:0,pxP=f>0?pxA/f:pxA,cashP=cashA+rp;
-  const[dC,cC]=dEur(cashP-cashA),dq=qP-qA,dqc=dq>0?GRN:dq<0?RED:GRY,dqs=`${dq>1e-9?'▲':dq<-1e-9?'▼':'▬'} ${dq>0?'+':''}${fg(dq)} titre(s)`,[dP,cP]=dPrix(pruP-pruA);
+  const[dC,cC]=dEur(cashP-cashA),dq=qP-qA,dqc=dq>0?GRN:dq<0?RED:GRY,dqs=`${dq>1e-9?'▲':dq<-1e-9?'▼':'▬'} ${dq>0?'+':''}${fq(dq)} titre(s)`,[dP,cP]=dPrix(pruP-pruA);
   return'<hr class="sh" style="margin:14px 0">'+sStep(2,'Impact sur le portefeuille','#0f766e')
-    +sBA([['💰 Poche espèces',fE(cashA),fE(cashP),dC,cC],['📦 Quantité détenue',fg(qA),fg(qP),dqs,dqc],['🎯 PRU net',fPD(pruA),fPD(pruP),dP,cP]])
+    +sBA([['💰 Poche espèces',fE(cashA),fE(cashP),dC,cC],['📦 Quantité détenue',fq(qA),fq(qP),dqs,dqc],['🎯 PRU net',fPD(pruA),fPD(pruP),dP,cP]])
     +sDuo([['Cours théorique après split',fE(pxP),`contre ${fE(pxA)} avant`,true,'#d97706'],['Facteur','× '+fg(f),f<1?'regroupement':'split',false,'#0891b2']])}
 
 function simOut(){
@@ -1700,7 +1701,7 @@ function simOut(){
   $('#sB').innerHTML=B;$('#sD').innerHTML=D;SM.rec=REC;REC=null;
   if(C==null){$('#sC').innerHTML='';SM._ck=''}
   else if(SM._ck!==SM._ckn){$('#sC').innerHTML=C;SM._ck=SM._ckn}
-  else{const q=$('#s_qv');if(q)q.placeholder='Toutes ('+fg(SM._qt)+')'}
+  else{const q=$('#s_qv');if(q)q.placeholder='Toutes ('+fq(SM._qt)+')'}
   if(T=='Achat/Vente'&&SM.av.mode=='objectif'&&C!=null){const e=$('#s_ge'),p=$('#s_gp');
     if(e&&document.activeElement!==e)e.value=fx2(SM.av.gEur);if(p&&document.activeElement!==p)p.value=fx2(SM.av.gPct)}
   document.querySelectorAll('#sim [data-req]').forEach(w=>{const i=w.querySelector('input');w.classList.toggle('req',!i.value.trim())})}
@@ -2012,15 +2013,14 @@ function drawSim(v){
   const [an,pAnn]=simAnc(),moy=simMoy(),defPerf=pAnn>0?Math.round(pAnn*10000)/100:7.0,cPS=+cg('taux_prelevements_sociaux',18.6);
   const pf0=Math.max(0,SIM_V('d',Math.max(Math.round(R.total),0))),ap=Math.max(0,Math.round(SIM_V('ap',simApDef()))),
     n=Math.round(clampN(SIM_V('n',+cg('horizon_projection_annees',10)),1,50)),pa=clampN(SIM_V('pa',+cg('perf_annuelle_projection',defPerf)),-50,100),
-    imp=clampN(SIM_V('imp',cPS),0,100),infl=clampN(SIM_V('infl',2.0),0,20),ret=clampN(SIM_V('ret',4.0),0,20);
-  const apTot=R.apports,PL=PLAFOND,inv=ap*12,r=pa/100,f=1+infl/100;
+    imp=clampN(SIM_V('imp',Math.round((cPS+12.8)*10)/10),0,100),infl=clampN(SIM_V('infl',2.0),0,20),ret=clampN(SIM_V('ret',4.0),0,20);
+  const apTot=R.apports,PL=Infinity,inv=ap*12,r=pa/100,f=1+infl/100;
   const vals=[pf0],verses=[Math.min(Math.max(apTot,0),pf0)];let apCur=apTot;
   for(let k=1;k<=n;k++){const place=Math.max(PL-apCur,0),apA=Math.min(inv,place);vals.push(vals[vals.length-1]*(1+r)+apA);apCur+=apA;verses.push(verses[verses.length-1]+apA)}
   const reelles=vals.map((x,k)=>x/Math.pow(f,k)),vb=vals[n],vr=reelles[n],interR=reelles.map((x,i)=>Math.max(x-verses[i],0));
-  const ancFin=an+n,tauxImp=imp+(ancFin>=5?0:12.8),gains=Math.max(vb-verses[n],0),vNet=vb-gains*tauxImp/100;
+  const ancFin=an+n,tauxImp=imp,gains=Math.max(vb-verses[n],0),vNet=vb-gains*tauxImp/100;
   const revBrut=vr*ret/100/12,revNet=(vNet/Math.pow(f,n))*ret/100/12,apFin=Math.min(apCur,PL);
-  const reste=PL-apTot;let aAvant=null,datePl;
-  if(reste<=0)datePl='Déjà atteint';else if(inv>0){aAvant=reste/inv;datePl=fdate(new Date(Date.now()+aAvant*365.25*864e5))}else datePl='Jamais (aucun apport prévu)';
+  let aAvant=null,datePl='';
   const arrow=pAnn>0.005?'▲':pAnn<-0.005?'▼':'▬',fiable=an>=1?'':' ⚠️ historique court, peu fiable';
   const H1='Utilisée pour faire croître le portefeuille d\'une année sur l\'autre.';
   let e=`<div class="sbox"><div class="sm2">
@@ -2028,39 +2028,35 @@ function drawSim(v){
     ${snum('ap','Apport prévu par mois (€)',ap,10,0,null,0,"Ajouté chaque mois (cumulé et versé en fin d'année dans la simulation), en plus de la croissance du portefeuille.")}
     ${snum('n','Nombre d\'années',n,1,1,50,0)}
     ${snum('pa','Performance annuelle retenue (%)',pa,0.5,-50,100,2,H1)}
-    ${snum('imp','Imposition des gains (%)',imp,0.1,0,100,1,"Par défaut : le taux de prélèvements sociaux réglé dans l'application, appliqué aux gains au moment du retrait. Si le PEA a moins de 5 ans à ce moment-là (ancienneté actuelle + nombre d'années), 12,8 % d'impôt sur le revenu sont ajoutés automatiquement.")}
+    ${snum('imp','Imposition des gains (%)',imp,0.1,0,100,1,"Par défaut : flat tax du CTO (PFU) = 12,8 % d'impôt sur le revenu + le taux de prélèvements sociaux réglé dans l'application, appliqué aux gains au moment du retrait.")}
     ${snum('infl','Inflation (%)',infl,0.1,0,20,1,"La valeur finale et le revenu passif sont exprimés en euros d'aujourd'hui (pouvoir d'achat). Mettez 0 pour les voir sans inflation.")}
     ${snum('ret','Taux de retrait (%)',ret,0.25,0,20,2,"Part du capital net retirée chaque année pour le revenu passif.")}
     <div></div></div>
-    <div class="cap">Apports moyens depuis l'ouverture du PEA : <b>${pEur(moy)} / mois</b><br>Performance moyenne depuis l'ouverture : <b>${arrow} ${(pAnn*100>=0?'+':'')+pyN(pAnn*100,2)} % / an</b>.${fiable}</div></div>`;
+    <div class="cap">Apports moyens depuis l'ouverture du CTO : <b>${pEur(moy)} / mois</b><br>Performance moyenne depuis l'ouverture : <b>${arrow} ${(pAnn*100>=0?'+':'')+pyN(pAnn*100,2)} % / an</b>.${fiable}</div></div>`;
   e+=sDuo([['Valorisation',pEur(vr),'',true,'#0284c7']])+sDuo([['Revenu passif / mois',pEur(revBrut),'avant impôts',false],["Revenu passif / mois net d'impôts",pEur(revNet),'',true,'#16a34a']])
     +sDuo([['Versements cumulés',pEur(verses[n]),'',false,'#6366f1'],['Intérêts',pEur(Math.max(vr-verses[n],0)),'',false,'#10b981']]);
   e+='<div class="cv" style="height:260px"><canvas id="c12"></canvas></div>';
-  const pct=Math.min(Math.max(apFin/PL*100,0),100),grad=pct<90?'linear-gradient(90deg, #d97706, #fbbf24)':'linear-gradient(90deg, #dc2626, #f87171)';
-  e+=`<div style="margin-top:-12px;padding:12px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;"><div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px;margin-bottom:8px;"><div style="font-size:0.74rem;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:0.04em;">🏦 Plafond de versements PEA</div><div style="font-size:0.82rem;font-weight:700;color:#0f172a;">${pEur(apFin)} / ${pEur(PL)}</div></div><div style="background:#e2e8f0;border-radius:999px;height:12px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:${grad};border-radius:999px;"></div></div><div style="margin-top:8px;font-size:0.78rem;color:#475569;">📅 Date de plafonnement selon les valeurs saisies : <b style="color:#0f172a;">${datePl}</b></div></div>`;
-  if(aAvant!=null&&aAvant>=0&&aAvant<=n&&inv>0)e+=`<div class="cap">⚠️ Au rythme prévu, le plafond de versements du PEA (${pEur(PL)}) serait atteint avant la fin de l'horizon : les apports sont plafonnés à partir de cette échéance.</div>`;
   e+='<div style="height:1.5rem;"></div>';
 
   /* ---- Simulateur de retrait ---- */
-  const ps=clampN(SIM_V('ps',cPS),0,100),mt=SIM_V('mt',0),a5=SIM_V('a5',true);
-  let w=`<div class="sbox"><p><b>💰 Paramètres du retrait</b></p><div class="sm2">${snum('mt','Montant souhaité (€)',mt>0?mt:'',500,0,null,2,'','Entrez un montant...')}${snum('ps','Prélèvements sociaux (%)',ps,0.1,0,100,1,"Taux en vigueur au moment du retrait. Modifiable si la réglementation évolue : la valeur saisie est mémorisée automatiquement.")}</div>
-    <label class="ck"><input type="checkbox" data-sim="a5"${a5?' checked':''}><span>Le PEA a plus de 5 ans ${helpI("Un PEA de plus de 5 ans est exonéré d'impôt sur le revenu sur les plus-values (seuls les prélèvements sociaux restent dus).")}</span></label></div>`;
-  if(!a5)w+=`<div class="cap">⚠️ Avant 5 ans, un retrait (même partiel) clôture le PEA et l'ensemble des gains est imposé (12,8 % + prélèvements sociaux) : cette simulation ne calcule que la part de gain contenue dans le montant retiré.</div>`;
+  const ps=clampN(SIM_V('ps',cPS),0,100),mt=SIM_V('mt',0);
+  let w=`<div class="sbox"><p><b>💰 Paramètres du retrait</b></p><div class="sm2">${snum('mt','Montant souhaité (€)',mt>0?mt:'',500,0,null,2,'','Entrez un montant...')}${snum('ps','Prélèvements sociaux (%)',ps,0.1,0,100,1,"Taux en vigueur au moment du retrait. Modifiable si la réglementation évolue : la valeur saisie est mémorisée automatiquement.")}</div></div>`;
+  w+=`<div class="cap">Fiscalité du CTO : prélèvement forfaitaire unique, soit 12,8 % d'impôt sur le revenu + prélèvements sociaux, appliqués à la part de plus-value contenue dans le montant retiré.</div>`;
   if(!(mt>0))w+=`<div style="padding:28px 20px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;text-align:center;color:#64748b;"><div style="font-size:1.6rem;">🧮</div><div style="font-size:0.92rem;font-weight:600;margin-top:6px;">Saisissez un montant de retrait pour voir la simulation</div><div style="font-size:0.8rem;margin-top:4px;">La répartition capital / plus-value, les taxes et le net perçu s'afficheront ici.</div></div>`;
   else{
-    const vt=R.total,ratio=vt>0?Math.max(0,(vt-apTot)/vt):0,pv=mt*ratio,cap=mt-pv,mps=pv*(ps/100),mir=a5?0:pv*0.128,tax=mps+mir,net=mt-tax;
+    const vt=R.total,ratio=vt>0?Math.max(0,(vt-apTot)/vt):0,pv=mt*ratio,cap=mt-pv,mps=pv*(ps/100),mir=pv*0.128,tax=mps+mir,net=mt-tax;
     const capP=cap/mt*100,pvP=100-capP,netP=net/mt*100;
     const [gc,nc]=netP>=90?['linear-gradient(90deg, #16a34a, #4ade80)','#16a34a']:netP>=80?['linear-gradient(90deg, #0284c7, #38bdf8)','#0284c7']:['linear-gradient(90deg, #d97706, #fbbf24)','#d97706'];
     w+=`<div>`+colorCardsRow([colorCard('💵 Montant net perçu',pEur(net),nc,true),colorCard('Total fiscalité',pEur(tax),tax>0?'#dc2626':'#64748b',true)])
       +'<div style="height:8px;"></div>'+progressBar(netP,gc,nc,`${pyN(netP,1)} % conservés après fiscalité`)
       +colorCardsRow([colorCard('Montant demandé',pEur(mt),'#0284c7'),colorCard(`Dont capital (${pyN(capP,2)} %)`,pEur(cap),'#4f46e5'),colorCard(`Dont plus-value (${pyN(pvP,2)} %)`,pEur(pv),'#10b981')])
-      +colorCardsRow([colorCard(`Prélèvements sociaux (${pyN(ps,1)} %)`,pEur(mps),'#d97706'),...(a5?[]:[colorCard('Impôt sur le revenu (12,8 %)',pEur(mir),'#dc2626')])])
+      +colorCardsRow([colorCard(`Prélèvements sociaux (${pyN(ps,1)} %)`,pEur(mps),'#d97706'),colorCard('Impôt sur le revenu (12,8 %)',pEur(mir),'#dc2626')])
       +'<div style="height:22px;"></div></div>'}
   v.innerHTML=`<div class="stv"><h3>📈 Simulateur d'épargne &amp; de revenu passif</h3>${exp2('sim1','🔮 Valeur du portefeuille, valeur nette et revenu passif',e)}<h3>🧮 Simulateur de Retrait</h3>${exp2('sim2',"💸 Simulation d'un retrait",w)}</div>`;
   setTimeout(()=>chartSim(n,verses,interR),0)}
 
 /* ---------- Affichage ---------- */
-const TABS=[['ov',"📊 Vue d'ensemble & Objectif"],['pos','📌 Positions & Transactions']];
+const TABS=[['ov',"📊 Vue d'ensemble & Objectif"],['pos','📌 Positions & Transactions'],['app','💰 Apports'],['cla','🏆 Classements'],['sai','🗓️ Saisonnalité'],['perf','📈 Performances & Indices'],['his','📅 Historique'],['div','💶 Dividendes & Cartographie'],['fra','🔍 Frais'],['wl','👁️ Watchlist'],['sim','🧮 Simulateurs']];
 function chart(id,cfg){if(CH[id])CH[id].destroy();const el=document.getElementById(id);if(!el||!window.Chart)return;
   Chart.defaults.color='#334155';Chart.defaults.font.family='Manrope, Inter, sans-serif';
   /* comme Streamlit (spikemode « across ») : trait pointillé vertical sous le curseur sur tous les graphiques à axe des x (lignes et barres verticales) */
@@ -2075,7 +2071,7 @@ function draw(){TIPS.length=0;setTimeout(welcomeCheck,0);
     v.innerHTML=`<section class="empty"><h2>Aucune donnée</h2><p>Importe l'export CSV de tes transactions pour afficher ton portefeuille. Tout reste dans ce navigateur.</p><button id="go">Importer mon CSV</button></section>`;
     $('#go').onclick=()=>{scrollTo(0,0);$('#expop').open=true};return}
   $('#tot').textContent=fE(R.total);
-  const at=LS.g('pricesAt');
+  const at=LS.g('cto_pricesAt');
   $('#sub').innerHTML=`<span class="${cl(R.gain)}">${sgn(R.gain)}</span> depuis le début`+(R.anyLive?` · <span class="${cl(R.day)}">${sgn(R.day)}</span> aujourd'hui`:' · cours non connectés, valeur au PRU')
     +(at&&R.anyLive?` · cours de ${new Date(at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`:'');
   const P=R.pos,open=P.filter(p=>p.open);
@@ -2165,7 +2161,7 @@ $('#exp').onclick=()=>{const q=v=>{v=v==null?'':String(v);return /[",\n]/.test(v
 const dl=(n,t,m)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:m}));a.download=n;a.click()},today=()=>new Date().toISOString().slice(0,10);
 /* ---------- Exports XML / PDF : mêmes données et même mise en page que generate_transactions_xml / _pdf (app_perso.py) ---------- */
 const xDyn=v=>{const s=(+v).toFixed(4);return s.endsWith('00')?(+v).toFixed(2):s.endsWith('0')?(+v).toFixed(3):s};
-const xQty=v=>{v=+v;return v%1==0?String(Math.trunc(v)):v.toFixed(4).replace(/0+$/,'').replace(/\.$/,'')};
+const xQty=v=>{v=+v;return v%1==0?String(Math.trunc(v)):v.toFixed(6).replace(/0+$/,'').replace(/\.$/,'')};
 const xDec=s=>s.includes('.')?s.split('.')[1].length:0;
 /* nombre -> '1 000.00' (point décimal, espace pour les milliers) ; '' si absent */
 function xmlNum(v,unit,o={}){if(v==null||v===''||!isFinite(+v))return'';
@@ -2184,7 +2180,7 @@ function expKpi(){const op=R.pos.filter(p=>p.open),inv=op.reduce((s,p)=>s+p.inv,
 function buildXml(){const K=expKpi(),n=new Date(),o=[];
   const el=(ind,tag,txt)=>o.push('  '.repeat(ind)+`<${tag}>${xEsc(txt===''||txt==null?'N/A':txt)}</${tag}>`);
   const open=(ind,tag)=>o.push('  '.repeat(ind)+`<${tag}>`),close=(ind,tag)=>o.push('  '.repeat(ind)+`</${tag}>`);
-  o.push('<?xml version="1.0" encoding="utf-8"?>');open(0,'Extrait_PEA');
+  o.push('<?xml version="1.0" encoding="utf-8"?>');open(0,'Extrait_CTO');
   el(1,'Date',p2(n.getDate())+'-'+p2(n.getMonth()+1)+'-'+n.getFullYear());el(1,'Heure',p2(n.getHours())+'-'+p2(n.getMinutes())+'-'+p2(n.getSeconds()));
   el(1,'Valeur',xmlNum(K.valeur,'€'));el(1,'Cash',xmlNum(K.cash,'€'));el(1,'TotalApport',xmlNum(K.total_apport,'€'));el(1,'Performance',xmlNum(K.performance,'%'));
   el(1,'PlusValueLatente',xmlNum(K.pvl,'€'));el(1,'Dividende',xmlNum(K.div,'€'));el(1,'Frais',xmlNum(K.frais,'€'));
@@ -2201,7 +2197,7 @@ function buildXml(){const K=expKpi(),n=new Date(),o=[];
   sec('Liste_Splits','Split',{t:'SPLIT',f:r=>{el(4,'Date',xDate(r.Date_Heure));el(4,'Nom',nm(r));el(4,'Ratio',xmlNum(r['Quantité'],'',{dyn:1}));
     el(4,'Rompu',xmlOpt(r.Rompu,'€'));el(4,'DateRompu',+r.Rompu>0&&r.Date_Rompus?xDate(r.Date_Rompus):'N/A')}});
   sec('Liste_Retraits','Retrait',{t:'RETRAIT',f:r=>{el(4,'Date',xDate(r.Date_Heure));el(4,'Montant',xmlNum(r['Quantité'],'€'))}});
-  close(1,'Liste_Transactions');close(0,'Extrait_PEA');return o.join('\n')+'\n'}
+  close(1,'Liste_Transactions');close(0,'Extrait_CTO');return o.join('\n')+'\n'}
 $('#expx').onclick=()=>{if(!R)return alert('Aucune donnée à exporter.');dl('ExportXML_'+stamp()+'.xml',buildXml(),'application/xml')};
 /* PDF : page imprimable A4 paysage (vue d'ensemble, positions actives, puis une table par type, chacune sur sa page) */
 const pdE=(v,o={})=>{if(v==null||v===''||!isFinite(+v))return'N/A';const d=o.qty?xDec(xQty(v)):o.dyn?xDec(xDyn(v))||2:2,t=(+v).toFixed(d),neg=t[0]=='-',[i,f]=t.replace('-','').split('.');
@@ -2211,13 +2207,13 @@ $('#expp').onclick=()=>{if(!R)return alert('Aucune donnée à exporter.');
   const w=window.open('','_blank');if(!w)return alert('Autorise les fenêtres pop-up pour exporter en PDF.');
   const K=expKpi(),n=new Date(),st=stamp(),broker=String(cg('broker','')||'').trim(),dts=S.raw.map(r=>String(r.Date_Heure).slice(0,10)).sort(),ouv=dts.length?xDate(dts[0]):'';
   let sub='Généré le '+p2(n.getDate())+'/'+p2(n.getMonth()+1)+'/'+n.getFullYear()+' à '+p2(n.getHours())+':'+p2(n.getMinutes())+':'+p2(n.getSeconds());
-  if(broker)sub+=' — Courtier : '+broker;if(ouv)sub+=' — Ouverture du PEA : '+ouv;
+  if(broker)sub+=' — Courtier : '+broker;if(ouv)sub+=' — Ouverture du CTO : '+ouv;
   const tbl=(cols,rows)=>`<table><thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`,
     sec=(title,t,cols,fn)=>{const rows=byType(t).map(fn);return`<section><h2>${title}</h2>${rows.length?tbl(cols,rows):'<p class="empty">Aucune opération de ce type.</p>'}</section>`};
   const ov=[['Valeur du portefeuille (actions)',pdE(K.valeur)+' €'],['Cash disponible',pdE(K.cash)+' €'],['Total des apports',pdE(K.total_apport)+' €'],['Performance globale',pdE(K.performance)+' %'],
     ['Plus-value latente',pdE(K.pvl)+' €'],['Dividendes cumulés',pdE(K.div)+' €'],['Frais cumulés',pdE(K.frais)+' €']];
   const act=R.pos.filter(p=>p.open&&p.sh>.0001).sort((a,b)=>b.latP-a.latP);
-  const body=`<h1>Export PEA — Vue d'ensemble</h1><p class="sub">${esc(sub)}</p>
+  const body=`<h1>Export CTO — Vue d'ensemble</h1><p class="sub">${esc(sub)}</p>
     <table class="big"><thead><tr><th>Indicateur</th><th>Valeur</th></tr></thead><tbody>${ov.map(r=>`<tr><td>${esc(r[0])}</td><td><b>${esc(r[1])}</b></td></tr>`).join('')}</tbody></table>
     <section><h2>Détail des positions actives</h2>${act.length?tbl(['Nom','Ticker','Quantité','PRU Net','Prix Actuel','Valeur Actuelle','Gain Latent','Performance'],
       act.map(p=>[p.nom,p.tk,pdE(p.sh,{qty:1}),pdE(p.pru,{dyn:1})+' €',pdE(p.px,{dyn:1})+' €',pdE(p.val)+' €',pdE(p.lat)+' €',pdE(p.latP)+' %'])):'<p class="empty">Aucune position active.</p>'}</section>`
@@ -2240,7 +2236,7 @@ $('#sbok').onclick=async()=>{try{sess(await raw('/auth/v1/verify',{method:'POST'
   $('#sbcode').hidden=true;$('#sbst').textContent='Connecté ✓';await pull()}catch(e){$('#sbst').textContent='Code invalide ou expiré : '+e.message}};
 $('#sbout').onclick=()=>{SB.s={...SB.s,access:null,refresh:null,uid:null};S.synced=false;$('#sbst').textContent='Déconnecté.';st('')};
 $('#dlg').addEventListener('close',()=>{const u=$('#url').value.trim();if(u!==S.url){S.url=u;LS.s('url',u);refreshPrices()}});
-$('#reset').onclick=()=>{if(confirm('Effacer toutes les données de ce navigateur ?')){['csv','raw','prices','pricesAt','hist','histAt','histKey','cfg','wlh','wlf','wlpx','wlhAt'].forEach(k=>localStorage.removeItem(k));S.prices={};S.hist={};S.htry=null;load();draw();$('#dlg').close()}};
+$('#reset').onclick=()=>{if(confirm('Effacer toutes les données de ce navigateur ?')){['cto_csv','cto_raw','cto_prices','cto_pricesAt','cto_hist','cto_histAt','cto_histKey','cto_cfg','cto_wlh','cto_wlf','cto_wlpx','cto_wlhAt','cto_ih','cto_ihAt','cto_ihKey'].forEach(k=>localStorage.removeItem(k));S.prices={};S.hist={};S.htry=null;load();draw();$('#dlg').close()}};
 document.addEventListener('change',e=>{const el=e.target,c=el.dataset&&el.dataset.cfg;
   if(c){cfgSave({[c]:el.type=='date'?el.value:c=='yearly_target'?Math.round(n2(el.value)):n2(el.value)}).then(()=>draw());return}
   const k=el.dataset&&el.dataset.sim;if(!k)return;
