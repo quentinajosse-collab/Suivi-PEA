@@ -276,11 +276,11 @@ canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
   <p id="hopen"></p>
   <p id="hbro"></p>
   <div class="hrow">
-    <details class="pop" id="expop"><summary>📥 Import</summary><div class="pp">
-      <p style="display:none"><b>📤 Exports</b></p>
-      <button type="button" id="expx" style="display:none">📤 Exporter les données (XML)</button>
-      <button type="button" id="expp" style="display:none">🧾 Exporter les données (PDF)</button>
-      <button type="button" id="exp" style="display:none">📄 Exporter les données (CSV)</button>
+    <details class="pop" id="expop"><summary>📦 Exports / Imports</summary><div class="pp">
+      <p><b>📤 Exports</b></p>
+      <button type="button" id="expx">📤 Exporter les données (XML)</button>
+      <button type="button" id="expp">🧾 Exporter les données (PDF)</button>
+      <button type="button" id="exp">📄 Exporter les données (CSV)</button>
       <hr><p><b>📥 Import (CSV ou Excel)</b></p>
       <p class="cp">Formats acceptés : CSV, Excel (.xlsx, .xls). Le fichier doit avoir exactement les mêmes colonnes que l'export CSV.</p>
       <div class="warn" style="font-size:.8rem;padding:8px 10px">⚠️ <b>L'import peut écraser tes données.</b> Avec « Remplacer entièrement », toutes tes transactions actuelles sont supprimées puis remplacées par le contenu du fichier. Fais d'abord un export CSV si tu veux une sauvegarde.</div>
@@ -303,19 +303,8 @@ canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 <dialog id="dlg">
   <form method="dialog">
     <h2>Réglages</h2>
-    <h3>Synchronisation Supabase</h3>
-    <label for="sbu">Adresse du projet</label><input id="sbu" type="url" placeholder="https://xxxx.supabase.co">
-    <label for="sbk">Clé publique (anon / publishable)</label><input id="sbk" type="text" autocomplete="off">
-    <p class="hint">Jamais la clé « service_role » : cette page est publique.</p>
-    <label for="sbe">E-mail</label><input id="sbe" type="email" autocomplete="email">
-    <div class="bar"><button type="button" id="sbsend">Recevoir un code</button><button type="button" id="sbout">Se déconnecter</button></div>
-    <div id="sbcode" hidden><label for="sbc">Code reçu par e-mail</label><input id="sbc" inputmode="numeric" autocomplete="one-time-code"><div class="bar"><button type="button" id="sbok">Valider le code</button></div></div>
-    <p class="hint" id="sbst"></p>
-    <p class="hint">Sans connexion, les données restent dans ce navigateur. Exports et import : bouton « 📦 Exports / Imports ».</p>
-    <h3>Cours en direct</h3>
-    <label for="url">Adresse du script Google</label>
-    <input type="url" id="url" placeholder="https://script.google.com/macros/s/…/exec">
-    <p class="hint">Sans adresse, les valeurs sont calculées au prix de revient (PRU).</p>
+    <p class="hint">La connexion Supabase et l'adresse du script Google des cours se règlent maintenant dans l'onglet Général (⚙️ Réglages), une seule fois pour tout le patrimoine.</p>
+    <p class="hint">Exports et import : bouton « 📦 Exports / Imports ».</p>
     <div style="display:flex;gap:8px;margin-top:16px;justify-content:space-between">
       <button type="button" id="reset">Effacer les données locales</button>
       <button value="ok">Fermer</button>
@@ -349,6 +338,8 @@ const cl=v=>Math.abs(v)<.005?'':v>0?'up':'dn';
 const ar=v=>Math.abs(v)<.005?'▬':v>0?'▲':'▼';
 const r2=x=>Math.round(Number((x*100).toFixed(6)))/100;
 const LS={g(k){try{return JSON.parse(localStorage.getItem(k))}catch{return null}},s(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+/* Plusieurs CTO : la page générale ouvre cto.html?a=cto2&l=Nom ; sans paramètre, c'est le compte « cto » d'origine (données inchangées) */
+const _P=new URLSearchParams(location.search),ACC=(_P.get('a')||'cto').replace(/[^a-z0-9_]/gi,''),ACC_L=_P.get('l')||'';
 
 /* ---------- Données ---------- */
 function parseCSV(t){
@@ -417,12 +408,12 @@ function compute(tx,prices){
 }
 
 /* ---------- État ---------- */
-let S={raw:[],synced:false,editing:null,tx:[],prices:LS.g('cto_prices')||{},url:LS.g('url')||'',tab:'ov'},R=null,CH={};
+let S={raw:[],synced:false,editing:null,tx:[],prices:LS.g(ACC+'_prices')||{},url:LS.g('url')||'',tab:'ov'},R=null,CH={};
 const COLS=['Nom','Type','Rompu','Ticker','Quantité','TTF (€)','Date_Heure','Date_Rompus','Arrondi_Courtier','Commission (€)','Frais Totaux (€)','Prix Unitaire (€)','Remboursement_Capital','Retenue_Source_Etrangere'];
 const TXT=['Nom','Type','Ticker','Date_Heure','Date_Rompus'];
 function toRaw(o){const r={};COLS.forEach(k=>r[k]=TXT.includes(k)?(o[k]||null):(parseFloat(o[k])||0));if(!r.Date_Rompus)r.Date_Rompus=r.Date_Heure;return r}
-function rebuild(){S.tx=S.raw.map(norm).filter(x=>x.type&&!isNaN(x.d));R=compute(S.tx,S.prices);try{localStorage.setItem('hub_cto',JSON.stringify({total:R.total,valeur:R.valeur,cash:R.cash,apports:R.apports,gain:R.gain,day:R.day,t:Date.now()}))}catch(e){}}
-function load(){let raw=LS.g('cto_raw');if(!raw){const t=LS.g('cto_csv');raw=t?parseCSV(t).map(toRaw):[]}S.raw=raw;rebuild()}
+function rebuild(){S.tx=S.raw.map(norm).filter(x=>x.type&&!isNaN(x.d));R=compute(S.tx,S.prices);try{localStorage.setItem('hub_'+ACC,JSON.stringify({total:R.total,valeur:R.valeur,cash:R.cash,apports:R.apports,gain:R.gain,day:R.day,t:Date.now()}))}catch(e){}}
+function load(){let raw=LS.g(ACC+'_raw');if(!raw){const t=LS.g(ACC+'_csv');raw=t?parseCSV(t).map(toRaw):[]}S.raw=raw;rebuild()}
 const st=m=>{$('#st').textContent=m||''};
 /* ---------- Supabase (API REST, connexion par code e-mail) ---------- */
 const SB={get s(){return LS.g('sb')||{}},set s(v){LS.s('sb',v)}};
@@ -435,14 +426,14 @@ async function ensure(){let s=SB.s;if(s.access&&s.exp>Date.now()/1000+60)return 
   return SB.s.access}
 const connected=()=>!!(SB.s.url&&SB.s.refresh);
 async function pull(){if(!connected())return;
-  try{const j=await raw(`/rest/v1/app_storage?select=value&key=eq.transactions_cto&user_id=eq.${SB.s.uid}`,{},await ensure());
-    S.synced=true;if(j.length&&Array.isArray(j[0].value)){S.raw=j[0].value;LS.s('cto_raw',S.raw);rebuild();draw();refreshPrices()}st('Synchronisé avec Supabase')}
+  try{const j=await raw(`/rest/v1/app_storage?select=value&key=eq.transactions_${ACC}&user_id=eq.${SB.s.uid}`,{},await ensure());
+    S.synced=true;if(j.length&&Array.isArray(j[0].value)){S.raw=j[0].value;LS.s(ACC+'_raw',S.raw);rebuild();draw();refreshPrices()}st('Synchronisé avec Supabase')}
   catch(e){S.synced=false;st('Synchronisation impossible : '+e.message);return}
   S.cfgOk=false;await cfgLoad()}
-async function save(){LS.s('cto_raw',S.raw);if(!connected())return;
+async function save(){LS.s(ACC+'_raw',S.raw);if(!connected())return;
   if(!S.synced)return st('Enregistré sur cet appareil seulement : la lecture en ligne a échoué, écriture bloquée par sécurité');
   try{await raw('/rest/v1/app_storage?on_conflict=user_id,key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
-    body:JSON.stringify({user_id:SB.s.uid,key:'transactions_cto',value:S.raw})},await ensure());st('Enregistré dans Supabase ✓')}
+    body:JSON.stringify({user_id:SB.s.uid,key:'transactions_'+ACC,value:S.raw})},await ensure());st('Enregistré dans Supabase ✓')}
   catch(e){st('Échec de l’enregistrement en ligne : '+e.message)}}
 /* ---------- Saisie d'opérations ---------- */
 const $v=id=>$(id).value,nn=id=>parseFloat($v(id))||0;
@@ -561,10 +552,10 @@ async function commit(){rebuild();draw();await save()}
 async function refreshPrices(){
   if(!S.url||!S.tx.length)return;
   const tks=compute(S.tx,{}).pos.filter(p=>p.open).map(p=>p.tk);
-  const at0=LS.g('cto_pricesAt'),ban=$('#pxban');
+  const at0=LS.g(ACC+'_pricesAt'),ban=$('#pxban');
   if(at0&&Object.keys(S.prices).length&&ban){const d=new Date(at0);ban.textContent=`🔄 Actualisation des cours en cours… Les chiffres affichés reposent pour l'instant sur les derniers cours connus (${pad(d.getDate())}/${pad(d.getMonth()+1)} à ${pad(d.getHours())}:${pad(d.getMinutes())}) ; la page se mettra à jour toute seule dans quelques secondes.`;ban.hidden=false}
   try{const r=await fetch(S.url+(S.url.includes('?')?'&':'?')+'t='+encodeURIComponent(tks.join(',')));
-    const j=await r.json();S.prices=j;LS.s('cto_prices',j);LS.s('cto_pricesAt',Date.now());R=compute(S.tx,S.prices);draw()}
+    const j=await r.json();S.prices=j;LS.s(ACC+'_prices',j);LS.s(ACC+'_pricesAt',Date.now());R=compute(S.tx,S.prices);draw()}
   catch(e){$('#sub').textContent='Cours indisponibles (script Google injoignable)'}
   if(ban)ban.hidden=true;
 }
@@ -574,32 +565,32 @@ const IDX=[['^FCHI','CAC 40'],['^GSPC','S&P 500'],['CW8.PA','MSCI World']];
 const esc=x=>String(x??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const pad=n=>String(n).padStart(2,'0'),dstr=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const la=a=>a[a.length-1],fD=s=>s?s.split('-').reverse().join('/'):'–';
-S.cfg=LS.g('cto_cfg')||{};S.cfgOk=false;S.cfgBusy=false;S.wl={px:LS.g('cto_wlpx')||{},h:LS.g('cto_wlh')||{},f:LS.g('cto_wlf')||{}};S.wlDis=new Set();S.wlAt=0;S.wlHAt=LS.g('cto_wlhAt')||0;S.wlBusy=false;S.wlTry=null;
+S.cfg=LS.g(ACC+'_cfg')||{};S.cfgOk=false;S.cfgBusy=false;S.wl={px:LS.g(ACC+'_wlpx')||{},h:LS.g(ACC+'_wlh')||{},f:LS.g(ACC+'_wlf')||{}};S.wlDis=new Set();S.wlAt=0;S.wlHAt=LS.g(ACC+'_wlhAt')||0;S.wlBusy=false;S.wlTry=null;
 /* Réglages : même table app_storage, clé « config » (comme config_pea.json côté Streamlit) */
 const cg=(k,d)=>S.cfg[k]!=null?S.cfg[k]:d;
 const n2=x=>{const v=parseFloat(String(x==null?'':x).replace(/[\s\u00a0\u202f]/g,'').replace(',','.'));return isFinite(v)?v:0};
 async function cfgLoad(){if(S.cfgOk||S.cfgBusy)return;if(!connected()){S.cfgOk=true;welcomeCheck();return}
   S.cfgBusy=true;
-  try{const c=await raw(`/rest/v1/app_storage?select=value&key=eq.config_cto&user_id=eq.${SB.s.uid}`,{},await ensure());
-    S.cfgOk=true;if(c.length&&c[0].value&&typeof c[0].value=='object'){S.cfg=c[0].value;LS.s('cto_cfg',S.cfg);S.wlAt=0;S.cfgBusy=false;draw()}}
+  try{const c=await raw(`/rest/v1/app_storage?select=value&key=eq.config_${ACC}&user_id=eq.${SB.s.uid}`,{},await ensure());
+    S.cfgOk=true;if(c.length&&c[0].value&&typeof c[0].value=='object'){S.cfg=c[0].value;LS.s(ACC+'_cfg',S.cfg);S.wlAt=0;S.cfgBusy=false;draw()}}
   catch(e){S.cfgOk=false}
   S.cfgBusy=false;welcomeCheck()}
-async function cfgSave(patch){S.cfg={...S.cfg,...patch};LS.s('cto_cfg',S.cfg);if(!connected())return;
+async function cfgSave(patch){S.cfg={...S.cfg,...patch};LS.s(ACC+'_cfg',S.cfg);if(!connected())return;
   if(!S.cfgOk)return st('Réglages enregistrés sur cet appareil seulement : la lecture en ligne a échoué, écriture bloquée par sécurité');
   try{await raw('/rest/v1/app_storage?on_conflict=user_id,key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
-    body:JSON.stringify({user_id:SB.s.uid,key:'config_cto',value:S.cfg})},await ensure())}
+    body:JSON.stringify({user_id:SB.s.uid,key:'config_'+ACC,value:S.cfg})},await ensure())}
   catch(e){st('Échec de l’enregistrement des réglages : '+e.message)}}
-S.hist=LS.g('cto_hist')||{};S.hbusy=false;S.hmsg='';S.htry=null;
+S.hist=LS.g(ACC+'_hist')||{};S.hbusy=false;S.hmsg='';S.htry=null;
 const histTickers=()=>[...new Set(S.raw.filter(r=>r.Ticker&&r.Ticker!='APPORT').map(r=>r.Ticker))];
 async function ensureHist(){
   if(S.hbusy||!S.url||!S.tx.length)return;
   const from=dstr(S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d)),tks=[...new Set([...histTickers(),...IDX.map(x=>x[0])])].sort(),key=tks.join(',')+'|'+from;
   if(S.htry==key)return;
-  if(LS.g('cto_histKey')==key&&Date.now()-(LS.g('cto_histAt')||0)<216e5&&Object.keys(S.hist).length)return;
+  if(LS.g(ACC+'_histKey')==key&&Date.now()-(LS.g(ACC+'_histAt')||0)<216e5&&Object.keys(S.hist).length)return;
   S.htry=key;S.hbusy=true;S.hmsg='Chargement de l’historique des cours…';draw();
   try{const r=await fetch(S.url+(S.url.includes('?')?'&':'?')+'h='+encodeURIComponent(tks.join(','))+'&from='+from);const j=await r.json(),h={};
     for(const k in j)if(j[k]&&Array.isArray(j[k].d)&&j[k].d.length)h[k]=j[k];
-    if(Object.keys(h).length){S.hist=h;LS.s('cto_hist',h);LS.s('cto_histKey',key);LS.s('cto_histAt',Date.now());S.hmsg=''}
+    if(Object.keys(h).length){S.hist=h;LS.s(ACC+'_hist',h);LS.s(ACC+'_histKey',key);LS.s(ACC+'_histAt',Date.now());S.hmsg=''}
     else S.hmsg='Le script Google n’a pas renvoyé d’historique : colle la nouvelle version (script_google.gs) puis redéploie-la.'}
   catch(e){S.hmsg='Historique indisponible : script Google injoignable ou ancienne version.'}
   S.hbusy=false;draw()}
@@ -637,16 +628,16 @@ const INDS=[['CAC 40','^FCHI','#e11d48',"Indice phare de la bourse de Paris (40 
   ['Nasdaq 100','^NDX','#db2777',"Indice américain axé sur la technologie (100 plus grandes entreprises non financières)."],['Euro Stoxx 50','^STOXX50E','#4f46e5',"Indice vedette de la zone euro (50 plus grandes entreprises de la région)."],
   ['Russell 2000','^RUT','#ea580c',"Indice américain représentant les petites capitalisations (small caps)."],['Emerging Markets','EEM','#0891b2',"Indice mesurant la performance des actions de grands marchés émergents."],
   ['Nikkei 225','^N225','#ca8a04',"Principal indice boursier de la bourse de Tokyo (225 entreprises majeures japonaises)."]];
-S.pf2={per:"Tout l'historique",d1:'',d2:''};S.ih=LS.g('cto_ih')||{};S.ibusy=false;S.itry=null;
+S.pf2={per:"Tout l'historique",d1:'',d2:''};S.ih=LS.g(ACC+'_ih')||{};S.ibusy=false;S.itry=null;
 async function ensureIdx(){
   if(S.ibusy||!S.url||!S.tx.length)return;
   const from=dstr(S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d)),tks=INDS.map(x=>x[1]),key=tks.join(',')+'|'+from;
   if(S.itry==key)return;
-  if(LS.g('cto_ihKey')==key&&Date.now()-(LS.g('cto_ihAt')||0)<216e5&&Object.keys(S.ih).length)return;
+  if(LS.g(ACC+'_ihKey')==key&&Date.now()-(LS.g(ACC+'_ihAt')||0)<216e5&&Object.keys(S.ih).length)return;
   S.itry=key;S.ibusy=true;
   try{const r=await fetch(S.url+(S.url.includes('?')?'&':'?')+'h='+encodeURIComponent(tks.join(','))+'&from='+from+'&adj=1'),j=await r.json(),h={};
     for(const k in j)if(j[k]&&Array.isArray(j[k].d)&&j[k].d.length)h[k]=j[k];
-    if(Object.keys(h).length){S.ih=h;LS.s('cto_ih',h);LS.s('cto_ihKey',key);LS.s('cto_ihAt',Date.now())}}catch(e){}
+    if(Object.keys(h).length){S.ih=h;LS.s(ACC+'_ih',h);LS.s(ACC+'_ihKey',key);LS.s(ACC+'_ihAt',Date.now())}}catch(e){}
   S.ibusy=false;if(S.tab=='perf')draw()}
 const pSgn=v=>(v>=0?'+':'-')+pyN(Math.abs(v),2),pArr=v=>v>.005?'▲':v<-.005?'▼':'▬';
 const pPct=v=>`${pArr(v)} ${pSgn(v)} %`;
@@ -788,7 +779,7 @@ function omt(label,val,delta,sec,inv){let d='';
 function orelD(a,b){let m=(b.getFullYear()-a.getFullYear())*12+b.getMonth()-a.getMonth();
   const add=k=>{const d=new Date(a.getFullYear(),a.getMonth()+k,1),l=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();d.setDate(Math.min(a.getDate(),l));return d};
   let an=add(m);if(an>b){m--;an=add(m)}return{y:Math.floor(m/12),m:m%12,d:Math.round((b-an)/864e5)}}
-function ovHdr(){const nm=String(cg('user_name','')).trim();$('#ttl').textContent='📊 Tableau de Bord CTO'+(nm?' - '+nm:'');
+function ovHdr(){const nm=String(cg('user_name','')).trim();$('#ttl').textContent='📊 Tableau de Bord CTO'+(ACC!='cto'&&ACC_L?' · '+ACC_L:'')+(nm?' - '+nm:'');
   const o=$('#hopen');
   if(S.tx.length){const a=S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d),a0=new Date(a.getFullYear(),a.getMonth(),a.getDate()),n=new Date(),t0=new Date(n.getFullYear(),n.getMonth(),n.getDate()),rd=orelD(a0,t0);
     o.innerHTML=`🗓️ <b>Date d'ouverture du CTO :</b> ${pad(a.getDate())}-${pad(a.getMonth()+1)}-${a.getFullYear()}<br><span style="color:#64748b">(Ancienneté : <b>${rd.y} an(s) ${rd.m} mois ${rd.d} jour(s)</b>)</span>`}
@@ -1289,7 +1280,7 @@ const perfCell=v=>{const s=String(v);return s.startsWith('▲')?'color:#16a34a;f
 async function fundFetch(tks){if(!S.url||S.fbusy)return;S.fbusy=true;S.fmsg='';S.fTry=tks.join(',')+'|'+Date.now();draw();
   try{const j=await(await fetch(S.url+(S.url.includes('?')?'&':'?')+'f='+encodeURIComponent(tks.join(',')))).json();let n=0;
     for(const k in j)if(j[k]&&typeof j[k]=='object'&&!j[k].error){j[k]._at=Date.now();S.wl.f[k]=j[k];n++}
-    LS.s('cto_wlf',S.wl.f);S.fmsg=n?'':'old'}
+    LS.s(ACC+'_wlf',S.wl.f);S.fmsg=n?'':'old'}
   catch(e){S.fmsg='old'}
   S.fbusy=false;draw()}
 function fondEnsure(tks){const stale=tks.filter(t=>!S.wl.f[t]||Date.now()-(S.wl.f[t]._at||0)>FUND_TTL);
@@ -1463,9 +1454,9 @@ async function wlFetch(force){const W=wlItems().filter(i=>i.ticker);if(!S.url||!
   if(!force&&S.wlTry&&S.wlTry.k==key&&now-S.wlTry.t<6e4)return;
   S.wlTry={k:key,t:now};S.wlBusy=true;const u=q=>S.url+(S.url.includes('?')?'&':'?')+q;
   try{
-    if(needPx){const j=await(await fetch(u('t='+encodeURIComponent(key)))).json();for(const k in j)if(j[k]&&j[k].p!=null)S.wl.px[k]=j[k];S.wlAt=Date.now();LS.s('cto_wlpx',S.wl.px)}
+    if(needPx){const j=await(await fetch(u('t='+encodeURIComponent(key)))).json();for(const k in j)if(j[k]&&j[k].p!=null)S.wl.px[k]=j[k];S.wlAt=Date.now();LS.s(ACC+'_wlpx',S.wl.px)}
     if(needH){const j=await(await fetch(u('h='+encodeURIComponent(key)+'&from='+addD(dstr(new Date()),-400)))).json();
-      for(const k in j)if(j[k]&&Array.isArray(j[k].d)&&j[k].d.length)S.wl.h[k]=j[k];S.wlHAt=Date.now();LS.s('cto_wlh',S.wl.h);LS.s('cto_wlhAt',S.wlHAt)}
+      for(const k in j)if(j[k]&&Array.isArray(j[k].d)&&j[k].d.length)S.wl.h[k]=j[k];S.wlHAt=Date.now();LS.s(ACC+'_wlh',S.wl.h);LS.s(ACC+'_wlhAt',S.wlHAt)}
   }catch(e){}
   S.wlBusy=false;if(S.tab=='wl'||S.tab=='ov')draw()}
 function drawWl(v){wlFetch();
@@ -2071,7 +2062,7 @@ function draw(){TIPS.length=0;setTimeout(welcomeCheck,0);
     v.innerHTML=`<section class="empty"><h2>Aucune donnée</h2><p>Importe l'export CSV de tes transactions pour afficher ton portefeuille. Tout reste dans ce navigateur.</p><button id="go">Importer mon CSV</button></section>`;
     $('#go').onclick=()=>{scrollTo(0,0);$('#expop').open=true};return}
   $('#tot').textContent=fE(R.total);
-  const at=LS.g('cto_pricesAt');
+  const at=LS.g(ACC+'_pricesAt');
   $('#sub').innerHTML=`<span class="${cl(R.gain)}">${sgn(R.gain)}</span> depuis le début`+(R.anyLive?` · <span class="${cl(R.day)}">${sgn(R.day)}</span> aujourd'hui`:' · cours non connectés, valeur au PRU')
     +(at&&R.anyLive?` · cours de ${new Date(at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`:'');
   const P=R.pos,open=P.filter(p=>p.open);
@@ -2095,7 +2086,7 @@ document.addEventListener('click',e=>{
   if(e.target.closest('#pfretry')){S.htry=null;S.hmsg='';ensureHist();return}
   const wx=e.target.closest('[data-wldis]');if(wx){S.wlDis.add(wx.dataset.wldis);draw();return}
 });
-$('#cfg').onclick=()=>{$('#url').value=S.url;const s=SB.s;$('#sbu').value=s.url||'';$('#sbk').value=s.key||'';$('#sbe').value=s.email||'';$('#sbst').textContent=connected()?'Connecté ('+(s.email||'')+')':'';$('#dlg').showModal()};
+$('#cfg').onclick=()=>$('#dlg').showModal();
 /* ---------- Import CSV / Excel : même parcours que Streamlit (colonnes exigées, Ajouter / Remplacer, confirmation) ---------- */
 const IMP_COLS=['Date_Heure','Type','Nom','Ticker','Quantité','Prix Unitaire (€)','Commission (€)','TTF (€)','Frais Totaux (€)','Rompu','Retenue_Source_Etrangere','Remboursement_Capital','Arrondi_Courtier','Date_Rompus'];
 const XLSX_URL='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
@@ -2157,7 +2148,7 @@ $('#opf').onsubmit=async e=>{const r=readOp();if(!r){e.preventDefault();return}
 $('#o_del').onclick=async()=>{if(confirm('Supprimer cette opération ?')){S.raw.splice(S.editing,1);$('#op').close();await commit()}};
 $('#exp').onclick=()=>{const q=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
   const csv='\uFEFF'+COLS.join(',')+'\n'+S.raw.map(r=>COLS.map(k=>q(r[k])).join(',')).join('\n');
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='transactions_'+new Date().toISOString().slice(0,10)+'.csv';a.click()};
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='transactions_'+ACC+'_'+new Date().toISOString().slice(0,10)+'.csv';a.click()};
 const dl=(n,t,m)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:m}));a.download=n;a.click()},today=()=>new Date().toISOString().slice(0,10);
 /* ---------- Exports XML / PDF : mêmes données et même mise en page que generate_transactions_xml / _pdf (app_perso.py) ---------- */
 const xDyn=v=>{const s=(+v).toFixed(4);return s.endsWith('00')?(+v).toFixed(2):s.endsWith('0')?(+v).toFixed(3):s};
@@ -2198,7 +2189,7 @@ function buildXml(){const K=expKpi(),n=new Date(),o=[];
     el(4,'Rompu',xmlOpt(r.Rompu,'€'));el(4,'DateRompu',+r.Rompu>0&&r.Date_Rompus?xDate(r.Date_Rompus):'N/A')}});
   sec('Liste_Retraits','Retrait',{t:'RETRAIT',f:r=>{el(4,'Date',xDate(r.Date_Heure));el(4,'Montant',xmlNum(r['Quantité'],'€'))}});
   close(1,'Liste_Transactions');close(0,'Extrait_CTO');return o.join('\n')+'\n'}
-$('#expx').onclick=()=>{if(!R)return alert('Aucune donnée à exporter.');dl('ExportXML_'+stamp()+'.xml',buildXml(),'application/xml')};
+$('#expx').onclick=()=>{if(!R)return alert('Aucune donnée à exporter.');dl('ExportXML_'+ACC.toUpperCase()+'_'+stamp()+'.xml',buildXml(),'application/xml')};
 /* PDF : page imprimable A4 paysage (vue d'ensemble, positions actives, puis une table par type, chacune sur sa page) */
 const pdE=(v,o={})=>{if(v==null||v===''||!isFinite(+v))return'N/A';const d=o.qty?xDec(xQty(v)):o.dyn?xDec(xDyn(v))||2:2,t=(+v).toFixed(d),neg=t[0]=='-',[i,f]=t.replace('-','').split('.');
   return(neg?'-':'')+i.replace(/\B(?=(\d{3})+(?!\d))/g,' ')+(f?','+f:'')};
@@ -2213,7 +2204,7 @@ $('#expp').onclick=()=>{if(!R)return alert('Aucune donnée à exporter.');
   const ov=[['Valeur du portefeuille (actions)',pdE(K.valeur)+' €'],['Cash disponible',pdE(K.cash)+' €'],['Total des apports',pdE(K.total_apport)+' €'],['Performance globale',pdE(K.performance)+' %'],
     ['Plus-value latente',pdE(K.pvl)+' €'],['Dividendes cumulés',pdE(K.div)+' €'],['Frais cumulés',pdE(K.frais)+' €']];
   const act=R.pos.filter(p=>p.open&&p.sh>.0001).sort((a,b)=>b.latP-a.latP);
-  const body=`<h1>Export CTO — Vue d'ensemble</h1><p class="sub">${esc(sub)}</p>
+  const body=`<h1>Export CTO${ACC!='cto'&&ACC_L?' « '+esc(ACC_L)+' »':''} — Vue d'ensemble</h1><p class="sub">${esc(sub)}</p>
     <table class="big"><thead><tr><th>Indicateur</th><th>Valeur</th></tr></thead><tbody>${ov.map(r=>`<tr><td>${esc(r[0])}</td><td><b>${esc(r[1])}</b></td></tr>`).join('')}</tbody></table>
     <section><h2>Détail des positions actives</h2>${act.length?tbl(['Nom','Ticker','Quantité','PRU Net','Prix Actuel','Valeur Actuelle','Gain Latent','Performance'],
       act.map(p=>[p.nom,p.tk,pdE(p.sh,{qty:1}),pdE(p.pru,{dyn:1})+' €',pdE(p.px,{dyn:1})+' €',pdE(p.val)+' €',pdE(p.lat)+' €',pdE(p.latP)+' %'])):'<p class="empty">Aucune position active.</p>'}</section>`
@@ -2229,14 +2220,11 @@ $('#expp').onclick=()=>{if(!R)return alert('Aucune donnée à exporter.');
     +'.big{width:18cm;margin:0 auto}.big th{background:#1d4ed8;font-size:13pt;line-height:16pt;padding:10pt 8pt}.big td{font-size:14pt;line-height:18pt;padding:10pt 8pt}';
   w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>ExportPDF_${st}</title><style>${css}</style></head><body>${body}</body></html>`);
   w.document.close();w.focus();setTimeout(()=>w.print(),300)};
-$('#sbsend').onclick=async()=>{SB.s={...SB.s,url:$v('#sbu').trim().replace(/\/$/,''),key:$v('#sbk').trim(),email:$v('#sbe').trim()};
-  try{await raw('/auth/v1/otp',{method:'POST',body:JSON.stringify({email:SB.s.email,create_user:false})});$('#sbcode').hidden=false;$('#sbst').textContent='Code envoyé : vérifie ta boîte mail (et les spams).'}
-  catch(e){$('#sbst').textContent='Erreur : '+e.message}};
-$('#sbok').onclick=async()=>{try{sess(await raw('/auth/v1/verify',{method:'POST',body:JSON.stringify({type:'email',email:SB.s.email,token:$v('#sbc').trim()})}));
-  $('#sbcode').hidden=true;$('#sbst').textContent='Connecté ✓';await pull()}catch(e){$('#sbst').textContent='Code invalide ou expiré : '+e.message}};
-$('#sbout').onclick=()=>{SB.s={...SB.s,access:null,refresh:null,uid:null};S.synced=false;$('#sbst').textContent='Déconnecté.';st('')};
-$('#dlg').addEventListener('close',()=>{const u=$('#url').value.trim();if(u!==S.url){S.url=u;LS.s('url',u);refreshPrices()}});
-$('#reset').onclick=()=>{if(confirm('Effacer toutes les données de ce navigateur ?')){['cto_csv','cto_raw','cto_prices','cto_pricesAt','cto_hist','cto_histAt','cto_histKey','cto_cfg','cto_wlh','cto_wlf','cto_wlpx','cto_wlhAt','cto_ih','cto_ihAt','cto_ihKey'].forEach(k=>localStorage.removeItem(k));S.prices={};S.hist={};S.htry=null;load();draw();$('#dlg').close()}};
+/* Connexion Supabase et script Google : réglés depuis la page Général (même navigateur, clés « sb » et « url ») */
+let _uid=SB.s.uid;
+addEventListener('storage',e=>{if(e.key==='url'){S.url=LS.g('url')||'';refreshPrices()}
+  if(e.key==='sb'){const u=SB.s.uid;const nw=connected()&&u&&u!==_uid;_uid=u;if(nw)pull();else if(!connected())S.synced=false}});
+$('#reset').onclick=()=>{if(confirm('Effacer toutes les données de ce navigateur ?')){[ACC+'_csv',ACC+'_raw',ACC+'_prices',ACC+'_pricesAt',ACC+'_hist',ACC+'_histAt',ACC+'_histKey',ACC+'_cfg',ACC+'_wlh',ACC+'_wlf',ACC+'_wlpx',ACC+'_wlhAt',ACC+'_ih',ACC+'_ihAt',ACC+'_ihKey'].forEach(k=>localStorage.removeItem(k));S.prices={};S.hist={};S.htry=null;load();draw();$('#dlg').close()}};
 document.addEventListener('change',e=>{const el=e.target,c=el.dataset&&el.dataset.cfg;
   if(c){cfgSave({[c]:el.type=='date'?el.value:c=='yearly_target'?Math.round(n2(el.value)):n2(el.value)}).then(()=>draw());return}
   const k=el.dataset&&el.dataset.sim;if(!k)return;
