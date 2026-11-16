@@ -161,8 +161,15 @@ const ACCD=[{id:'pea',type:'PEA',broker:'',label:''},{id:'cto',type:'CTO',broker
 const EXTRA=['Compte bancaire','Livret'];
 const TYI={'PEA':'📈','CTO':'🏦','Épargne salariale':'🎁','Crypto':'₿','Compte bancaire':'🏧','Livret':'🐖'},TYR=['PEA','CTO','Épargne salariale','Crypto','Compte bancaire','Livret'];
 const isBk=a=>EXTRA.includes(a.type);
+/* Livret : solde = transferts reçus - transferts émis + intérêts crédités (calculé automatiquement) ; sans aucun mouvement, on garde le solde saisi dans les réglages */
+const tdy=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+function livMv(a,Dx){const m=[];Dx=Dx||{};(Dx.transferts||[]).forEach(r=>{if(!r.date)return;const v=+r.montant||0;if(r.vers===a.id)m.push([r.date,v]);if(r.de===a.id)m.push([r.date,-v])});
+  (Dx.livrets_lignes||[]).forEach(l=>{if(l.acc===a.id&&l.type==='cred'&&l.date)m.push([l.date,+l.v||0])});return m}
+function livBal(a,Dx,d){const m=livMv(a,Dx);if(!m.length)return+a.balance||0;d=d||tdy();return Math.round(m.filter(x=>x[0]<=d).reduce((t,x)=>t+x[1],0)*100)/100}
+/* Un livret est clôturé automatiquement dès que son solde revient à 0 (après au moins un mouvement) */
+const livClosed=(a,Dx)=>{if(a.type!=='Livret')return false;const m=livMv(a,Dx),T=tdy();return m.some(x=>x[0]<=T)&&Math.abs(livBal(a,Dx,T))<.005};
 /* Solde = solde initial (saisi une seule fois dans les réglages) + opérations/transferts rattachés au compte depuis la date d'initialisation (comptes bancaires) */
-function acctBal(a,Dx){const s=+a.balance||0;if(a.type!=='Compte bancaire')return s;Dx=Dx||{};const d0=a.initDate||'';let t=s;
+function acctBal(a,Dx){if(a.type==='Livret')return livBal(a,Dx);const s=+a.balance||0;if(a.type!=='Compte bancaire')return s;Dx=Dx||{};const d0=a.initDate||'';let t=s;
   (Dx.depenses||[]).forEach(o=>{if(o.compte===a.id&&o.date&&o.date>=d0){const rv=o.sens?o.sens==='Revenu':['Salaire','Prime / Remboursement','Virement reçu'].includes(o.categorie);t+=rv?(+o.montant||0):-(+o.montant||0)}});
   (Dx.transferts||[]).forEach(r=>{if(r.date&&r.date>=d0){if(r.de===a.id)t-=+r.montant||0;if(r.vers===a.id)t+=+r.montant||0}});return Math.round(t*100)/100}
 const bal=a=>acctBal(a,LS.g('depenses_v1'));
@@ -232,10 +239,10 @@ function epargne(D){const L=(D.interessement||[]).filter(s=>s.date),P=s=>String(
   const per=!!(sv&&(sv.pee!=null||sv.perco!=null||sv.peg!=null)),leg=!!(sv&&!per&&sv.valeur>=0);
   return{n:L.length,tp,tc,tr,has:per||leg,plans,cur:leg?sv.valeur:per?Object.values(plans).reduce((a,v)=>a+v,0):Math.max(0,tp-tr)}}
 /* Livrets : intérêts en cours (même calcul que le module Épargne : relevé / taux / intérêts crédités) */
-function livAcc(D,a){const T=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10),dd=(x,y)=>Math.round((Date.parse(y+'T12:00:00Z')-Date.parse(x+'T12:00:00Z'))/864e5),
-  L=(D.livrets_lignes||[]).filter(l=>l.acc===a.id&&l.date).sort((x,y)=>x.date<y.date?-1:x.date>y.date?1:0),bal=+a.balance||0,
+function livAcc(D,a){const T=tdy(),dd=(x,y)=>Math.round((Date.parse(y+'T12:00:00Z')-Date.parse(x+'T12:00:00Z'))/864e5),
+  L=(D.livrets_lignes||[]).filter(l=>l.acc===a.id&&l.date).sort((x,y)=>x.date<y.date?-1:x.date>y.date?1:0),MV=livMv(a,D).map(x=>x[0]),
   tx=d=>{let t=null;L.forEach(l=>{if(l.type==='taux'&&l.date<=d)t=l.v});if(t==null){const f=L.find(l=>l.type==='taux');t=f?f.v:null}return t},
-  ib=(f,t)=>{if(!(t>f))return 0;const cuts=[...new Set(L.filter(l=>l.type==='taux'&&l.date>f&&l.date<t).map(l=>l.date))].sort(),p=[f,...cuts,t];let r=0;for(let k=0;k<p.length-1;k++){const q=tx(p[k]);if(q!=null)r+=bal*q/100*dd(p[k],p[k+1])/365}return r},
+  ib=(f,t)=>{if(!(t>f))return 0;const cuts=[...new Set([...L.filter(l=>l.type==='taux').map(l=>l.date),...MV].filter(x=>x>f&&x<t))].sort(),p=[f,...cuts,t];let r=0;for(let k=0;k<p.length-1;k++){const q=tx(p[k]);if(q!=null)r+=livBal(a,D,p[k])*q/100*dd(p[k],p[k+1])/365}return r},
   cr=L.filter(l=>l.type==='cred'&&l.date<=T).pop(),c0=cr?cr.date:T.slice(0,4)+'-01-01',rel=L.filter(l=>l.type==='rel'&&l.date<=T&&l.date>=c0).pop(),taux=tx(T);
   return{taux,acc:taux==null?0:(rel?rel.v:0)+ib(rel?rel.date:c0,T)}}
 /* ---------- Évolution du patrimoine ---------- */
@@ -309,7 +316,7 @@ const todayI=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOSt
 function stateAt(ao,A,D,cf,net_){
   const pea=A.some(a=>a.type==='PEA')?serAt(LS.g('hub_pea_hist'),ao):0,cto=A.filter(a=>a.type==='CTO').reduce((t,a)=>t+serAt(LS.g('hub_'+a.id+'_hist'),ao),0),cry=A.some(a=>a.type==='Crypto')?serAt(LS.g('hub_crypto_hist'),ao):0,
     pl=(D.interessement||[]).filter(s=>s.date&&s.date<=ao&&String(s.dest||'').startsWith('Placé')).reduce((t,s)=>t+(s.montant||0),0),rt=(D.retraits_epargne||[]).filter(r=>r.date&&r.date<=ao).reduce((t,r)=>t+(r.montant||0),0),
-    sb=A.filter(a=>a.type==='Compte bancaire').reduce((t,a)=>t+bal(a),0),sl=A.filter(a=>a.type==='Livret').reduce((t,a)=>t+bal(a),0),
+    sb=A.filter(a=>a.type==='Compte bancaire').reduce((t,a)=>t+bal(a),0),sl=A.filter(a=>a.type==='Livret').reduce((t,a)=>t+livBal(a,D,ao),0),
     im=D.immo||{},ia=+im.apport||0,iv=D.immo!=null?(+im.valeur||0):(cf.immo||0),noLoan=!(D.prets||[]).some(p=>p.date_debut&&p.capital),lo=loanAt(D,ao.slice(0,7)),st=lo.st>0||noLoan,imm=st?(net_?ia+lo.paid:(iv||ia+lo.cap)):0;
   const items=[['PEA','📈',pea],['CTO','🏦',cto],['Crypto','₿',cry],['Épargne salariale','🎁',Math.max(0,pl-rt)],['Comptes bancaires','🏧',sb],['Livrets','🐖',sl],['Immobilier','🏡',imm]];
   return{items,total:items.reduce((t,x)=>t+x[2],0)}}
@@ -320,7 +327,7 @@ function renderHome(){
     de=epargne(D),di=crdPrets(D),cf=CF.v,cr=LS.g('hub_crypto');
   const cd=ctos.map(a=>LS.g('hub_'+a.id)),cl_=cd.filter(Boolean),ct=cl_.length?{total:cl_.reduce((s,c)=>s+c.total,0),gain:cl_.reduce((s,c)=>s+c.gain,0),day:cl_.reduce((s,c)=>s+(c.day||0),0)}:null;
   const im=D.immo||{},hasIm=D.immo!=null,iv=hasIm?(+im.valeur||0):(cf.immo||0),ia=+im.apport||0,
-    bkA=A.filter(a=>a.type==='Compte bancaire'),lvA=A.filter(a=>a.type==='Livret'),sb=bkA.reduce((t,a)=>t+bal(a),0),sl=lvA.reduce((t,a)=>t+bal(a),0),
+    bkA=A.filter(a=>a.type==='Compte bancaire'),lvAll=A.filter(a=>a.type==='Livret'),lvA=lvAll.filter(a=>!livClosed(a,D)),lvC=lvAll.length-lvA.length,sb=bkA.reduce((t,a)=>t+bal(a),0),sl=lvA.reduce((t,a)=>t+bal(a),0),
     fin=(p?p.total:0)+(ct?ct.total:0)+(cr?cr.total:0)+de.cur+sb+sl,immoNet=ia+di.paid,immoBrut=iv||(di.n||ia?ia+di.cap:0),
     brut=fin+immoBrut,net=fin+immoNet,net_=cf.mode==='net';
   $('#tot').textContent=eur(net_?net:brut);
@@ -339,7 +346,7 @@ function renderHome(){
    ...ctos.map((a,i)=>ctoTile(a,cd[i])),
    ['epargne','🎁','Épargne salariale',de.n?`<div class="v">${eur(de.cur)}</div>`+((de.plans.PEE||de.plans.PERCO||de.plans.PEG)?`<div class="m">${['PEE','PERCO','PEG'].filter(k=>k!=='PEG'||de.plans.PEG!=null).map(k=>k+' '+eur(de.plans[k]||0)).join(' · ')}</div>`:'')+pct(de.has&&de.tp>0?(de.cur+de.tr-de.tp)/de.tp*100:null):'<div class="m">Aucun versement saisi</div>'],
    ...(bkA.length?[['depenses','🏧','Comptes bancaires',`<div class="v">${eur(sb)}</div>`+bkA.map(a=>`<div class="m">${esc(nm(a))}${brokerOf(a,A)?' · '+esc(brokerOf(a,A)):''} : <b>${eur(bal(a))}</b></div>`).join('')]]:[]),
-   ...(lvA.length?[['livrets','🐖','Livrets',`<div class="v">${eur(sl)}</div>`+(()=>{const li=lvA.map(a=>livAcc(D,a)),ok=li.some(x=>x.taux!=null),ti=li.reduce((t,x)=>t+x.acc,0);return ok?`<div class="m">Intérêts en cours : <b class="up">+${ti.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €</b></div>`:''})()+lvA.map(a=>`<div class="m">${esc(nm(a))}${brokerOf(a,A)?' · '+esc(brokerOf(a,A)):''} : <b>${eur(bal(a))}</b></div>`).join('')]]:[]),
+   ...(lvAll.length?[['livrets','🐖','Livrets',`<div class="v">${eur(sl)}</div>`+(()=>{const li=lvA.map(a=>livAcc(D,a)),ok=li.some(x=>x.taux!=null),ti=li.reduce((t,x)=>t+x.acc,0);return ok?`<div class="m">Intérêts en cours : <b class="up">+${ti.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €</b></div>`:''})()+lvA.map(a=>`<div class="m">${esc(nm(a))}${brokerOf(a,A)?' · '+esc(brokerOf(a,A)):''} : <b>${eur(bal(a))}</b></div>`).join('')+(lvC?`<div class="m">${lvC} livret${lvC>1?'s':''} clôturé${lvC>1?'s':''} (solde à 0)</div>`:'')]]:[]),
    ['immo','🏡',im.nom?esc(im.nom):'Immobilier',(di.n||iv||ia)?`<div class="v">${eur(iv||immoBrut)}</div>`+(im.type?`<div class="m">${esc(im.type)}${+im.loyer>0?' · loyers '+eur(+im.loyer)+'/mois':''}</div>`:'')+(imR==null?(iv?'':'<div class="m">Valeur estimée à saisir</div>'):pct(imR)):'<div class="m">Aucun bien ni prêt saisi</div>'],
    ['crypto','₿','Crypto',acct(cr)],
    ];
@@ -455,7 +462,7 @@ function renderAccDlg(){const A=DR;
   $('#accl').innerHTML=A.map(a=>`<div class="ar" data-id="${a.id}"><b>${TYI[a.type]} ${esc(a.type)}</b>${delable(a)?' <button type="button" data-del="1" style="float:right;padding:2px 8px">✕</button>':''}
     <input data-f="label" placeholder="Nom du compte${isBk(a)?' (ex. Compte courant)':' (facultatif)'}" value="${esc(a.label)}">
     <input data-f="broker" placeholder="${a.type==='Épargne salariale'?'Gestionnaire (ex. Amundi)':isBk(a)?'Banque (ex. Crédit Agricole)':'Courtier (ex. Boursorama)'}" value="${esc(a.broker)}">
-    ${isBk(a)?(a.type==='Compte bancaire'&&a.initDate?`<div class="d" style="margin:4px 0">✓ Solde initialisé : il se met à jour automatiquement selon les opérations (onglet Dépenses).</div>`:`<input data-f="balance" type="number" inputmode="decimal" step="0.01" placeholder="${a.type==='Compte bancaire'?'Solde de départ (€) — saisi une seule fois':'Solde actuel (€)'}" value="${a.balance!=null&&a.balance!==''?esc(a.balance):''}">`):''}
+    ${a.type==='Livret'?`<div class="d" style="margin:4px 0">✓ Solde calculé automatiquement d'après les transferts (onglet Dépenses) et les intérêts reçus (onglet Épargne) ; le livret est clôturé quand son solde revient à 0.</div>`:isBk(a)?(a.type==='Compte bancaire'&&a.initDate?`<div class="d" style="margin:4px 0">✓ Solde initialisé : il se met à jour automatiquement selon les opérations (onglet Dépenses).</div>`:`<input data-f="balance" type="number" inputmode="decimal" step="0.01" placeholder="${a.type==='Compte bancaire'?'Solde de départ (€) — saisi une seule fois':'Solde actuel (€)'}" value="${a.balance!=null&&a.balance!==''?esc(a.balance):''}">`):''}
     ${a.type==='Crypto'?`<select data-f="inCto">${cryOpts(a,A)}</select>`:''}</div>`).join('')}
 $('#accl').addEventListener('change',e=>{const el=e.target,row=el.closest('.ar');if(!row||!el.dataset.f)return;
   const a=DR.find(x=>x.id===row.dataset.id);if(!a)return;a[el.dataset.f]=el.dataset.f==='balance'?(parseFloat(el.value)||0):el.value.trim();
