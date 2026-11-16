@@ -299,7 +299,8 @@ g[data-tip]{cursor:pointer}
 
 <dialog id="dlgL"><form method="dialog" id="frmL">
  <h3 id="lTitle" style="margin:0 0 4px">Nouvelle ligne</h3>
- <label>Livret</label><select id="lAcc" required></select>
+ <label id="lAccL">Livret</label><select id="lAcc" required></select>
+ <div id="lMulti" class="hide"><label>Appliquer à</label><div id="lChk"></div><button type="button" class="sec" id="lAll" style="width:100%;margin-top:6px">Tout cocher / décocher</button></div>
  <label>Type de ligne</label><select id="lType"><option value="rel">🔎 Relevé des intérêts en cours</option><option value="taux">📈 Taux (changement de taux)</option><option value="cred">💰 Intérêts crédités</option></select>
  <label>Date</label><input id="lDate" type="date" required>
  <label id="lVL">Intérêts en cours (€)</label><input id="lV" type="number" step="0.01" min="0" inputmode="decimal" required>
@@ -317,7 +318,7 @@ const REV=["Salaire","Prime / Remboursement","Virement reçu"];
 const PAL=["#0284c7","#7c3aed","#0d9488","#f97316","#dc2626","#ca8a04","#db2777","#4f46e5","#059669","#ea580c","#0891b2","#9333ea"];
 const SEC={depenses:["Depenses","Depense"],recurrentes:["Recurrentes","Recurrente"],salaires:["Salaires","Salaire"],prets:["Prets","Pret"],interessement:["Interessements","Interessement"],groupes:["Groupes","Groupe"]};
 const NUM=new Set(["montant","net","brut","impot","capital","taux","duree","assurance","premiere_reelle"]);
-const VER="26.7-a",KEY="depenses_v1",FKEY="depenses_fold";
+const VER="26.7-b",KEY="depenses_v1",FKEY="depenses_fold";
 const MOD=new URLSearchParams(location.search).get("m")||"",MODT={dep:["home","ana","rec","data"],immo:["cred"],epargne:["pos","cpt","int","ret"],livrets:["liv","lvi"],salaire:["sal","tax"],sante:["sante"]},TKEY="depenses_tab"+(MOD?"_"+MOD:""),TIDS=MODT[MOD]||["home","ana","rec","cred","sal","tax","int","pos","cpt","ret","sante","data"];
 let D=load(),tab=loadTab(),per="m:"+TODAY().slice(0,7),gran="jour",q="",sens="Dépense";
 let FOLD=(()=>{try{return JSON.parse(localStorage.getItem(FKEY))||{}}catch(e){return{}}})();
@@ -667,7 +668,7 @@ document.addEventListener("change",e=>{if(!/^im(Val|App|Type|Nom|Loy|Chg|Tax)$/.
  o.valeur=n("imVal");o.apport=n("imApp");o.type=g("imType").value;o.nom=g("imNom").value.trim();if(g("imLoy")){o.loyer=n("imLoy");o.charges=n("imChg");o.taxe=n("imTax")}
  D.immo=o;save();render()});
 document.addEventListener("click",e=>{const tr=e.target.closest&&e.target.closest("[data-tr]");if(tr&&!UI.selMode)openTr(+tr.dataset.tr);
- const lr=e.target.closest&&e.target.closest("[data-lv]");if(lr)openLv(+lr.dataset.lv);const la=e.target.closest&&e.target.closest("[data-lvadd]");if(la)openLv(-1,la.dataset.lvadd);
+ const lr=e.target.closest&&e.target.closest("[data-lv]");if(lr)openLv(+lr.dataset.lv);const la=e.target.closest&&e.target.closest("[data-lvadd]");if(la)openLv(-1,la.dataset.lvadd);if(e.target.closest&&e.target.closest("[data-lvtaux]"))openLv(-1,null,"taux");
  if(e.target.id==="bLinkSal")linkAllSal();if(e.target.id==="bAddP"||e.target.id==="bAddP2")openPret(-1)});
 function vCred(){
  if(!D.prets.length)return vImmo(0,0,0,0)+'<div class="card" style="margin-top:0"><div class="empty">Aucun prêt<br>Appuie sur + ou sur « Ajouter un prêt immobilier ».</div></div>';
@@ -1366,19 +1367,24 @@ function vLiv(){
   +card("liv-n","Comment sont calculés les intérêts ?",`<div class="d">Intérêts bruts, en intérêts simples : solde actuel × taux × nombre de jours ÷ 365, depuis le dernier crédit d'intérêts (ou le 1er janvier), ou depuis le dernier relevé que tu as saisi. Les quinzaines et arrondis de la banque peuvent donner quelques centimes d'écart : ajoute un « relevé » dans l'onglet Taux &amp; intérêts pour recaler le calcul. Le solde se règle dans ⚙️ Réglages du tableau de bord général.</div>`)}
 function vLvi(){
  const L=hubAcc().filter(a=>a.type==="Livret");if(!L.length)return noLiv();
- return`<div class="d" style="margin:0 0 10px">Une ligne par événement : <b>🔎 relevé</b> des intérêts en cours lu sur ta banque, <b>📈 taux</b> (à chaque changement), <b>💰 intérêts crédités</b> (le calcul repart de zéro). Touche une ligne pour la modifier.</div>`+L.map(a=>{const c=livCalc(a);
+ return`<div class="d" style="margin:0 0 10px">Une ligne par événement : <b>🔎 relevé</b> des intérêts en cours lu sur ta banque, <b>📈 taux</b> (à chaque changement), <b>💰 intérêts crédités</b> (le calcul repart de zéro). Touche une ligne pour la modifier.</div>`+(L.length>1?`<button class="sec" data-lvtaux style="width:100%;margin:0 0 10px">📈 Appliquer un taux à plusieurs livrets</button>`:"")+L.map(a=>{const c=livCalc(a);
   const rows=c.L.slice().reverse().map(l=>`<div class="op" data-lv="${l.i}"><div class="m"><b>${LVT[l.type][0]} ${LVT[l.type][1]}</b><small>${fdy(l.date)}</small></div><span class="am ${l.type==="cred"?"pos":""}">${l.type==="taux"?fpx(l.v):(l.type==="cred"?"+":"")+eur2(l.v)}</span><span style="color:var(--mut)">✎</span></div>`).join("")||'<div class="empty">Aucune ligne</div>';
   return card("lvi-"+a.id,`🐖 ${esc(hubNm(a))} · ${c.taux!=null?"intérêts en cours +"+eur2(c.acc):"taux à saisir"}`,`<div class="lst">${rows}</div><button class="sec" data-lvadd="${esc(a.id)}" style="width:100%;margin-top:8px">➕ Ajouter une ligne</button>`)}).join("")}
 const dlgL=$("#dlgL");let lIdx=-1;
-const LVH={rel:["Intérêts en cours (€)","Montant des intérêts acquis mais pas encore crédités, tel qu'affiché par ta banque à cette date. Le calcul repart de là, au taux en vigueur."],taux:["Taux annuel brut (%)","À partir de cette date, ce taux s'applique (ex. 1,7). Ajoute une ligne à chaque changement de taux."],cred:["Intérêts crédités (€)","Intérêts versés sur le livret (en général au 31 décembre). Le calcul des intérêts en cours repart de zéro à cette date. Pense à mettre à jour le solde dans ⚙️ Réglages."]};
+const LVH={rel:["Intérêts en cours (€)","Montant des intérêts acquis mais pas encore crédités, tel qu'affiché par ta banque à cette date. Le calcul repart de là, au taux en vigueur."],taux:["Taux annuel brut (%)","À partir de cette date, ce taux s'applique (ex. 1,7). Ajoute une ligne à chaque changement de taux. Coche plusieurs livrets pour appliquer le même taux d'un coup."],cred:["Intérêts crédités (€)","Intérêts versés sur le livret (en général au 31 décembre). Le calcul des intérêts en cours repart de zéro à cette date. Pense à mettre à jour le solde dans ⚙️ Réglages."]};
 function lvHint(){const t=$("#lType").value;$("#lVL").textContent=LVH[t][0];$("#lHint").textContent=LVH[t][1]}
-$("#lType").onchange=lvHint;
-function openLv(i=-1,acc){lIdx=i;const Ls=hubAcc().filter(a=>a.type==="Livret");if(!Ls.length){alert("Ajoute d'abord un livret dans ⚙️ Réglages du tableau de bord général.");return}
+$("#lType").onchange=()=>{lvHint();lvMode()};
+$("#lAll").onclick=()=>{const c=[...document.querySelectorAll("#lChk input")],on=c.some(x=>!x.checked);c.forEach(x=>x.checked=on)};
+function lvMode(){const n=$("#lChk").children.length,m=lIdx<0&&$("#lType").value==="taux"&&n>1;$("#lMulti").classList.toggle("hide",!m);$("#lAcc").classList.toggle("hide",m);$("#lAccL").classList.toggle("hide",m);return m}
+function openLv(i=-1,acc,typ){lIdx=i;const Ls=hubAcc().filter(a=>a.type==="Livret");if(!Ls.length){alert("Ajoute d'abord un livret dans ⚙️ Réglages du tableau de bord général.");return}
  $("#frmL").reset();$("#lAcc").innerHTML=Ls.map(a=>`<option value="${esc(a.id)}">${esc(hubNm(a))}</option>`).join("");const l=i>=0?D.livrets_lignes[i]:null;
- $("#lTitle").textContent=l?"Modifier la ligne":"Nouvelle ligne";$("#lAcc").value=l?l.acc:(acc||Ls[0].id);$("#lType").value=l?l.type:"rel";$("#lDate").value=l?l.date:TODAY();$("#lV").value=l?l.v:"";lvHint();$("#lDel").classList.toggle("hide",!l);dlgL.showModal()}
+ $("#lTitle").textContent=l?"Modifier la ligne":"Nouvelle ligne";$("#lAcc").value=l?l.acc:(acc||Ls[0].id);$("#lType").value=l?l.type:(typ||"rel");$("#lDate").value=l?l.date:TODAY();$("#lV").value=l?l.v:"";
+ $("#lChk").innerHTML=Ls.map(a=>`<label class="pdfr"><input type="checkbox" value="${esc(a.id)}"${a.id===$("#lAcc").value?" checked":""}><div class="m"><b>${esc(hubNm(a))}</b>${a.broker?`<small>${esc(a.broker)}</small>`:""}</div></label>`).join("");lvHint();lvMode();$("#lDel").classList.toggle("hide",!l);dlgL.showModal()}
 $("#lCancel").onclick=()=>dlgL.close();
 $("#lDel").onclick=()=>{if(lIdx>=0&&confirm("Supprimer cette ligne ?")){D.livrets_lignes.splice(lIdx,1);save();dlgL.close();render()}};
 $("#frmL").onsubmit=e=>{const v=parseFloat($("#lV").value);if(!(v>=0)){e.preventDefault();return}
+ if(lvMode()){const ids=[...document.querySelectorAll("#lChk input:checked")].map(x=>x.value);if(!ids.length){e.preventDefault();alert("Coche au moins un livret.");return}
+  D.livrets_lignes=D.livrets_lignes||[];ids.forEach(id=>D.livrets_lignes.push({acc:id,date:$("#lDate").value,type:"taux",v:Math.round(v*1000)/1000}));save();render();return}
  const o={acc:$("#lAcc").value,date:$("#lDate").value,type:$("#lType").value,v:Math.round(v*1000)/1000};D.livrets_lignes=D.livrets_lignes||[];if(lIdx>=0)D.livrets_lignes[lIdx]=o;else D.livrets_lignes.push(o);save();render()};
 /* Retour à la page générale du module quand le tableau de bord général le demande ; mise à jour si les réglages (soldes) changent */
 addEventListener("message",e=>{if(e.source===parent&&e.data&&e.data.hubHome){tab=TIDS[0];render();scrollTo(0,0)}});
