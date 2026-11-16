@@ -35,6 +35,9 @@ th{color:var(--mute);font-weight:600;background:var(--alt)}th:first-child,td:fir
 td small{display:block;color:var(--mute);font-size:11px}
 tr:last-child td{border-bottom:0}
 .empty{background:var(--card);border:1px dashed var(--line);border-radius:14px;padding:18px;color:var(--mute);text-align:center}
+
+/* Fond identique aux modules PEA / CTO / Crypto (mode clair) */
+@media(prefers-color-scheme:light),(prefers-color-scheme:no-preference){body{background:radial-gradient(circle at 8% 8%,rgba(2,132,199,.10) 0%,transparent 45%),radial-gradient(circle at 92% 18%,rgba(124,58,237,.08) 0%,transparent 45%),radial-gradient(circle at 15% 92%,rgba(13,148,136,.08) 0%,transparent 45%),linear-gradient(180deg,#f8fafc 0%,#eef2f7 100%);background-attachment:fixed}}
 </style>
 </head>
 <body>

@@ -92,6 +92,9 @@ dialog .hint{color:var(--mut);font-size:12px;margin:6px 0 0}
 #tbw tr:last-child td{border-bottom:0}
 #evo svg{width:100%;height:auto;display:block;touch-action:pan-y;margin-top:6px}
 #evt{position:absolute;pointer-events:none;background:var(--txt);color:var(--bg);font-size:12px;padding:5px 8px;border-radius:8px;white-space:nowrap;display:none;transform:translate(-50%,0);z-index:2}
+
+/* Fond identique aux modules PEA / CTO / Crypto (mode clair) */
+@media(prefers-color-scheme:light),(prefers-color-scheme:no-preference){body{background:radial-gradient(circle at 8% 8%,rgba(2,132,199,.10) 0%,transparent 45%),radial-gradient(circle at 92% 18%,rgba(124,58,237,.08) 0%,transparent 45%),radial-gradient(circle at 15% 92%,rgba(13,148,136,.08) 0%,transparent 45%),linear-gradient(180deg,#f8fafc 0%,#eef2f7 100%);background-attachment:fixed}}
 </style>
 </head>
 <body>

@@ -211,6 +211,9 @@ details.exp .in{display:flex;flex-direction:column;gap:.8rem;padding:0 .8rem 1re
 .bal .s{color:var(--mut);opacity:1}
 dialog#dlgH{width:min(560px,94vw);max-height:88vh;overflow:auto}
 @media(max-width:640px){.kpi b,.mtr .mtv{font-size:1.2rem}.kpi,.mtr{padding:10px 8px}.kpi span,.mtr .mtl p{font-size:.66rem}.mcols{gap:.5rem}.kpis.k3 .kpi b{font-size:.95rem}}
+
+/* Fond identique aux modules PEA / CTO / Crypto (mode clair) */
+@media(prefers-color-scheme:light),(prefers-color-scheme:no-preference){body{background:radial-gradient(circle at 8% 8%,rgba(2,132,199,.10) 0%,transparent 45%),radial-gradient(circle at 92% 18%,rgba(124,58,237,.08) 0%,transparent 45%),radial-gradient(circle at 15% 92%,rgba(13,148,136,.08) 0%,transparent 45%),linear-gradient(180deg,#f8fafc 0%,#eef2f7 100%);background-attachment:fixed}}
 </style>
 </head>
 <body>
@@ -371,7 +374,7 @@ const PAL=["#0284c7","#7c3aed","#0d9488","#f97316","#dc2626","#ca8a04","#db2777"
 const SEC={depenses:["Depenses","Depense"],recurrentes:["Recurrentes","Recurrente"],salaires:["Salaires","Salaire"],prets:["Prets","Pret"],interessement:["Interessements","Interessement"],groupes:["Groupes","Groupe"]};
 const NUM=new Set(["montant","net","brut","impot","capital","taux","duree","assurance","premiere_reelle"]);
 const VER="26.8-a",KEY="depenses_v1",FKEY="depenses_fold";
-const MOD=new URLSearchParams(location.search).get("m")||"",MODT={dep:["home","ana","rec","data"],immo:["cred"],epargne:["ov","pos","cpt","int","ret"],livrets:["liv","lvi"],salaire:["sal","tax"],sante:["sante"]},TKEY="depenses_tab"+(MOD?"_"+MOD:""),TIDS=MODT[MOD]||["home","ana","rec","cred","sal","tax","int","ov","pos","cpt","ret","sante","data"];
+const MOD=new URLSearchParams(location.search).get("m")||"",MODT={dep:["home","ana","rec","data"],immo:["cred"],epargne:["ov","pos","int"],livrets:["liv","lvi"],salaire:["sal","tax"],sante:["sante"]},TKEY="depenses_tab"+(MOD?"_"+MOD:""),TIDS=MODT[MOD]||["home","ana","rec","cred","sal","tax","int","ov","pos","cpt","ret","sante","data"];
 let D=load(),tab=loadTab(),per="m:"+TODAY().slice(0,7),gran="jour",q="",sens="Dépense";
 let FOLD=(()=>{try{return JSON.parse(localStorage.getItem(FKEY))||{}}catch(e){return{}}})();
 function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.depenses)return r}catch(e){}return{version:1,depenses:[],recurrentes:[],salaires:[],prets:[]}}
@@ -750,7 +753,7 @@ document.addEventListener("change",e=>{if(!/^im(Val|App|Type|Nom|Loy|Chg|Tax)$/.
  o.valeur=n("imVal");o.apport=n("imApp");o.type=g("imType").value;o.nom=g("imNom").value.trim();if(g("imLoy")){o.loyer=n("imLoy");o.charges=n("imChg");o.taxe=n("imTax")}
  UI.immoEdit=true;D.immo=o;save();render()});
 document.addEventListener("click",e=>{const tr=e.target.closest&&e.target.closest("[data-tr]");if(tr&&!UI.selMode)openTr(+tr.dataset.tr);
- const lr=e.target.closest&&e.target.closest("[data-lv]");if(lr)openLv(+lr.dataset.lv);const la=e.target.closest&&e.target.closest("[data-lvadd]");if(la)openLv(-1,la.dataset.lvadd,la.dataset.lvtyp||undefined);const lh=e.target.closest&&e.target.closest("[data-lvhist]");if(lh)openHist(lh.dataset.lvhist);if(e.target.id==="imEd"){UI.immoEdit=true;render()}if(e.target.id==="imOk"){UI.immoEdit=false;render()}if(e.target.closest&&e.target.closest("[data-lvtaux]"))openLv(-1,null,"taux");
+ const lr=e.target.closest&&e.target.closest("[data-lv]");if(lr)openLv(+lr.dataset.lv);const la=e.target.closest&&e.target.closest("[data-lvadd]");if(la)openLv(-1,la.dataset.lvadd,la.dataset.lvtyp||undefined);const lh=e.target.closest&&e.target.closest("[data-lvhist]");if(lh)openHist(lh.dataset.lvhist);if(e.target.id==="bAddRet")openRet(-1);if(e.target.id==="imEd"){UI.immoEdit=true;render()}if(e.target.id==="imOk"){UI.immoEdit=false;render()}if(e.target.closest&&e.target.closest("[data-lvtaux]"))openLv(-1,null,"taux");
  if(e.target.id==="bLinkSal")linkAllSal();if(e.target.id==="bAddP"||e.target.id==="bAddP2")openPret(-1)});
 function vCred(){
  if(!D.prets.length)return vImmo(0,0,0,0)+'<div class="card" style="margin-top:0"><div class="empty">Aucun prêt<br>Appuie sur + ou sur « Ajouter un prêt immobilier ».</div></div>';
@@ -852,19 +855,23 @@ function vSal(){
  ${card("sal-emp","Répartition par employeur (net avant impôts)",bars(emp,null,(k,v)=>tipHtml(k,[tl("Total net avant impôts",eur2(v),TC.g),tl("Part",(net>0?v/net*100:0).toFixed(1).replace(".",",")+" %"),tl("Versements",ecn[k])])))}
  ${card("sal-hist","Historique des versements · touche une ligne pour la modifier",`<div class="lst">${hist}</div>`)}`}
 /* ---------- Intéressement / Participation (onglet « Prime ») ---------- */
-function vInt(){
- const all=(D.interessement||[]).map((s,i)=>({...s,i})).filter(s=>s.date).sort((a,b)=>a.date.localeCompare(b.date));
-  if(!all.length)return pdfCard()+`<div class="card" style="margin-top:0"><div class="empty">Aucun versement enregistré pour le moment.<br>Appuie sur + pour en ajouter un.</div></div>`;
- const ys=[...new Set(all.map(s=>s.date.slice(0,4)))].sort().reverse();
+function vMvt(){
+ const vers=(D.interessement||[]).map((s,i)=>({...s,i})).filter(s=>s.date),rets=(D.retraits_epargne||[]).map((r,i)=>({...r,i})).filter(r=>r.date),
+  addBtn=`<button type="button" class="sec" id="bAddRet" style="width:100%;margin-bottom:12px">➖ Ajouter un retrait</button>`;
+ if(!vers.length&&!rets.length)return pdfCard()+`<div class="card" style="margin-top:0"><div class="empty">Aucun versement ni retrait enregistré.<br>Appuie sur + pour ajouter un versement.</div></div>`+addBtn;
+ const ys=[...new Set([...vers,...rets].map(s=>s.date.slice(0,4)))].sort().reverse();
  if(UI.iy!=="all"&&!ys.includes(UI.iy))UI.iy="all";
- const T=(l,t)=>sum(l.filter(s=>s.type===t),"montant"),L=UI.iy==="all"?all:all.filter(s=>s.date.startsWith(UI.iy)),tI=T(L,"Intéressement"),tP=T(L,"Participation"),tA=T(L,"Abondement"),tV=T(L,"PPV");
- const YR=ys.slice().reverse().map(y=>{const l=all.filter(s=>s.date.startsWith(y)),i=T(l,"Intéressement"),p=T(l,"Participation"),a=T(l,"Abondement"),v=T(l,"PPV");return{y,i,p,a,v,t:i+p+a+v,c:l.length}});
-  const chart=stackChart(YR.map(r=>({l1:r.y,segs:[{v:r.i,c:"#7c3aed"},{v:r.p,c:"#0d9488"},{v:r.a,c:"#f97316"},{v:r.v,c:"#0284c7"}],tip:tipHtml(r.y,[tl("Intéressement",eur2(r.i),TC.v),tl("Participation",eur2(r.p),TC.g),tl("Abondement",eur2(r.a),TC.o),tl("PPV",eur2(r.v),TC.b),tl("Total",eur2(r.t),TC.b),tl("Versements",r.c)])})),{bw:64,lg:'<div class="lg"><span><i style="background:#7c3aed"></i>Intéressement</span><span><i style="background:#0d9488"></i>Participation</span><span><i style="background:#f97316"></i>Abondement</span><span><i style="background:#0284c7"></i>PPV</span></div>'});
- const yrRows=YR.slice().reverse().map(r=>`<div class="op"><div class="m"><b>${r.y}</b><small>${r.c} versement${r.c>1?"s":""}</small><div class="d">Intéressement ${eur(r.i)} · Participation ${eur(r.p)} · Abondement ${eur(r.a)} · PPV ${eur(r.v)}</div></div><div class="r"><b>${eur(r.t)}</b></div></div>`).join("");
+ const inY=x=>UI.iy==="all"||x.date.startsWith(UI.iy),V=vers.filter(inY),R=rets.filter(inY),
+  T=(l,t)=>sum(l.filter(s=>s.type===t),"montant"),tI=T(V,"Intéressement"),tP=T(V,"Participation"),tA=T(V,"Abondement"),tV=T(V,"PPV"),tR=sum(R,"montant");
+ const YR=ys.slice().reverse().map(y=>{const l=vers.filter(s=>s.date.startsWith(y)),i=T(l,"Intéressement"),p=T(l,"Participation"),a=T(l,"Abondement"),v=T(l,"PPV");return{y,i,p,a,v,t:i+p+a+v,c:l.length}});
+ const chart=stackChart(YR.map(r=>({l1:r.y,segs:[{v:r.i,c:"#7c3aed"},{v:r.p,c:"#0d9488"},{v:r.a,c:"#f97316"},{v:r.v,c:"#0284c7"}],tip:tipHtml(r.y,[tl("Intéressement",eur2(r.i),TC.v),tl("Participation",eur2(r.p),TC.g),tl("Abondement",eur2(r.a),TC.o),tl("PPV",eur2(r.v),TC.b),tl("Total",eur2(r.t),TC.b),tl("Versements",r.c)])})),{bw:64,lg:'<div class="lg"><span><i style="background:#7c3aed"></i>Intéressement</span><span><i style="background:#0d9488"></i>Participation</span><span><i style="background:#f97316"></i>Abondement</span><span><i style="background:#0284c7"></i>PPV</span></div>'});
+ const H=[...V.map(s=>({d:s.date,h:`<div class="op" data-int="${s.i}"><div class="m"><b>${esc(s.type)}</b><small>${fdy(s.date)}${s.employeur?" · "+esc(s.employeur):""} · ${esc(s.dest||"")}${s.plan?" · "+esc(s.plan):""}${s.brut>0?" · brut "+eur2(s.brut):""}</small></div><span class="pos am">+${eur2(s.montant)}</span><span style="color:var(--mut)">✎</span></div>`})),
+  ...R.map(r=>({d:r.date,h:`<div class="op" data-ret="${r.i}"><div class="m"><b>↩️ ${esc(r.motif||"Retrait")}</b><small>${fdy(r.date)}${r.plan?" · "+esc(r.plan):""}${r.employeur?" · "+esc(r.employeur):""}${r.brut>0?" · brut "+eur2(r.brut)+" − prélèv. sociaux "+eur2(r.ps||0)+" − frais "+eur2(r.frais||0):""}</small></div><span class="neg am">−${eur2(r.montant)}</span><span style="color:var(--mut)">✎</span></div>`}))].sort((x,y)=>y.d.localeCompare(x.d));
  return pdfCard()+`<div class="card" style="margin-top:0"><div class="sh">🗓️ Période affichée</div><label>Année</label><select data-u="iy"><option value="all">Toutes les années</option>${ys.map(y=>opt(y,y,UI.iy)).join("")}</select></div>
- <div class="kpis"><div class="kpi wide" style="--c:var(--bleu)"><span>Total versé</span><b>${eur(tI+tP+tA+tV)}</b></div><div class="kpi" style="--c:var(--violet)"><span>Intéressement</span><b>${eur(tI)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Participation</span><b>${eur(tP)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Abondement</span><b>${eur(tA)}</b></div><div class="kpi" style="--c:var(--bleu)"><span>PPV</span><b>${eur(tV)}</b></div></div>
- ${card("int-yr","Intéressement / participation / abondement / PPV par année",chart+`<div class="lst">${yrRows}</div>`)}
- ${card("int-hist","Historique · touche une ligne pour la modifier",`<div class="lst">${L.slice().reverse().map(s=>`<div class="op" data-int="${s.i}"><div class="m"><b>${esc(s.type)}</b><small>${fdy(s.date)}${s.employeur?" · "+esc(s.employeur):""} · ${esc(s.dest||"")}${s.plan?" · "+esc(s.plan):""}${s.brut>0?" · brut "+eur2(s.brut):""}</small></div><span class="pos am">${eur2(s.montant)}</span><span style="color:var(--mut)">✎</span></div>`).join("")}</div>`)}`}
+ <div class="kpis"><div class="kpi wide" style="--c:var(--bleu)"><span>Total versé</span><b>${eur(tI+tP+tA+tV)}</b></div><div class="kpi" style="--c:var(--violet)"><span>Intéressement</span><b>${eur(tI)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Participation</span><b>${eur(tP)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Abondement</span><b>${eur(tA)}</b></div><div class="kpi" style="--c:var(--bleu)"><span>PPV</span><b>${eur(tV)}</b></div><div class="kpi wide" style="--c:var(--rouge)"><span>Total retiré</span><b>${eur(tR)}</b></div></div>
+ ${card("int-yr","Versements par année",chart)}
+ ${addBtn}
+ ${card("int-hist","Versements et retraits · touche une ligne pour la modifier",`<div class="lst">${H.map(x=>x.h).join("")}</div>`)}`}
 function planStats(){
  const all=(D.interessement||[]).filter(s=>s.date),isP=s=>String(s.dest||"").startsWith("Placé"),pl=all.filter(isP),rt=D.retraits_epargne||[],sv=D.solde_epargne||null,keys=["PEE","PERCO"];
  [...pl,...rt].forEach(x=>{const k=x.plan||"";if(!keys.includes(k))keys.push(k)});
@@ -872,27 +879,14 @@ function planStats(){
   return{k,lb:k||"Plan non précisé",placed,ret,base,ent,val:ent!=null?ent:base}});
  const per=!!(sv&&(sv.pee!=null||sv.perco!=null||sv.peg!=null)),legacy=sv&&!per&&sv.valeur>=0?sv.valeur:null;
  return{all,pl,P,sv,per,legacy,tot:legacy!=null?legacy:P.reduce((t,x)=>t+x.val,0),tp:sum(pl,"montant"),tr:sum(rt,"montant"),tc:sum(all.filter(s=>!isP(s)),"montant"),anyEnt:per||legacy!=null}}
-function vCpt(){
- const S=planStats();
- if(!S.all.length)return pdfCard()+`<div class="card" style="margin-top:0"><div class="empty">Aucun versement enregistré.<br>Ajoute-les dans l'onglet Historique ou lis un relevé PDF ci-dessus.</div></div>`;
- const byT={},byE={};S.pl.forEach(s=>{byT[s.type]=(byT[s.type]||0)+s.montant;const k=s.employeur||"Sans employeur";byE[k]=(byE[k]||0)+s.montant});
- const kp=(l,v,c,w)=>`<div class="kpi${w?" wide":""}" style="--c:var(--${c})"><span>${l}</span><b>${eur(v)}</b></div>`,pv=S.tot+S.tr-S.tp,pc=S.P.filter(x=>x.k||x.placed||x.ret);
- const PK=["PEE","PERCO",...(S.P.some(z=>z.k==="PEG"&&(z.placed||z.ret||z.ent!=null))?["PEG"]:[])],inp=PK.map(k=>{const x=S.P.find(z=>z.k===k)||{ent:null,base:0};return`<label>${k} : montant réel sur ton compte (€)</label><input id="cpt${k}" type="number" step="0.01" min="0" inputmode="decimal" value="${x.ent??""}" placeholder="${Math.round(x.base)}">`}).join("");
+function planBlock(){
+ const S=planStats();if(!S.all.length)return"";
+ const pc=S.P.filter(x=>x.k||x.placed||x.ret),PK=["PEE","PERCO",...(S.P.some(z=>z.k==="PEG"&&(z.placed||z.ret||z.ent!=null))?["PEG"]:[])],
+  inp=PK.map(k=>{const x=S.P.find(z=>z.k===k)||{ent:null,base:0};return`<label>${k} : montant réel sur ton compte (€)</label><input id="cpt${k}" type="number" step="0.01" min="0" inputmode="decimal" value="${x.ent??""}" placeholder="${Math.round(x.base)}">`}).join("");
  const tbl=`<div class="tw"><table class="rc"><thead><tr><th>Plan</th><th>Placé</th><th>Retiré</th><th>Sur le compte</th><th>Plus-value</th></tr></thead><tbody>${pc.map(x=>{const g=x.ent!=null?x.val+x.ret-x.placed:null;return`<tr><th>${esc(x.lb)}</th><td>${eur(x.placed)}</td><td class="neg">${x.ret?"−"+eur(x.ret):"—"}</td><td><b>${eur(x.val)}</b></td><td class="${g==null?"":g>=0?"pos":"neg"}">${g==null?"—":eur(g)}</td></tr>`}).join("")}</tbody></table></div>`;
- return`<div class="card" style="margin-top:0"><div class="sh">💰 Valeur actuelle de chaque plan</div>${inp}<div class="d" style="margin-top:6px">${S.sv&&S.sv.date?"Saisi le "+fdy(S.sv.date)+". ":""}Sans montant saisi pour un plan : versements placés − retraits.${S.legacy!=null?` Montant global saisi auparavant : ${eur2(S.legacy)} (tous plans confondus) : saisis-le maintenant par plan, il sera remplacé.`:""}</div></div>
- ${pdfCard()}<div class="kpis">${kp("Sur les comptes ("+PK.join(" + ")+")",S.tot,"bleu",1)}${pc.filter(x=>x.k).map(x=>kp(x.lb,x.val,x.k==="PEE"?"violet":x.k==="PEG"?"orange":"vert")).join("")}${kp("Versements placés",S.tp,"violet")}${kp("Retiré des comptes",S.tr,"rouge")}${kp("Déjà perçu (hors compte)",S.tc,"orange")}${S.anyEnt?kp("Plus-value",pv,pv>=0?"vert":"rouge"):""}</div>
- ${card("cpt-p","Par plan ("+PK.join(" / ")+")",tbl)}${supCard(S)}${card("cpt-t","Placé par type",bars(byT,null))}${card("cpt-e","Placé par employeur",bars(byE,null))}`}
+ return card("cpt-in","💰 Valeur actuelle de chaque plan",inp+`<div class="d" style="margin-top:6px">${S.sv&&S.sv.date?"Saisi le "+fdy(S.sv.date)+". ":""}Sans montant saisi pour un plan : versements placés − retraits.${S.legacy!=null?` Montant global saisi auparavant : ${eur2(S.legacy)} (tous plans confondus) : saisis-le maintenant par plan, il sera remplacé.`:""}</div>`)+card("cpt-p","Par plan ("+PK.join(" / ")+")",tbl)}
 document.addEventListener("change",e=>{const id=e.target.id;if(id!=="cptPEE"&&id!=="cptPERCO"&&id!=="cptPEG")return;const k=id.slice(3).toLowerCase(),v=parseFloat(e.target.value),o={...(D.solde_epargne||{})};
  if(o.pee==null&&o.perco==null&&o.peg==null)delete o.valeur;if(v>=0)o[k]=Math.round(v*100)/100;else delete o[k];o.date=TODAY();if(o.dates&&o.dates[k])o.dates={...o.dates,[k]:TODAY()};D.solde_epargne=(o.pee!=null||o.perco!=null||o.peg!=null)?o:null;save();render()});
-function vRet(){
- const all=(D.retraits_epargne||[]).map((r,i)=>({...r,i})).filter(r=>r.date).sort((a,b)=>a.date.localeCompare(b.date));
- if(!all.length)return`<div class="card" style="margin-top:0"><div class="empty">Aucun retrait enregistré.<br>Appuie sur + pour en ajouter un.</div></div>`;
- const tot=sum(all,"montant"),cy=TODAY().slice(0,4),Y={},E={};
- all.forEach(r=>{const y=r.date.slice(0,4);Y[y]=(Y[y]||0)+r.montant;const k=r.employeur||"Sans employeur";E[k]=(E[k]||0)+r.montant});
- const kp=(l,v,c,w)=>`<div class="kpi${w?" wide":""}" style="--c:var(--${c})"><span>${l}</span><b>${v}</b></div>`;
- return`<div class="kpis">${kp("Total retiré",eur(tot),"rouge",1)}${kp("Retiré en "+cy,eur(sum(all.filter(r=>r.date.startsWith(cy)),"montant")),"orange")}${kp("Nombre de retraits",all.length,"bleu")}</div>
- ${card("ret-yr","Retiré par année",bars(Y,"#f97316"))}${Object.keys(E).length>1?card("ret-emp","Retiré par employeur",bars(E,null)):""}
- ${card("ret-hist","Historique des retraits · touche une ligne pour la modifier",`<div class="lst">${all.slice().reverse().map(r=>`<div class="op" data-ret="${r.i}"><div class="m"><b>${esc(r.motif||"Retrait")}</b><small>${fdy(r.date)}${r.plan?" · "+esc(r.plan):""}${r.employeur?" · "+esc(r.employeur):""}${r.brut>0?" · brut "+eur2(r.brut)+" − prélèv. sociaux "+eur2(r.ps||0)+" − frais "+eur2(r.frais||0):""}</small></div><span class="neg am">−${eur2(r.montant)}</span><span style="color:var(--mut)">✎</span></div>`).join("")}</div>`)}`}
 /* ---------- Nouveaux onglets : Recherche, Santé, Impôts ---------- */
 const UI={sq:"",scat:"all",ssens:"Dépense",syr:"all",hAct:"gen",hPrix:null,hQty:1,fy:null,iy:"all",hs:"all",hPr:"o",hS:"n",hMon:null,hg:"all",gd:"",selMode:false,sel:new Set(),gt:"",gn:"",gp:"",addG:"",sg:""};
 const nrm=s=>String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
@@ -1016,7 +1010,7 @@ function vTax(){
  <div class="d" style="margin-top:8px">Estimation simplifiée (sans crédits ni réductions d'impôt, ni revenus du capital). Net imposable ≈ net avant impôts × ${String(ratio).replace(".",",")}.</div>`,"margin-top:0")}
  ${ca>0?`<div class="kpis k3"><div class="kpi" style="--c:var(--bleu)"><span>Net avant impôts / mois</span><b>${eur(mb)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Taux d'imposition</span><b>${fp(taux*100)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Net après impôts / mois</span><b>${eur(mn)}</b></div></div>`:'<div class="card"><div class="empty">Saisis un salaire net avant impôts annuel, ou ajoute des salaires dans Suivi Salaire.</div></div>'}`}
 /* Ordre des onglets : … Suivi Salaire · Prime · Simulateur d'impôts · Santé (tout à droite) · Données */
-const TABS=[["home","🏠","Vue d'ensemble",vHome],["ana","📊","Analyse",vAna],["rec","🔁","Dépenses récurrentes",vRec],["cred","🏦","Suivi Crédit",vCred],["sal","💼","Suivi Salaire",vSal],["int","📜","Historique",vInt],["ov","🏠","Vue d'ensemble",vOv],["pos","📊","Positions & Transactions",vPos],["cpt","💰","Sur le compte",vCpt],["ret","↩️","Retraits",vRet],["tax","🧾","Simulateur d'impôts",vTax],["sante","🩺","Santé",vSante],["data","🔄","Données",vData],["liv","🐖","Tableau de bord",vLiv],["lvi","📝","Taux & intérêts",vLvi]];
+const TABS=[["home","🏠","Vue d'ensemble",vHome],["ana","📊","Analyse",vAna],["rec","🔁","Dépenses récurrentes",vRec],["cred","🏦","Suivi Crédit",vCred],["sal","💼","Suivi Salaire",vSal],["ov","🏠","Vue d'ensemble",vOv],["pos","📊","Positions & Transactions",vPos],["int","📜","Versements & retraits",vMvt],["tax","🧾","Simulateur d'impôts",vTax],["sante","🩺","Santé",vSante],["data","🔄","Données",vData],["liv","🐖","Tableau de bord",vLiv],["lvi","📝","Taux & intérêts",vLvi]];
 /* Limite chaque liste et chaque tableau à 5 lignes visibles, le reste défile */
 function fitLists(){
  document.querySelectorAll(".lst").forEach(l=>{l.style.maxHeight="";if(!l.offsetParent)return;const k=l.children[5];if(k)l.style.maxHeight=(k.offsetTop+1)+"px"});
@@ -1162,7 +1156,7 @@ function trCard(a,b){if(UI.hg!=="all"||q.trim()||UI.scat!=="all"||UI.hs!=="all")
 function fillRec(on){const R=D.recurrentes.map((r,i)=>({r,i})).sort((a,b)=>a.r.libelle.localeCompare(b.r.libelle,"fr"));$("#fRecW").classList.toggle("hide",!(on&&R.length));
  $("#fRec").innerHTML='<option value="">— Saisie libre —</option>'+R.map(x=>`<option value="${x.i}">${esc(x.r.libelle)} · ${eur2(x.r.montant)}${x.r.type==="Revenu"?" (revenu)":""}</option>`).join("")}
 function fillGrp(cur){const L=grpNames();$("#fGrpW").classList.toggle("hide",!L.length);$("#fGrp").innerHTML='<option value="">— Aucun —</option>'+L.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");$("#fGrp").value=cur&&L.includes(cur)?cur:""}
-$("#fab").onclick=()=>{if(tab==="liv"||tab==="lvi")return openLv(-1);if(tab==="int"||tab==="cpt"||tab==="pos"||tab==="ov")return openInt(-1);if(tab==="ret")return openRet(-1);if(tab==="cred")return openPret(-1);if(tab==="rec")return openRec(-1);$("#fabBg").classList.remove("hide")};
+$("#fab").onclick=()=>{if(tab==="liv"||tab==="lvi")return openLv(-1);if(tab==="int"||tab==="pos"||tab==="ov")return openInt(-1);if(tab==="cred")return openPret(-1);if(tab==="rec")return openRec(-1);$("#fabBg").classList.remove("hide")};
 function newOp(){tIdx=-1;oIdx=-1;oAllow=true;oLink=null;salOn=false;$("#opTitle").textContent="Nouvelle opération";$("#fDel").classList.add("hide");$("#frm").reset();$("#fDate").value=TODAY();setSens("Dépense");fillTr(null);fillAcc();fillGrp(UI.hg!=="all"&&!UI.hg.startsWith("sg:")?UI.hg:"");fillRec(true);
  $("#libs").innerHTML=[...new Set(D.depenses.slice(-400).map(o=>o.libelle))].map(l=>`<option value="${esc(l)}">`).join("");dlg.showModal()}
 $("#fabBg").onclick=e=>{if(e.target.id==="fabBg")e.target.classList.add("hide")};
@@ -1477,7 +1471,7 @@ const fN=(v,d=2)=>Number(v).toLocaleString("fr-FR",{minimumFractionDigits:d,maxi
  pPx=v=>{if(v==null||isNaN(v))return"N/A";const t=v.toFixed(4);return fN(v,t.endsWith("00")?2:t.endsWith("0")?3:4)+" €"},pQ=q=>q%1===0?fN(q,0):fN(q,4).replace(/0+$/,"").replace(/,$/,""),
  perfAnn=(p,j)=>{if(p==null||isNaN(p)||j==null||j<30)return NaN;const g=1+p/100;return g<=0?-100:(Math.pow(g,365/j)-1)*100},
  perfCell=v=>{const t=String(v);return t.startsWith("▲")?"color:#16a34a;font-weight:700;":t.startsWith("▼")?"color:#dc2626;font-weight:700;":"color:var(--mut);font-weight:700;"};
-const OMT={"Performance Globale":"% = gain total (valeur du compte + retraits − versements placés) ÷ versements placés. Demande la valeur réelle des comptes (onglet Sur le compte ou relevés PDF).","Performance Annuelle Moyenne":"% = (1 + performance globale) ^ (1 ÷ années depuis le premier versement) − 1, soit un taux annuel composé (calculé après 3 mois).","Plus-Value Latente":"% = plus-value latente ÷ capital investi dans les fonds encore détenus (fonds à historique complet uniquement).","Plus-Value Actée":"% = plus-value actée lors des ventes et arbitrages ÷ valeur actuelle du compte.","Abondement Reçu":"% = abondement de l'employeur ÷ total des versements placés.","Intéressement & Participation":"% = intéressement + participation + PPV placés ÷ total des versements placés."};
+const OMT={"Performance Globale":"% = gain total (valeur du compte + retraits − versements placés) ÷ versements placés. Demande la valeur réelle des comptes (en bas de la Vue d'ensemble ou relevés PDF).","Performance Annuelle Moyenne":"% = (1 + performance globale) ^ (1 ÷ années depuis le premier versement) − 1, soit un taux annuel composé (calculé après 3 mois).","Plus-Value Latente":"% = plus-value latente ÷ capital investi dans les fonds encore détenus (fonds à historique complet uniquement).","Plus-Value Actée":"% = plus-value actée lors des ventes et arbitrages ÷ valeur actuelle du compte.","Abondement Reçu":"% = abondement de l'employeur ÷ total des versements placés.","Intéressement & Participation":"% = intéressement + participation + PPV placés ÷ total des versements placés."};
 function omt(label,val,delta,sec,inv){let d="";if(delta!=null){const neg=delta[0]=="-",good=inv?neg:!neg;d=`<div class="mtd ${good?"g":"r"}">${neg?OARD:OARU}<span>${delta}</span></div>`}
  const tp=OMT[label];return`<div class="mtr ${sec}${tp?" tp":""}"${tp?` data-mt="${esc(tp)}"`:""}><div class="mtl"><p>${label}</p></div><div class="mtv">${val}</div>${d}</div>`}
 let OMB=null;const ombClose=()=>{if(OMB){OMB.remove();OMB=null}};
@@ -1518,10 +1512,11 @@ function vOv(){
  <div class="mcols mc2">${omt("Plus-Value Latente",lat!=null?oGE(lat):"N/A",pl!=null?oDP(pl):null,"gain")}${omt("Plus-Value Actée",oGE(real),pa!=null?oDP(pa):null,"gain")}</div>
  <div class="mcols mc2">${omt("Abondement Reçu",oGE(ab),ap>0?oDP(ab/ap*100):null,"gain")}${omt("Intéressement & Participation",oGE(ip),ap>0?oDP(ip/ap*100):null,"gain")}</div>
  </div></div></details>
- ${!hasV?`<div class="ovnote" style="margin-top:12px">Saisis la valeur réelle de tes comptes (onglet <b>Sur le compte</b>) ou lis un relevé PDF pour obtenir les performances.</div>`:""}
+ ${!hasV?`<div class="ovnote" style="margin-top:12px">Saisis la valeur réelle de tes comptes (en bas de cette page) ou lis un relevé PDF pour obtenir les performances.</div>`:""}
  ${P.inc.length?`<div class="ovnote" style="margin-top:12px">⚠ Historique incomplet pour ${P.inc.map(r=>esc(supNm(r.nom))).join(", ")} : plus-value latente et montant investi sont calculés sans ces fonds. Importe les relevés manquants pour les compléter.</div>`:""}
  ${partNote(P)}
- ${P.sn?`<div class="d" style="margin:8px 4px">Dernière valorisation de fonds : ${fdy(P.sn.date)}.</div>`:""}`}
+ ${P.sn?`<div class="d" style="margin:8px 4px">Dernière valorisation de fonds : ${fdy(P.sn.date)}.</div>`:""}
+ ${planBlock()}`}
 function txList(){const a=[];(D.mouvements_epargne||[]).forEach(m=>a.push({d:m.date,t:m.sens==="achat"?(m.div?"Dividende réinvesti":"Achat"):"Rachat",n:supNm(m.fond),q:m.qte,p:m.prix,m:m.montant,pl:m.plan||""}));
  (D.interessement||[]).forEach((s,i)=>{if(s.date)a.push({d:s.date,t:"Versement · "+s.type,n:String(s.dest||"").startsWith("Placé")?"Placé":"Perçu",q:null,p:null,m:s.montant,pl:s.plan||"",i})});return a.sort((x,y)=>y.d.localeCompare(x.d))}
 const TXP=["Tout l'historique","Année en cours","12 derniers mois","6 derniers mois","3 derniers mois"];
