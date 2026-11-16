@@ -160,7 +160,12 @@ const MODS0=[
 const ACCD=[{id:'pea',type:'PEA',broker:'',label:''},{id:'cto',type:'CTO',broker:'',label:''},{id:'epargne',type:'Épargne salariale',broker:'',label:''},{id:'crypto',type:'Crypto',broker:'',label:'',inCto:''}];
 const EXTRA=['Compte bancaire','Livret'];
 const TYI={'PEA':'📈','CTO':'🏦','Épargne salariale':'🎁','Crypto':'₿','Compte bancaire':'🏧','Livret':'🐖'},TYR=['PEA','CTO','Épargne salariale','Crypto','Compte bancaire','Livret'];
-const isBk=a=>EXTRA.includes(a.type),bal=a=>+a.balance||0;
+const isBk=a=>EXTRA.includes(a.type);
+/* Solde = solde initial (saisi une seule fois dans les réglages) + opérations/transferts rattachés au compte depuis la date d'initialisation (comptes bancaires) */
+function acctBal(a,Dx){const s=+a.balance||0;if(a.type!=='Compte bancaire')return s;Dx=Dx||{};const d0=a.initDate||'';let t=s;
+  (Dx.depenses||[]).forEach(o=>{if(o.compte===a.id&&o.date&&o.date>=d0){const rv=o.sens?o.sens==='Revenu':['Salaire','Prime / Remboursement','Virement reçu'].includes(o.categorie);t+=rv?(+o.montant||0):-(+o.montant||0)}});
+  (Dx.transferts||[]).forEach(r=>{if(r.date&&r.date>=d0){if(r.de===a.id)t-=+r.montant||0;if(r.vers===a.id)t+=+r.montant||0}});return Math.round(t*100)/100}
+const bal=a=>acctBal(a,LS.g('depenses_v1'));
 const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function accs(){const l=((LS.g('hub_acc')||{}).list||[]).map(a=>({...a})),o=[...l];
   ACCD.forEach(d=>{if(!o.some(a=>a.id===d.id))o.push({...d})});
@@ -450,10 +455,11 @@ function renderAccDlg(){const A=DR;
   $('#accl').innerHTML=A.map(a=>`<div class="ar" data-id="${a.id}"><b>${TYI[a.type]} ${esc(a.type)}</b>${delable(a)?' <button type="button" data-del="1" style="float:right;padding:2px 8px">✕</button>':''}
     <input data-f="label" placeholder="Nom du compte${isBk(a)?' (ex. Compte courant)':' (facultatif)'}" value="${esc(a.label)}">
     <input data-f="broker" placeholder="${a.type==='Épargne salariale'?'Gestionnaire (ex. Amundi)':isBk(a)?'Banque (ex. Crédit Agricole)':'Courtier (ex. Boursorama)'}" value="${esc(a.broker)}">
-    ${isBk(a)?`<input data-f="balance" type="number" inputmode="decimal" step="0.01" placeholder="Solde actuel (€)" value="${a.balance!=null&&a.balance!==''?esc(a.balance):''}">`:''}
+    ${isBk(a)?(a.type==='Compte bancaire'&&a.initDate?`<div class="d" style="margin:4px 0">✓ Solde initialisé : il se met à jour automatiquement selon les opérations (onglet Dépenses).</div>`:`<input data-f="balance" type="number" inputmode="decimal" step="0.01" placeholder="${a.type==='Compte bancaire'?'Solde de départ (€) — saisi une seule fois':'Solde actuel (€)'}" value="${a.balance!=null&&a.balance!==''?esc(a.balance):''}">`):''}
     ${a.type==='Crypto'?`<select data-f="inCto">${cryOpts(a,A)}</select>`:''}</div>`).join('')}
 $('#accl').addEventListener('change',e=>{const el=e.target,row=el.closest('.ar');if(!row||!el.dataset.f)return;
   const a=DR.find(x=>x.id===row.dataset.id);if(!a)return;a[el.dataset.f]=el.dataset.f==='balance'?(parseFloat(el.value)||0):el.value.trim();
+  if(el.dataset.f==='balance'&&a.type==='Compte bancaire'&&!a.initDate)a.initDate=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
   if(el.dataset.f==='label'){const sel=$('#accl select[data-f=inCto]');if(sel){const c=DR.find(x=>x.type==='Crypto');sel.innerHTML=cryOpts(c,DR)}}});
 $('#accl').addEventListener('click',e=>{const b=e.target.closest('[data-del]');if(!b)return;const id=b.closest('.ar').dataset.id,a=DR.find(x=>x.id===id);
   if(!confirm(isBk(a)?'Retirer ce compte de la liste ?':'Retirer ce CTO de la liste ? Ses données restent enregistrées.'))return;

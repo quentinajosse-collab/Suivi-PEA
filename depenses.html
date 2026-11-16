@@ -205,6 +205,7 @@ details.exp .in{display:flex;flex-direction:column;gap:.8rem;padding:0 .8rem 1re
  <datalist id="libs"></datalist>
  <div id="fMtW"><label>Montant (€)</label><input id="fMt" type="number" step="0.01" min="0.01" inputmode="decimal" required></div>
  <div id="fCatW"><label>Catégorie</label><select id="fCat" required></select></div>
+ <div id="fAccW"><label id="fAccL">Compte débité</label><select id="fAcc"></select></div>
  <div id="fTrW" class="hide"><label>Depuis le compte</label><select id="fTrFrom"></select><label>Vers le compte</label><select id="fTrTo"></select><div class="d" style="margin-top:6px">Un transfert déplace de l'argent entre tes comptes : il n'est compté ni en dépense ni en revenu.</div></div>
  <div id="fGrpW"><label>Groupe (voyage, projet…)</label><select id="fGrp"></select></div>
  <label>Date</label><input id="fDate" type="date" required>
@@ -665,12 +666,21 @@ function hubAll(){const l=hubAcc().map(a=>({...a}));HACCD.forEach(d=>{if(!l.some
 function hubNm(a){return a.label||(a.type==="CTO"&&a.id!=="cto"?"CTO "+a.id.slice(3):HBK.includes(a.type)?(a.type+" "+(a.id.replace(/^\D+/,"")||"")).trim():a.type)}
 function trAccs(){const o=[];hubAll().forEach(a=>{if(a.id==="epargne"){o.push(["epargne:PEE","🎁 Épargne salariale · PEE"],["epargne:PERCO","🎁 Épargne salariale · PERCO"]);return}o.push([a.id,(HIC[a.type]||TYI2[a.type]||"•")+" "+hubNm(a)+(a.broker?" ("+a.broker+")":"")])});return o}
 const accLabel=v=>v?((trAccs().find(x=>x[0]===v)||[0,v])[1]):"";
-/* Comptes bancaires : solde affiché seulement (il se règle dans ⚙️ Réglages du tableau de bord général) */
+/* Solde d'un compte bancaire = solde initial (réglages, saisi une seule fois) + revenus − dépenses ± transferts rattachés au compte, à partir de la date d'initialisation */
+function acctBal(a){const s=+a.balance||0;if(a.type!=="Compte bancaire")return s;const d0=a.initDate||"";let t=s;
+ (D.depenses||[]).forEach(o=>{if(o.compte===a.id&&o.date&&o.date>=d0)t+=isRev(o)?(+o.montant||0):-(+o.montant||0)});
+ (D.transferts||[]).forEach(r=>{if(r.date&&r.date>=d0){if(r.de===a.id)t-=+r.montant||0;if(r.vers===a.id)t+=+r.montant||0}});return Math.round(t*100)/100}
+const bkList=()=>hubAcc().filter(a=>a.type==="Compte bancaire");
+function fillAcc(cur){const L=bkList(),s=$("#fAcc");$("#fAccW").classList.toggle("hide",!L.length||sens==="Transfert");
+ s.innerHTML='<option value="">— Aucun (non comptabilisé) —</option>'+L.map(a=>`<option value="${esc(a.id)}">${esc((HIC[a.type]||"")+" "+hubNm(a)+(a.broker?" ("+a.broker+")":""))}</option>`).join("");
+ if(cur==null){const last=[...D.depenses].reverse().find(o=>o.compte&&L.some(a=>a.id===o.compte));cur=last?last.compte:(L.length===1?L[0].id:"")}
+ s.value=L.some(a=>a.id===cur)?cur:""}
+/* Comptes bancaires : solde calculé automatiquement d'après les opérations */
 function vBanks(){
  const L=hubAcc().filter(a=>a.type==="Compte bancaire");
- if(!L.length)return card("home-bk","🏧 Comptes bancaires",'<div class="d">Aucun compte bancaire. Ajoute-en dans ⚙️ Réglages du tableau de bord général (nom, banque, solde).</div>',"margin-top:0");
- const tot=L.reduce((t,a)=>t+(+a.balance||0),0),one=L.length===1;
- return`<div class="bkx"><div class="bal tot"><small>🏧 ${one?esc(hubNm(L[0]))+(L[0].broker?" · "+esc(L[0].broker):""):"Total des comptes bancaires"}</small><b>${eur2(tot)}</b><div class="s">${one?"":L.length+" comptes · "}solde modifiable dans ⚙️ Réglages</div></div>${one?"":L.map(a=>`<div class="bal"><small>${esc(hubNm(a))}${a.broker?" · "+esc(a.broker):""}</small><b>${eur2(+a.balance||0)}</b></div>`).join("")}</div>`}
+ if(!L.length)return card("home-bk","🏧 Comptes bancaires",'<div class="d">Aucun compte bancaire. Ajoute-en dans ⚙️ Réglages du tableau de bord général (nom, banque, solde de départ).</div>',"margin-top:0");
+ const tot=L.reduce((t,a)=>t+acctBal(a),0),one=L.length===1;
+ return`<div class="bkx"><div class="bal tot"><small>🏧 ${one?esc(hubNm(L[0]))+(L[0].broker?" · "+esc(L[0].broker):""):"Total des comptes bancaires"}</small><b>${eur2(tot)}</b><div class="s">${one?"":L.length+" comptes · "}solde calculé selon tes opérations</div></div>${one?"":L.map(a=>`<div class="bal"><small>${esc(hubNm(a))}${a.broker?" · "+esc(a.broker):""}</small><b>${eur2(acctBal(a))}</b></div>`).join("")}</div>`}
 /* ---------- Bien immobilier : estimation + apport (stockés dans D.immo, synchronisés avec les dépenses) ---------- */
 const IMT=["Résidence principale","Résidence secondaire","Investissement locatif","SCI","Autre"];
 function vImmo(pc,crd,cap0,nb){
@@ -1039,7 +1049,7 @@ function toCsv(){const q=v=>'"'+String(v).replace(/"/g,'""')+'"';return"\uFEFFDa
 function norm(p){const n=x=>parseFloat(x)||0;
  return{sante:p.sante,fisc:p.fisc,retraits_epargne:p.retraits_epargne,solde_epargne:p.solde_epargne,mouvements_epargne:p.mouvements_epargne,releves_epargne:p.releves_epargne,transferts:p.transferts,livrets_lignes:p.livrets_lignes,version:1,exporte_le:p.exporte_le||"",
  groupes:p.groupes?p.groupes.map(g=>({nom:String(g&&g.nom!=null?g.nom:g)})).filter(g=>g.nom):undefined,
- depenses:(p.depenses||[]).filter(o=>o.date).map(o=>({date:String(o.date).slice(0,10),libelle:String(o.libelle??""),categorie:String(o.categorie??"Divers"),montant:n(o.montant),sens:o.sens||(REV.includes(o.categorie)?"Revenu":"Dépense"),...(o.lien?{lien:String(o.lien)}:{}),...(o.groupe?{groupe:String(o.groupe)}:{})})),
+ depenses:(p.depenses||[]).filter(o=>o.date).map(o=>({date:String(o.date).slice(0,10),libelle:String(o.libelle??""),categorie:String(o.categorie??"Divers"),montant:n(o.montant),sens:o.sens||(REV.includes(o.categorie)?"Revenu":"Dépense"),...(o.lien?{lien:String(o.lien)}:{}),...(o.groupe?{groupe:String(o.groupe)}:{}),...(o.compte?{compte:String(o.compte)}:{})})),
  recurrentes:(p.recurrentes||[]).map(r=>({libelle:String(r.libelle??""),categorie:String(r.categorie??""),montant:n(r.montant),type:r.type||"Charge",...(r.groupe?{groupe:String(r.groupe)}:{})})),
  sgroupes:p.sgroupes?p.sgroupes.map(g=>({nom:String(g.nom||""),groupes:(g.groupes||[]).map(String)})).filter(g=>g.nom):undefined,
  interessement:p.interessement?p.interessement.map(s=>({date:String(s.date||"").slice(0,10),type:String(s.type||"Intéressement"),montant:n(s.montant),brut:n(s.brut),dest:String(s.dest||""),employeur:String(s.employeur||""),...(s.plan?{plan:String(s.plan)}:{}),...(s.ref?{ref:String(s.ref)}:{})})):undefined,
@@ -1095,7 +1105,7 @@ function syncSal(){const on=!!(oAllow&&sens==="Revenu"&&$("#fCat").value==="Sala
   $("#emps2").innerHTML=[...new Set(D.salaires.map(x=>x.employeur).filter(Boolean))].map(l=>`<option value="${esc(l)}">`).join("")}
  salOn=on;updA()}
 function setSens(s){sens=s;const T=s==="Transfert";$("#sD").style.outline=s==="Dépense"?"2px solid var(--bleu)":"none";$("#sR").style.outline=s==="Revenu"?"2px solid var(--bleu)":"none";$("#sT").style.outline=T?"2px solid var(--bleu)":"none";
- $("#fCatW").classList.toggle("hide",T);$("#fCat").required=!T;$("#fTrW").classList.toggle("hide",!T);$("#fTrTo").required=T;$("#fGrpW").classList.toggle("hide",T||!grpNames().length);
+ $("#fCatW").classList.toggle("hide",T);$("#fCat").required=!T;$("#fTrW").classList.toggle("hide",!T);$("#fTrTo").required=T;$("#fGrpW").classList.toggle("hide",T||!grpNames().length);$("#fAccW").classList.toggle("hide",T||!bkList().length);$("#fAccL").textContent=s==="Revenu"?"Compte crédité":"Compte débité";
  $("#fCat").innerHTML=(oIdx<0?'<option value=""></option>':"")+catsFor(s).map(c=>`<option>${esc(c)}</option>`).join("");syncSal()}
 function fillTr(t){const A=trAccs();if(t)[t.de,t.vers].forEach(v=>{if(v&&!A.some(x=>x[0]===v))A.push([v,v])});const h=A.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join("");
  $("#fTrFrom").innerHTML='<option value="">— Non précisé —</option>'+h;$("#fTrTo").innerHTML='<option value="">— Choisir le compte —</option>'+h;if(t){$("#fTrFrom").value=t.de||"";$("#fTrTo").value=t.vers||""}}
@@ -1103,12 +1113,12 @@ function openTr(i){tIdx=i;const t=D.transferts[i];oIdx=-1;oAllow=true;oLink=null
  $("#fLib").value=t.libelle||"";$("#fMt").value=t.montant;$("#fDate").value=t.date;$("#fDel").classList.remove("hide");fillRec(false);dlg.showModal()}
 function trCard(a,b){if(UI.hg!=="all"||q.trim()||UI.scat!=="all"||UI.hs!=="all")return"";
  const L=(D.transferts||[]).map((t,i)=>({...t,i})).filter(t=>t.date&&t.date>=a&&t.date<=b).sort((x,y)=>y.date.localeCompare(x.date));if(!L.length)return"";
- return card("home-tr","↔ Transferts entre comptes · "+eur(sum(L,"montant")),`<div class="lst">${L.map(t=>`<div class="op" data-tr="${t.i}"><div class="m"><b>${esc(t.libelle||"Transfert")}</b><small>${fdy(t.date)} · ${esc(accLabel(t.de)||"compte non précisé")} ➜ ${esc(accLabel(t.vers))}</small></div><span class="am" style="color:var(--bleu)">${eur2(t.montant)}</span><span style="color:var(--mut)">✎</span></div>`).join("")}</div><div class="d" style="margin-top:6px">Un transfert déplace de l'argent entre tes comptes : il n'est compté ni en dépense ni en revenu. Les soldes se règlent dans ⚙️ Réglages du tableau de bord général.</div>`)}
+ return card("home-tr","↔ Transferts entre comptes · "+eur(sum(L,"montant")),`<div class="lst">${L.map(t=>`<div class="op" data-tr="${t.i}"><div class="m"><b>${esc(t.libelle||"Transfert")}</b><small>${fdy(t.date)} · ${esc(accLabel(t.de)||"compte non précisé")} ➜ ${esc(accLabel(t.vers))}</small></div><span class="am" style="color:var(--bleu)">${eur2(t.montant)}</span><span style="color:var(--mut)">✎</span></div>`).join("")}</div><div class="d" style="margin-top:6px">Un transfert déplace de l'argent entre tes comptes : il n'est compté ni en dépense ni en revenu. Les soldes des comptes bancaires se mettent à jour automatiquement.</div>`)}
 function fillRec(on){const R=D.recurrentes.map((r,i)=>({r,i})).sort((a,b)=>a.r.libelle.localeCompare(b.r.libelle,"fr"));$("#fRecW").classList.toggle("hide",!(on&&R.length));
  $("#fRec").innerHTML='<option value="">— Saisie libre —</option>'+R.map(x=>`<option value="${x.i}">${esc(x.r.libelle)} · ${eur2(x.r.montant)}${x.r.type==="Revenu"?" (revenu)":""}</option>`).join("")}
 function fillGrp(cur){const L=grpNames();$("#fGrpW").classList.toggle("hide",!L.length);$("#fGrp").innerHTML='<option value="">— Aucun —</option>'+L.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");$("#fGrp").value=cur&&L.includes(cur)?cur:""}
 $("#fab").onclick=()=>{if(tab==="liv"||tab==="lvi")return openLv(-1);if(tab==="int"||tab==="cpt"||tab==="pos"||tab==="ov")return openInt(-1);if(tab==="ret")return openRet(-1);if(tab==="cred")return openPret(-1);if(tab==="rec")return openRec(-1);$("#fabBg").classList.remove("hide")};
-function newOp(){tIdx=-1;oIdx=-1;oAllow=true;oLink=null;salOn=false;$("#opTitle").textContent="Nouvelle opération";$("#fDel").classList.add("hide");$("#frm").reset();$("#fDate").value=TODAY();setSens("Dépense");fillTr(null);fillGrp(UI.hg!=="all"&&!UI.hg.startsWith("sg:")?UI.hg:"");fillRec(true);
+function newOp(){tIdx=-1;oIdx=-1;oAllow=true;oLink=null;salOn=false;$("#opTitle").textContent="Nouvelle opération";$("#fDel").classList.add("hide");$("#frm").reset();$("#fDate").value=TODAY();setSens("Dépense");fillTr(null);fillAcc();fillGrp(UI.hg!=="all"&&!UI.hg.startsWith("sg:")?UI.hg:"");fillRec(true);
  $("#libs").innerHTML=[...new Set(D.depenses.slice(-400).map(o=>o.libelle))].map(l=>`<option value="${esc(l)}">`).join("");dlg.showModal()}
 $("#fabBg").onclick=e=>{if(e.target.id==="fabBg")e.target.classList.add("hide")};
 $("#fabO").onclick=()=>{$("#fabBg").classList.add("hide");newOp()};
@@ -1146,13 +1156,13 @@ $("#frm").onsubmit=e=>{const on=!!(oAllow&&sens==="Revenu"&&$("#fCat").value==="
     D.salaires=D.salaires.filter(x=>x.lien!==old.lien);const nw={...old,...o};delete nw.lien;D.depenses[oIdx]=nw}
    else D.depenses[oIdx]={...old,...o}}
   else D.depenses.push(o)}
- {const gi=oIdx>=0?oIdx:D.depenses.length-1,gv=$("#fGrp").value;if(D.depenses[gi]){if(gv)D.depenses[gi].groupe=gv;else delete D.depenses[gi].groupe}}
+ {const gi=oIdx>=0?oIdx:D.depenses.length-1,gv=$("#fGrp").value;if(D.depenses[gi]){if(gv)D.depenses[gi].groupe=gv;else delete D.depenses[gi].groupe;const cv=$("#fAcc").value;if(cv)D.depenses[gi].compte=cv;else delete D.depenses[gi].compte}}
  save();if(oIdx<0)per="m:"+date.slice(0,7);render()};
 function openOp(i){tIdx=-1;oIdx=i;const o=D.depenses[i];oAllow=!!o.lien;oLink=o.lien||null;salOn=false;$("#frm").reset();$("#opTitle").textContent="Modifier l'opération";setSens(isRev(o)?"Revenu":"Dépense");
  $("#libs").innerHTML=[...new Set(D.depenses.slice(-400).map(x=>x.libelle))].map(l=>`<option value="${esc(l)}">`).join("");
  $("#fLib").value=o.libelle;$("#fMt").value=o.montant;
  if(o.categorie&&![...$("#fCat").options].some(x=>x.value===o.categorie))$("#fCat").insertAdjacentHTML("beforeend",`<option>${esc(o.categorie)}</option>`);
- $("#fCat").value=o.categorie;$("#fDate").value=o.date;
+ $("#fCat").value=o.categorie;$("#fDate").value=o.date;fillAcc(o.compte||"");
  if(o.lien){const s=D.salaires.find(x=>x.lien===o.lien);$("#fEmp").value=s?s.employeur:"";$("#fBrut").value=s&&s.brut!=null?s.brut:"";$("#fNet").value=s?s.net:o.montant;$("#fImp").value=s&&s.impot?s.impot:""}
  $("#fDel").classList.remove("hide");fillGrp(o.groupe);fillRec(false);syncSal();dlg.showModal()}
 $("#fDel").onclick=()=>{if(tIdx>=0){if(confirm("Supprimer ce transfert ?")){D.transferts.splice(tIdx,1);save();dlg.close();render()}return}if(oIdx<0)return;const o=D.depenses[oIdx];
