@@ -273,6 +273,7 @@ canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 <main>
 <header class="pg">
   <h1 id="ttl">📊 Tableau de Bord CTO</h1>
+  <script>if(new URLSearchParams(location.search).get("v")==="crypto"){document.title="Tableau de bord Crypto";document.getElementById("ttl").textContent="₿ Tableau de Bord Crypto"}</script>
   <p id="hopen"></p>
   <p id="hbro"></p>
   <div class="hrow">
@@ -797,8 +798,8 @@ function orelD(a,b){let m=(b.getFullYear()-a.getFullYear())*12+b.getMonth()-a.ge
 function ovHdr(){const nm=String(cg('user_name','')).trim();$('#ttl').textContent=(CRY?'₿ Tableau de Bord Crypto':'📊 Tableau de Bord CTO'+(ACC!='cto'&&ACC_L?' · '+ACC_L:''))+(nm?' - '+nm:'');
   const o=$('#hopen');
   if(S.tx.length){const a=S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d),a0=new Date(a.getFullYear(),a.getMonth(),a.getDate()),n=new Date(),t0=new Date(n.getFullYear(),n.getMonth(),n.getDate()),rd=orelD(a0,t0);
-    o.innerHTML=`🗓️ <b>Date d'ouverture du CTO :</b> ${pad(a.getDate())}-${pad(a.getMonth()+1)}-${a.getFullYear()}<br><span style="color:#64748b">(Ancienneté : <b>${rd.y} an(s) ${rd.m} mois ${rd.d} jour(s)</b>)</span>`}
-  else o.innerHTML="🗓️ <b>Date d'ouverture du CTO :</b> Aucune transaction";
+    o.innerHTML=`🗓️ <b>Date d'ouverture ${CRY?'du compte crypto':'du CTO'} :</b> ${pad(a.getDate())}-${pad(a.getMonth()+1)}-${a.getFullYear()}<br><span style="color:#64748b">(Ancienneté : <b>${rd.y} an(s) ${rd.m} mois ${rd.d} jour(s)</b>)</span>`}
+  else o.innerHTML="🗓️ <b>Date d'ouverture "+(CRY?"du compte crypto":"du CTO")+" :</b> Aucune transaction";
   $('#hbro').innerHTML=`🏦 <b>Courtier :</b> <b>${esc(cg('broker','Non renseigné'))}</b>`}
 /* Alertes (comme le Streamlit, au-dessus des onglets) : anomalies TTF puis watchlist */
 S.ttfDis=new Set();
@@ -2038,7 +2039,7 @@ function drawSim(v){
     ${snum('infl','Inflation (%)',infl,0.1,0,20,1,"La valeur finale et le revenu passif sont exprimés en euros d'aujourd'hui (pouvoir d'achat). Mettez 0 pour les voir sans inflation.")}
     ${snum('ret','Taux de retrait (%)',ret,0.25,0,20,2,"Part du capital net retirée chaque année pour le revenu passif.")}
     <div></div></div>
-    <div class="cap">Apports moyens depuis l'ouverture du CTO : <b>${pEur(moy)} / mois</b><br>Performance moyenne depuis l'ouverture : <b>${arrow} ${(pAnn*100>=0?'+':'')+pyN(pAnn*100,2)} % / an</b>.${fiable}</div></div>`;
+    <div class="cap">Apports moyens depuis l'ouverture ${CRY?'du compte crypto':'du CTO'} : <b>${pEur(moy)} / mois</b><br>Performance moyenne depuis l'ouverture : <b>${arrow} ${(pAnn*100>=0?'+':'')+pyN(pAnn*100,2)} % / an</b>.${fiable}</div></div>`;
   e+=sDuo([['Valorisation',pEur(vr),'',true,'#0284c7']])+sDuo([['Revenu passif / mois',pEur(revBrut),'avant impôts',false],["Revenu passif / mois net d'impôts",pEur(revNet),'',true,'#16a34a']])
     +sDuo([['Versements cumulés',pEur(verses[n]),'',false,'#6366f1'],['Intérêts',pEur(Math.max(vr-verses[n],0)),'',false,'#10b981']]);
   e+='<div class="cv" style="height:260px"><canvas id="c12"></canvas></div>';
@@ -2213,7 +2214,7 @@ $('#expp').onclick=()=>{if(!R)return alert('Aucune donnée à exporter.');
   const w=window.open('','_blank');if(!w)return alert('Autorise les fenêtres pop-up pour exporter en PDF.');
   const K=expKpi(),n=new Date(),st=stamp(),broker=String(cg('broker','')||'').trim(),dts=S.raw.map(r=>String(r.Date_Heure).slice(0,10)).sort(),ouv=dts.length?xDate(dts[0]):'';
   let sub='Généré le '+p2(n.getDate())+'/'+p2(n.getMonth()+1)+'/'+n.getFullYear()+' à '+p2(n.getHours())+':'+p2(n.getMinutes())+':'+p2(n.getSeconds());
-  if(broker)sub+=' — Courtier : '+broker;if(ouv)sub+=' — Ouverture du CTO : '+ouv;
+  if(broker)sub+=' — Courtier : '+broker;if(ouv)sub+=' — Ouverture '+(CRY?'du compte crypto':'du CTO')+' : '+ouv;
   const tbl=(cols,rows)=>`<table><thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`,
     sec=(title,t,cols,fn)=>{const rows=byType(t).map(fn);return`<section><h2>${title}</h2>${rows.length?tbl(cols,rows):'<p class="empty">Aucune opération de ce type.</p>'}</section>`};
   const ov=[['Valeur du portefeuille (actions)',pdE(K.valeur)+' €'],['Cash disponible',pdE(K.cash)+' €'],['Total des apports',pdE(K.total_apport)+' €'],['Performance globale',pdE(K.performance)+' %'],

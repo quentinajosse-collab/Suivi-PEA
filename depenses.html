@@ -162,6 +162,33 @@ g[data-tip]{cursor:pointer}
 .bal b{display:block;font-size:1.55rem;letter-spacing:-.02em;margin-top:2px;font-variant-numeric:tabular-nums}
 .bal .s{font-size:.78rem;opacity:.92;margin-top:6px;line-height:1.4}
 .pdfr{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.pdfr .m{flex:1;min-width:0}.pdfr small{display:block;color:var(--mut);font-size:.78rem}.pdfr input{width:auto;flex:none;transform:scale(1.25)}#dlgPdf .sh{font-weight:700}
+.dcard{display:flex;flex-direction:column;gap:1rem;border:1px solid var(--line);padding:16px 14px;border-radius:16px;box-shadow:0 2px 6px rgba(0,0,0,.04);background:var(--card)}.dcard>*{margin:0}
+.dst{font-size:.78rem;font-weight:700;color:var(--bleu);margin:4px 0 0;text-transform:uppercase;letter-spacing:.06em}
+.mcols{display:grid;gap:.7rem}.mc4,.mc2{grid-template-columns:repeat(2,minmax(0,1fr))}@media(min-width:700px){.mc4{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.mtr{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--bleu);padding:10px 12px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.05);text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2rem;min-width:0}
+.mtr.cap{border-left-color:var(--bleu)}.mtr.perf{border-left-color:var(--violet)}.mtr.gain{border-left-color:var(--vert)}
+.mtr.tp{cursor:pointer}.mtr.tp .mtl p::after{content:" ⓘ";opacity:.45;font-size:.85em}
+.mtl{width:100%}.mtl p{margin:0;font-size:.68rem;font-weight:600;color:var(--mut);text-transform:uppercase;line-height:1.35}
+.mtv{font-variant-numeric:tabular-nums;font-weight:800;letter-spacing:-.03em;color:var(--txt);font-size:1.2rem;line-height:1.25;white-space:nowrap;max-width:100%}
+.mtd{display:flex;align-items:center;gap:.15rem;font-size:.78rem;font-weight:700}.mtd.g{color:#09ab3b}.mtd.r{color:#ff2b2b}.mtd svg{width:1.1em;height:1.1em;flex:none}
+#pea-metric-bubble{position:fixed;z-index:999999;max-width:280px;padding:9px 12px;border-radius:10px;background:#1e293b;color:#f8fafc;font:500 13px/1.4 system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.28);pointer-events:none}
+details.exp{background:transparent;border:1px solid var(--line);border-radius:.6rem;margin-top:12px}
+details.exp>summary{cursor:pointer;padding:.7rem 1rem;list-style:none;font-weight:600;color:var(--txt)}details.exp>summary::-webkit-details-marker{display:none}
+details.exp>summary::after{content:"⌃";float:right;color:var(--mut)}details.exp:not([open])>summary::after{content:"⌄"}
+details.exp .in{display:flex;flex-direction:column;gap:.8rem;padding:0 .8rem 1rem}details.exp .in>*{margin:0}
+.ovnote{padding:10px 12px;border-radius:10px;border:1px solid #fde68a;border-left:4px solid #d97706;background:rgba(253,230,138,.18);font-size:.82rem}
+.pea-tbl-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.pea-tbl{border-collapse:separate;border-spacing:0;width:100%;font-size:.8rem;color:var(--txt)}
+.pea-tbl th{position:sticky;top:0;z-index:2;background:var(--bg);color:var(--mut);text-transform:uppercase;font-size:.66rem;font-weight:700;letter-spacing:.03em;padding:8px;text-align:center;white-space:nowrap;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+.pea-tbl th.s-asc::after{content:" ▲";font-size:.6rem}.pea-tbl th.s-desc::after{content:" ▼";font-size:.6rem}
+.pea-tbl td{text-align:center;padding:6px 8px;white-space:nowrap;border-bottom:1px solid var(--line)}
+.pea-tbl tbody tr:nth-child(even){background:rgba(148,163,184,.10)}
+.pea-tbl th.stk,.pea-tbl td.stk{position:sticky;left:0;z-index:3;background:var(--card);text-align:left;font-weight:700;box-shadow:2px 0 4px -2px rgba(15,23,42,.25)}
+.pea-tbl tbody tr:nth-child(even) td.stk{background:var(--bg)}.pea-tbl th.stk{background:var(--bg);z-index:4}
+.pea-tbl tfoot td,.pea-tbl tfoot th{position:sticky;bottom:0;z-index:2;background:var(--bg);font-weight:800;border-top:2px solid var(--line);border-bottom:none;text-transform:none;font-size:.8rem;color:inherit;cursor:default}
+.pea-tbl tfoot td.stk{background:var(--bg);z-index:4}
+.pea-tbl tr[data-int]{cursor:pointer}
+.tfl{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 </style>
 </head>
 <body>
@@ -318,8 +345,8 @@ const REV=["Salaire","Prime / Remboursement","Virement reçu"];
 const PAL=["#0284c7","#7c3aed","#0d9488","#f97316","#dc2626","#ca8a04","#db2777","#4f46e5","#059669","#ea580c","#0891b2","#9333ea"];
 const SEC={depenses:["Depenses","Depense"],recurrentes:["Recurrentes","Recurrente"],salaires:["Salaires","Salaire"],prets:["Prets","Pret"],interessement:["Interessements","Interessement"],groupes:["Groupes","Groupe"]};
 const NUM=new Set(["montant","net","brut","impot","capital","taux","duree","assurance","premiere_reelle"]);
-const VER="26.7-b",KEY="depenses_v1",FKEY="depenses_fold";
-const MOD=new URLSearchParams(location.search).get("m")||"",MODT={dep:["home","ana","rec","data"],immo:["cred"],epargne:["pos","cpt","int","ret"],livrets:["liv","lvi"],salaire:["sal","tax"],sante:["sante"]},TKEY="depenses_tab"+(MOD?"_"+MOD:""),TIDS=MODT[MOD]||["home","ana","rec","cred","sal","tax","int","pos","cpt","ret","sante","data"];
+const VER="26.8-a",KEY="depenses_v1",FKEY="depenses_fold";
+const MOD=new URLSearchParams(location.search).get("m")||"",MODT={dep:["home","ana","rec","data"],immo:["cred"],epargne:["ov","pos","cpt","int","ret"],livrets:["liv","lvi"],salaire:["sal","tax"],sante:["sante"]},TKEY="depenses_tab"+(MOD?"_"+MOD:""),TIDS=MODT[MOD]||["home","ana","rec","cred","sal","tax","int","ov","pos","cpt","ret","sante","data"];
 let D=load(),tab=loadTab(),per="m:"+TODAY().slice(0,7),gran="jour",q="",sens="Dépense";
 let FOLD=(()=>{try{return JSON.parse(localStorage.getItem(FKEY))||{}}catch(e){return{}}})();
 function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.depenses)return r}catch(e){}return{version:1,depenses:[],recurrentes:[],salaires:[],prets:[]}}
@@ -934,7 +961,7 @@ function vTax(){
  <div class="d" style="margin-top:8px">Estimation simplifiée (sans crédits ni réductions d'impôt, ni revenus du capital). Net imposable ≈ net avant impôts × ${String(ratio).replace(".",",")}.</div>`,"margin-top:0")}
  ${ca>0?`<div class="kpis k3"><div class="kpi" style="--c:var(--bleu)"><span>Net avant impôts / mois</span><b>${eur(mb)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Taux d'imposition</span><b>${fp(taux*100)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Net après impôts / mois</span><b>${eur(mn)}</b></div></div>`:'<div class="card"><div class="empty">Saisis un salaire net avant impôts annuel, ou ajoute des salaires dans Suivi Salaire.</div></div>'}`}
 /* Ordre des onglets : … Suivi Salaire · Prime · Simulateur d'impôts · Santé (tout à droite) · Données */
-const TABS=[["home","🏠","Vue d'ensemble",vHome],["ana","📊","Analyse",vAna],["rec","🔁","Dépenses récurrentes",vRec],["cred","🏦","Suivi Crédit",vCred],["sal","💼","Suivi Salaire",vSal],["int","📜","Historique",vInt],["pos","📊","Positions",vPos],["cpt","💰","Sur le compte",vCpt],["ret","↩️","Retraits",vRet],["tax","🧾","Simulateur d'impôts",vTax],["sante","🩺","Santé",vSante],["data","🔄","Données",vData],["liv","🐖","Tableau de bord",vLiv],["lvi","📝","Taux & intérêts",vLvi]];
+const TABS=[["home","🏠","Vue d'ensemble",vHome],["ana","📊","Analyse",vAna],["rec","🔁","Dépenses récurrentes",vRec],["cred","🏦","Suivi Crédit",vCred],["sal","💼","Suivi Salaire",vSal],["int","📜","Historique",vInt],["ov","🏠","Vue d'ensemble",vOv],["pos","📊","Positions & Transactions",vPos],["cpt","💰","Sur le compte",vCpt],["ret","↩️","Retraits",vRet],["tax","🧾","Simulateur d'impôts",vTax],["sante","🩺","Santé",vSante],["data","🔄","Données",vData],["liv","🐖","Tableau de bord",vLiv],["lvi","📝","Taux & intérêts",vLvi]];
 /* Limite chaque liste et chaque tableau à 5 lignes visibles, le reste défile */
 function fitLists(){
  document.querySelectorAll(".lst").forEach(l=>{l.style.maxHeight="";if(!l.offsetParent)return;const k=l.children[5];if(k)l.style.maxHeight=(k.offsetTop+1)+"px"});
@@ -1080,7 +1107,7 @@ function trCard(a,b){if(UI.hg!=="all"||q.trim()||UI.scat!=="all"||UI.hs!=="all")
 function fillRec(on){const R=D.recurrentes.map((r,i)=>({r,i})).sort((a,b)=>a.r.libelle.localeCompare(b.r.libelle,"fr"));$("#fRecW").classList.toggle("hide",!(on&&R.length));
  $("#fRec").innerHTML='<option value="">— Saisie libre —</option>'+R.map(x=>`<option value="${x.i}">${esc(x.r.libelle)} · ${eur2(x.r.montant)}${x.r.type==="Revenu"?" (revenu)":""}</option>`).join("")}
 function fillGrp(cur){const L=grpNames();$("#fGrpW").classList.toggle("hide",!L.length);$("#fGrp").innerHTML='<option value="">— Aucun —</option>'+L.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");$("#fGrp").value=cur&&L.includes(cur)?cur:""}
-$("#fab").onclick=()=>{if(tab==="liv"||tab==="lvi")return openLv(-1);if(tab==="int"||tab==="cpt"||tab==="pos")return openInt(-1);if(tab==="ret")return openRet(-1);if(tab==="cred")return openPret(-1);if(tab==="rec")return openRec(-1);$("#fabBg").classList.remove("hide")};
+$("#fab").onclick=()=>{if(tab==="liv"||tab==="lvi")return openLv(-1);if(tab==="int"||tab==="cpt"||tab==="pos"||tab==="ov")return openInt(-1);if(tab==="ret")return openRet(-1);if(tab==="cred")return openPret(-1);if(tab==="rec")return openRec(-1);$("#fabBg").classList.remove("hide")};
 function newOp(){tIdx=-1;oIdx=-1;oAllow=true;oLink=null;salOn=false;$("#opTitle").textContent="Nouvelle opération";$("#fDel").classList.add("hide");$("#frm").reset();$("#fDate").value=TODAY();setSens("Dépense");fillTr(null);fillGrp(UI.hg!=="all"&&!UI.hg.startsWith("sg:")?UI.hg:"");fillRec(true);
  $("#libs").innerHTML=[...new Set(D.depenses.slice(-400).map(o=>o.libelle))].map(l=>`<option value="${esc(l)}">`).join("");dlg.showModal()}
 $("#fabBg").onclick=e=>{if(e.target.id==="fabBg")e.target.classList.add("hide")};
@@ -1202,8 +1229,8 @@ function parseRel(T,DP,DC){
   if(r.av!=null&&Math.abs(r.sup.reduce((t,x)=>t+x.val,0)-r.av)>.05)r.sup=[]}
  const dS=dF((R(/Valence, le (\d{2}\/\d{2}\/\d{4})/)||[])[1]||""),q=R(/(\d{2}\/\d{2}\/\d{4}) VERSEMENT DE VOTRE QUOTE PART/i),
   inv=R(/INVESTISSEMENT [^.]*? SUR (PERCO|PER COL|PERECO|PEE|PER)\b/i),plan=inv?(/^PEE$/i.test(inv[1])?"PEE":"PERCO"):"";
- const rm=new RegExp("(INVESTISSEMENT|RACHATS?) [^€]*? (AMUNDI [A-Z0-9' \\-]+?) (?:: )?(\\d+,\\d{4}) \\(Quantit[ée]\\) le (\\d{2}/\\d{2}/\\d{4}) à "+AM,"g"),pm=/PER ?COL|PERCO|PERECO/i.test(T)?"PERCO":/\bPEE\b/.test(T)?"PEE":"PERCO";let mm;
- while((mm=rm.exec(T))){const q=nF(mm[3]),p=nF(mm[5]);r.mv.push({date:dF(mm[4]),fond:mm[2].trim(),sens:/^INV/i.test(mm[1])?"achat":"rachat",qte:q,prix:p,montant:Math.round(q*p*100)/100,plan:pm,ref})}
+ const rm=new RegExp("(INVESTISSEMENT|RACHATS?) [^€]*? (AMUNDI [A-Z0-9' \\-]+?) (?:: )?(\\d+,\\d{4}) \\(Quantit[ée]\\) le (\\d{2}/\\d{2}/\\d{4}) à "+AM+"(?: - DISPONIBLES[^€]*?)?(?: ("+AMN+") € ("+AMN+") €)?","g"),pm=/PER ?COL|PERCO|PERECO/i.test(T)?"PERCO":/\bPEE\b/.test(T)?"PEE":"PERCO";let mm;
+ while((mm=rm.exec(T))){const q=nF(mm[3]),p=nF(mm[5]);r.mv.push({date:dF(mm[4]),fond:mm[2].trim(),sens:/^INV/i.test(mm[1])?"achat":"rachat",qte:q,prix:p,montant:mm[6]?Math.max(nF(mm[6]),nF(mm[7])):Math.round(q*p*100)/100,plan:pm,ref})}
  if(r.typ==="Abondement"){
   const m=R(new RegExp("(\\d{2}/\\d{2}/\\d{4}) VERSEMENT DE L.ABONDEMENT[^€]*?(?:"+AMN+") € "+AM,"i"));
   if(m&&nF(m[2])>0)r.op={type:"Abondement",date:dF(m[1]),montant:nF(m[2]),brut:0,dest:DP,employeur:emp,plan:plan||"PERCO",ref};
@@ -1229,7 +1256,7 @@ async function pdfTexte(f){const L=await pdfjs(),doc=await L.getDocument({data:n
  for(let p=1;p<=doc.numPages;p++){const c=await(await doc.getPage(p)).getTextContent();t+=c.items.map(i=>i.str).join(" ")+" "}
  return t.replace(/[\u00a0\u202f\u2009]/g," ").replace(/(\d)\s*,\s*(\d{2})(?!\d)/g,"$1,$2").replace(/\s+/g," ").trim()}
 const pdfCard=()=>`<div class="card" style="margin-top:0"><div class="sh">📄 Lire mes relevés Amundi (PDF)</div><div class="d" style="margin:2px 0 10px">Abondement, intéressement, participation, arbitrage… Choisis un ou plusieurs PDF : tu vérifies avant que ce soit ajouté.</div><button type="button" class="sec" id="bPdf" style="width:100%">📄 Choisir des PDF…</button><input type="file" id="pdfIn" accept="application/pdf,.pdf" multiple class="hide"></div>`;
-const supNm=n=>{const x=n.replace(/^AMUNDI /,"").replace(/ ESR - F$/,"").toLowerCase();return x.charAt(0).toUpperCase()+x.slice(1)};
+const supNm=n=>{const x=n.replace(/^AMUNDI /,"").replace(/ ESR - F$/,"").toLowerCase().replace("monetaire","monétaire");return x.charAt(0).toUpperCase()+x.slice(1)};
 const supCard=S=>S.sv&&S.sv.supports&&S.sv.supports.length?card("cpt-s","Répartition par fonds (relevé du "+fdy(S.sv.supports_date||"")+")",bars(Object.fromEntries(S.sv.supports.map(x=>[supNm(x.nom),x.val])),null)):"";
 function pdfDup(o){return(D.interessement||[]).some(s=>(o.ref&&s.ref===o.ref)||(!s.ref&&s.type===o.type&&Math.abs((s.montant||0)-o.montant)<.015&&Math.abs(Date.parse(s.date)-Date.parse(o.date))<=20*864e5))}
 document.addEventListener("click",e=>{if(e.target.closest("#bPdf"))$("#pdfIn").click()});
@@ -1267,34 +1294,93 @@ $("#frmPdf").onsubmit=()=>{const ck=[...document.querySelectorAll("#pdfBody [dat
 function posEp(){
  const M=[...(D.mouvements_epargne||[])].sort((a,b)=>a.date.localeCompare(b.date)||(a.sens===b.sens?0:a.sens==="achat"?-1:1)),
   SN=[...(D.releves_epargne||[])].sort((a,b)=>b.date.localeCompare(a.date)),sn=SN[0]||null,F={},ventes=[];
- M.forEach(m=>{const f=F[m.fond]||(F[m.fond]={nom:m.fond,plan:m.plan||"PERCO",qte:0,cout:0,inv:0,real:0,vendu:0,lp:0,ld:"",part:false});
-  if(m.sens==="achat"){f.qte+=m.qte;f.cout+=m.montant;f.inv+=m.montant}
+ M.forEach(m=>{const f=F[m.fond]||(F[m.fond]={nom:m.fond,plan:m.plan||"PERCO",qte:0,cout:0,inv:0,real:0,vendu:0,lp:0,ld:"",d0:"",part:false});
+  if(m.sens==="achat"){f.qte+=m.qte;f.cout+=m.montant;f.inv+=m.montant;if(!f.d0)f.d0=m.date}
   else{const pru=f.qte>1e-6?f.cout/f.qte:0,qv=Math.max(0,Math.min(m.qte,f.qte)),cr=qv*pru,pv=m.qte>0?m.montant*qv/m.qte:0,g=pv-cr,part=m.qte-qv>1e-4;
    if(part)f.part=true;f.real+=g;f.vendu+=m.montant;f.qte-=qv;f.cout-=cr;ventes.push({date:m.date,fond:m.fond,qte:m.qte,prix:m.prix,montant:m.montant,g,part,cr})}
   f.lp=m.prix;f.ld=m.date});
- if(sn)sn.sup.forEach(x=>{if(!F[x.nom])F[x.nom]={nom:x.nom,plan:"PERCO",qte:0,cout:0,inv:0,real:0,vendu:0,lp:0,ld:"",part:false}});
+ if(sn)sn.sup.forEach(x=>{if(!F[x.nom])F[x.nom]={nom:x.nom,plan:"PERCO",qte:0,cout:0,inv:0,real:0,vendu:0,lp:0,ld:"",d0:"",part:false}});
  const rows=Object.values(F).map(f=>{
   const sv=sn?(sn.sup.find(x=>x.nom===f.nom)||{}).val||0:f.qte*f.lp,days=sn&&f.ld?Math.max(0,(Date.parse(sn.date)-Date.parse(f.ld))/864e5):0,
    inc=!!sn&&((f.qte>1e-4&&sv<=0&&sn.date>f.ld)||(f.qte<=1e-4&&sv>1)||(f.qte>1e-4&&sv>0&&f.lp>0&&Math.abs(sv/f.qte/f.lp-1)>.1+.0006*days));
   const act=sv>1||f.qte>1e-4,ok=act&&!inc&&f.qte>1e-4&&f.cout>0;
-  return{...f,val:sv,act,inc,ok,cours:f.qte>1e-4&&sn&&!inc?sv/f.qte:f.lp,pru:f.qte>1e-4?f.cout/f.qte:0,lat:ok?sv-f.cout:null,perf:ok?(sv-f.cout)/f.cout*100:null}});
+  return{...f,val:sv,act,inc,ok,cours:f.qte>1e-4&&sn&&!inc?sv/f.qte:f.lp,pru:f.qte>1e-4?f.cout/f.qte:0,jours:f.d0?Math.max(0,Math.round((Date.now()-Date.parse(f.d0))/864e5)):null,lat:ok?sv-f.cout:null,perf:ok?(sv-f.cout)/f.cout*100:null}});
  const A=rows.filter(r=>r.act),C=rows.filter(r=>!r.act&&(r.inv>0||r.vendu>0)),OK=A.filter(r=>r.ok);
  return{rows,A,C,ventes,sn,tot:A.reduce((t,r)=>t+r.val,0),lat:OK.reduce((t,r)=>t+r.lat,0),coutOk:OK.reduce((t,r)=>t+r.cout,0),real:rows.reduce((t,r)=>t+r.real,0),inc:A.filter(r=>r.inc),part:rows.some(r=>r.part),
   d0:M[0]?M[0].date:"",d1:M.length?M[M.length-1].date:""}}
+/* ---------- Vue d'ensemble / Positions & Transactions (mise en page reprise du tableau de bord PEA) ---------- */
+const OARU='<svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg>',OARD='<svg viewBox="0 0 24 24"><path fill="currentColor" d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z"/></svg>';
+const fN=(v,d=2)=>Number(v).toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d}).replace(/[\u202f\u00a0]/g," ").replace("−","-"),
+ oGE=v=>isFinite(v)&&v!=null?fN(v)+" €":"N/A",oDE=g=>(g<0?"-":"+")+fN(Math.abs(g))+" €",oDP=g=>(g<0?"-":"+")+fN(Math.abs(g))+"%",oPT=v=>isFinite(v)&&v!=null?(v>0?"+":"")+fN(v)+"%":"N/A",
+ pEA=v=>v==null||isNaN(v)?"N/A":v>.005?"▲ +"+fN(v)+" €":v<-.005?"▼ "+fN(v)+" €":"▬ 0,00 €",pPf=v=>v==null||isNaN(v)?"N/A":(v>0?"▲ +":v<0?"▼ ":"▬ ")+fN(v)+"%",
+ pPx=v=>{if(v==null||isNaN(v))return"N/A";const t=v.toFixed(4);return fN(v,t.endsWith("00")?2:t.endsWith("0")?3:4)+" €"},pQ=q=>q%1===0?fN(q,0):fN(q,4).replace(/0+$/,"").replace(/,$/,""),
+ perfAnn=(p,j)=>{if(p==null||isNaN(p)||j==null||j<30)return NaN;const g=1+p/100;return g<=0?-100:(Math.pow(g,365/j)-1)*100},
+ perfCell=v=>{const t=String(v);return t.startsWith("▲")?"color:#16a34a;font-weight:700;":t.startsWith("▼")?"color:#dc2626;font-weight:700;":"color:var(--mut);font-weight:700;"};
+const OMT={"Performance Globale":"% = gain total (valeur du compte + retraits − versements placés) ÷ versements placés. Demande la valeur réelle des comptes (onglet Sur le compte ou relevés PDF).","Performance Annuelle Moyenne":"% = (1 + performance globale) ^ (1 ÷ années depuis le premier versement) − 1, soit un taux annuel composé (calculé après 3 mois).","Plus-Value Latente":"% = plus-value latente ÷ capital investi dans les fonds encore détenus (fonds à historique complet uniquement).","Plus-Value Actée":"% = plus-value actée lors des ventes et arbitrages ÷ valeur actuelle du compte.","Abondement Reçu":"% = abondement de l'employeur ÷ total des versements placés.","Intéressement & Participation":"% = intéressement + participation + PPV placés ÷ total des versements placés."};
+function omt(label,val,delta,sec,inv){let d="";if(delta!=null){const neg=delta[0]=="-",good=inv?neg:!neg;d=`<div class="mtd ${good?"g":"r"}">${neg?OARD:OARU}<span>${delta}</span></div>`}
+ const tp=OMT[label];return`<div class="mtr ${sec}${tp?" tp":""}"${tp?` data-mt="${esc(tp)}"`:""}><div class="mtl"><p>${label}</p></div><div class="mtv">${val}</div>${d}</div>`}
+let OMB=null;const ombClose=()=>{if(OMB){OMB.remove();OMB=null}};
+document.addEventListener("click",e=>{const m=e.target.closest&&e.target.closest(".mtr[data-mt]"),same=OMB&&m&&OMB._m===m;ombClose();if(!m||same)return;
+ OMB=document.createElement("div");OMB.id="pea-metric-bubble";OMB.textContent=m.dataset.mt;OMB._m=m;document.body.appendChild(OMB);
+ const r=m.getBoundingClientRect(),b=OMB.getBoundingClientRect();OMB.style.left=Math.min(Math.max(r.left+r.width/2-b.width/2,8),innerWidth-b.width-8)+"px";
+ let t=r.top-b.height-8;if(t<8)t=r.bottom+8;OMB.style.top=t+"px"},true);
+addEventListener("scroll",ombClose,{passive:true,capture:true});
+UI.exc=UI.exc||new Set();
+const exp2=(k,t,b)=>`<details class="exp" data-ex="${k}"${UI.exc.has(k)?"":" open"}><summary>${t}</summary><div class="in">${b}</div></details>`;
+document.addEventListener("toggle",e=>{const d=e.target;if(d&&d.dataset&&d.dataset.ex){if(d.open)UI.exc.delete(d.dataset.ex);else UI.exc.add(d.dataset.ex)}},true);
+function pTbl(cols,rows,o={}){const cell=(c,v)=>o.col&&o.col.includes(c)?perfCell(v):"",dsh=v=>["","N/A","NaN"].includes(String(v))?"-":v;
+ const head=cols.map((c,i)=>`<th${i==0?' class="stk"':""}>${esc(c)}</th>`).join(""),
+  body=rows.map((r,ri)=>`<tr${o.attr&&o.attr[ri]?" "+o.attr[ri]:""}>${r.map((v,i)=>`<td${i==0?' class="stk"':""}${cell(cols[i],v)?` style="${cell(cols[i],v)}"`:""}>${esc(dsh(v))}</td>`).join("")}</tr>`).join(""),
+  foot=o.total?`<tfoot><tr>${o.total.map((v,i)=>`<td${i==0?' class="stk"':""}${cell(cols[i],v)?` style="${cell(cols[i],v)}"`:""}>${esc(dsh(v))}</td>`).join("")}</tr></tfoot>`:"",
+  h=Math.min(o.maxH||640,34+30*rows.length+14+(o.total?36:0));
+ return`<div class="pea-tbl-wrap" style="max-height:${h}px"><table class="pea-tbl"><thead><tr>${head}</tr></thead><tbody>${body}</tbody>${foot}</table></div>`}
+const tblKey=t=>{t=(t||"").trim();let m=t.match(/^(\d{2})[-\/](\d{2})[-\/](\d{4})$/);if(m)return+(m[3]+m[2]+m[1]);const c=t.replace(/[\u00a0\u202f\s€%▲▼▬=]/g,"").replace("\u2212","-").replace(",",".");if(/^[+\-]?\d+(\.\d+)?$/.test(c))return parseFloat(c);return t=="-"||t==""?null:t.toLowerCase()};
+document.addEventListener("click",e=>{const th=e.target.closest&&e.target.closest(".pea-tbl thead th");if(!th)return;
+ const t=th.closest("table"),hr=t.tHead.rows[0],i=[...hr.cells].indexOf(th),d=(t._last===i&&t._dir==1)?-1:1;t._dir=d;t._last=i;
+ [...hr.cells].forEach(x=>x.classList.remove("s-asc","s-desc"));th.classList.add(d==1?"s-asc":"s-desc");
+ const tb=t.tBodies[0],rows=[...tb.rows],keys=rows.map(r=>tblKey(r.cells[i].textContent)),idx=rows.map((_,k)=>k);
+ idx.sort((a,b)=>{const x=keys[a],y=keys[b];if(x===null&&y===null)return a-b;if(x===null)return 1;if(y===null)return-1;if(typeof x=="number"&&typeof y=="number")return(x-y)*d||(a-b);return String(x).localeCompare(String(y),"fr")*d||(a-b)});
+ idx.forEach(k=>tb.appendChild(rows[k]))});
+function vOv(){
+ const S=planStats(),P=posEp(),ap=S.tp,gt=S.tot+S.tr-S.tp,hasV=S.anyEnt,sm=(a,t)=>sum(a.filter(s=>s.type===t),"montant");
+ if(!S.all.length&&!P.rows.length)return pdfCard()+`<div class="card" style="margin-top:0"><div class="empty">Aucune donnée pour le moment.<br>Ajoute un versement (➕) ou lis un relevé Amundi (PDF).</div></div>`;
+ const f0=S.pl.reduce((m,s)=>s.date<m?s.date:m,"9999-12-31"),ans=S.pl.length?Math.max((Date.now()-Date.parse(f0))/864e5/365.25,0):0,
+  pg=hasV&&ap>0?gt/ap*100:null,pam=pg!=null&&ans>=.25&&1+pg/100>0?(Math.pow(1+pg/100,1/ans)-1)*100:null,gam=pg!=null&&ans>=.25?gt/ans:null,
+  lat=P.coutOk>0?P.lat:null,pl=P.coutOk>0?P.lat/P.coutOk*100:null,real=P.real,pa=S.tot>0?real/S.tot*100:null,
+  ab=sm(S.pl,"Abondement"),ip=sm(S.pl,"Intéressement")+sm(S.pl,"Participation")+sm(S.pl,"PPV");
+ return pdfCard()+`<details class="exp" data-ex="ov1"${UI.exc.has("ov1")?"":" open"}><summary>📊 Vue d'ensemble de l'épargne salariale</summary><div class="in"><div class="dcard">
+ <p class="dst">💰 Capital & Investissement</p>
+ <div class="mcols mc4">${omt("Valeur Actuelle",oGE(S.tot),null,"cap")}${omt("Montant Investi",P.coutOk>0?oGE(P.coutOk):"N/A",null,"cap")}${omt("Total Apports",oGE(ap),null,"cap")}${omt("Retiré des comptes",oGE(S.tr),null,"cap")}</div>
+ <p class="dst" style="margin-top:16px">📈 Performances</p>
+ <div class="mcols mc2">${omt("Performance Globale",pg!=null?oPT(pg):"N/A",pg!=null?oDE(gt):null,"perf")}${omt("Performance Annuelle Moyenne",pam!=null?oPT(pam):"N/A",gam!=null?oDE(gam):null,"perf")}</div>
+ <p class="dst" style="margin-top:16px">🏷️ Plus-values & Versements</p>
+ <div class="mcols mc2">${omt("Plus-Value Latente",lat!=null?oGE(lat):"N/A",pl!=null?oDP(pl):null,"gain")}${omt("Plus-Value Actée",oGE(real),pa!=null?oDP(pa):null,"gain")}</div>
+ <div class="mcols mc2">${omt("Abondement Reçu",oGE(ab),ap>0?oDP(ab/ap*100):null,"gain")}${omt("Intéressement & Participation",oGE(ip),ap>0?oDP(ip/ap*100):null,"gain")}</div>
+ </div></div></details>
+ ${!hasV?`<div class="ovnote" style="margin-top:12px">Saisis la valeur réelle de tes comptes (onglet <b>Sur le compte</b>) ou lis un relevé PDF pour obtenir les performances.</div>`:""}
+ ${P.inc.length?`<div class="ovnote" style="margin-top:12px">⚠ Historique incomplet pour ${P.inc.map(r=>esc(supNm(r.nom))).join(", ")} : plus-value latente et montant investi sont calculés sans ces fonds. Importe les relevés manquants pour les compléter.</div>`:""}
+ ${P.sn?`<div class="d" style="margin:8px 4px">Dernière valorisation de fonds : ${fdy(P.sn.date)}.</div>`:""}`}
+function txList(){const a=[];(D.mouvements_epargne||[]).forEach(m=>a.push({d:m.date,t:m.sens==="achat"?"Achat":"Rachat",n:supNm(m.fond),q:m.qte,p:m.prix,m:m.montant,pl:m.plan||""}));
+ (D.interessement||[]).forEach((s,i)=>{if(s.date)a.push({d:s.date,t:"Versement · "+s.type,n:String(s.dest||"").startsWith("Placé")?"Placé":"Perçu",q:null,p:null,m:s.montant,pl:s.plan||"",i})});return a.sort((x,y)=>y.d.localeCompare(x.d))}
+const TXP=["Tout l'historique","Année en cours","12 derniers mois","6 derniers mois","3 derniers mois"];
+function txFrom(l){const t=new Date(),d=n=>{const x=new Date(t.getFullYear(),t.getMonth()-n,t.getDate());return x.toISOString().slice(0,10)};return l==="Année en cours"?t.getFullYear()+"-01-01":l==="12 derniers mois"?d(12):l==="6 derniers mois"?d(6):l==="3 derniers mois"?d(3):""}
+document.addEventListener("change",e=>{if(e.target.id==="txPer"){UI.txp=e.target.value;render()}if(e.target.id==="txTy"){UI.txt=e.target.value;render()}});
 function vPos(){
- const P=posEp(),sg=v=>`<span class="${v>=0?"pos":"neg"}">${v>=0?"+":"−"}${eur2(Math.abs(v))}</span>`,sp=v=>v==null?"—":`<span class="${v>=0?"pos":"neg"}">${v>=0?"+":"−"}${Math.abs(v).toFixed(1).replace(".",",")} %</span>`,nq=v=>v.toLocaleString("fr-FR",{maximumFractionDigits:4});
- if(!P.rows.length)return pdfCard()+`<div class="card" style="margin-top:0"><div class="empty">Pas encore de positions.<br>Lis tes relevés Amundi (PDF) : achats, ventes et valeur de chaque fonds sont enregistrés pour calculer tes plus-values.</div></div>`;
- const kp=(l,v,c,w)=>`<div class="kpi${w?" wide":""}" style="--c:var(--${c})"><span>${l}</span><b>${v}</b></div>`,tg=P.lat+P.real;
- const plans=[...new Set(P.A.map(r=>r.plan))];
- const tbl=rs=>`<div class="tw"><table class="rc"><thead><tr><th>Fonds</th><th>Parts</th><th>PRU</th><th>Cours</th><th>Valeur</th><th>Gain latent</th><th>Perf.</th></tr></thead><tbody>${rs.sort((a,b)=>b.val-a.val).map(r=>`<tr><th>${esc(supNm(r.nom))}${r.inc?" ⚠":""}</th><td>${r.qte>1e-4?nq(r.qte):"—"}</td><td>${r.ok?eur2(r.pru):"—"}</td><td>${r.cours?eur2(r.cours):"—"}</td><td><b>${eur2(r.val)}</b></td><td>${r.ok?sg(r.lat):"—"}</td><td>${sp(r.perf)}</td></tr>`).join("")}</tbody></table></div>`;
- const clo=P.C.length?`<div class="tw"><table class="rc"><thead><tr><th>Fonds</th><th>Investi</th><th>Vendu</th><th>Plus-value actée</th></tr></thead><tbody>${P.C.map(r=>`<tr><th>${esc(supNm(r.nom))}</th><td>${eur2(r.inv)}</td><td>${eur2(r.vendu)}</td><td>${sg(r.real)}</td></tr>`).join("")}</tbody></table></div>`:"";
- const vt=P.ventes.length?`<div class="lst">${P.ventes.slice().reverse().map(v=>`<div class="op"><div class="m"><b>${esc(supNm(v.fond))}</b><small>${fdy(v.date)} · ${nq(v.qte)} parts à ${eur2(v.prix)}${v.part?" · ⚠ parts antérieures aux relevés":""}</small></div><span>${sg(v.g)}</span></div>`).join("")}</div>`:"";
- return pdfCard()+`<div class="kpis">${kp("Valeur du compte",eur2(P.tot),"bleu",1)}${kp("Plus-value latente",P.coutOk>0?sg(P.lat):"—","vert")}${kp("Plus-value actée",sg(P.real),"violet")}${kp("Gain total",P.coutOk>0||P.real?sg(tg):"—",tg>=0?"vert":"rouge")}${kp("Perf. positions",P.coutOk>0?sp(P.lat/P.coutOk*100):"—","orange")}</div>
- <div class="d" style="margin:8px 4px">${P.sn?"Valorisation du "+fdy(P.sn.date)+" · ":""}${P.d0?"mouvements du "+fdy(P.d0)+" au "+fdy(P.d1):""}. Le PRU est calculé sur les achats lus dans les relevés importés.</div>
- ${P.inc.length?`<div class="card" style="margin-top:0;border-color:var(--orange)"><div class="sh">⚠ Historique incomplet</div><div class="d">Pour ${P.inc.map(r=>esc(supNm(r.nom))).join(", ")}, la valeur du dernier relevé ne correspond pas aux parts lues : il manque des relevés (intéressement, participation, arbitrage…). Importe-les pour obtenir un PRU et un gain fiables.</div></div>`:""}
- ${plans.map(p=>card("pos-"+p,"Positions actives"+(plans.length>1?" · "+esc(p):""),tbl(P.A.filter(r=>r.plan===p)))).join("")}
- ${P.C.length?card("pos-c","Positions clôturées",clo):""}
- ${P.ventes.length?card("pos-v","Ventes et arbitrages · plus-value actée",vt):""}`}
+ const P=posEp(),all=txList();
+ if(!P.rows.length&&!all.length)return pdfCard()+`<div class="card" style="margin-top:0"><div class="empty">Pas encore de positions ni de transactions.<br>Lis tes relevés Amundi (PDF) : achats, ventes et valeur de chaque fonds sont enregistrés pour calculer tes plus-values.</div></div>`;
+ const A=P.A.slice().sort((a,b)=>b.val-a.val),cols=["Nom","Parts","PRU (€)","Prix actuel (€)","Valeur (€)","Gain latent (€)","Performance (%)","Gain réalisé (€)","Détention (j)","Perf. annuelle moy. (%)"],CC=["Gain latent (€)","Performance (%)","Gain réalisé (€)","Perf. annuelle moy. (%)"];
+ const rows=A.map(r=>[supNm(r.nom)+(r.inc?" ⚠":""),r.qte>1e-4?pQ(r.qte):"",r.ok?pPx(r.pru):"",r.cours?pPx(r.cours):"",oGE(r.val),r.ok?pEA(r.lat):"",r.ok?pPf(r.perf):"",pEA(r.real),r.jours!=null&&r.qte>1e-4?String(r.jours):"",r.ok?pPf(perfAnn(r.perf,r.jours)):""]);
+ const OK=A.filter(r=>r.ok),cap=OK.reduce((t,r)=>t+r.cout,0),T=cols.map(()=>"");T[0]="Total";T[4]=oGE(P.tot);T[5]=cap>0?pEA(P.lat):"";T[6]=cap>0?pPf(P.lat/cap*100):"";T[7]=pEA(A.reduce((t,r)=>t+r.real,0));
+ const act=A.length?pTbl(cols,rows,{col:CC,total:T,maxH:1000}):'<div class="ovnote">Aucune position active.</div>';
+ const m={};A.forEach(r=>{if(r.val>0)m[supNm(r.nom)]=r.val});const rep=Object.keys(m).length?bars(m,null):"";
+ const cc=["Nom","Investi (€)","Vendu (€)","Gain réalisé (€)","Performance (%)"],crow=P.C.map(r=>[supNm(r.nom),oGE(r.inv),oGE(r.vendu),pEA(r.real),r.vendu-r.real>0?pPf(r.real/(r.vendu-r.real)*100):""]);
+ const clo=P.C.length?pTbl(cc,crow,{col:["Gain réalisé (€)","Performance (%)"],total:["Total",oGE(P.C.reduce((t,r)=>t+r.inv,0)),oGE(P.C.reduce((t,r)=>t+r.vendu,0)),pEA(P.C.reduce((t,r)=>t+r.real,0)),""],maxH:600}):"";
+ const per=UI.txp||TXP[0],ty=UI.txt||"Tous",dmin=txFrom(per),tx=all.filter(x=>(!dmin||x.d>=dmin)&&(ty==="Tous"||(ty==="Versements"?x.t.startsWith("Versement"):ty==="Achats"?x.t==="Achat":x.t==="Rachat")));
+ const tc=["Date","Type","Fonds / Statut","Parts","Prix (€)","Montant (€)","Plan"],trow=tx.map(x=>[fdy(x.d),x.t,x.n,x.q!=null?pQ(x.q):"",x.p!=null?pPx(x.p):"",oGE(x.m),x.pl]);
+ const txh=`<div class="tfl"><div><label>Période</label><select id="txPer">${TXP.map(p=>`<option${p===per?" selected":""}>${p}</option>`).join("")}</select></div><div><label>Type</label><select id="txTy">${["Tous","Versements","Achats","Rachats"].map(p=>`<option${p===ty?" selected":""}>${p}</option>`).join("")}</select></div></div>`
+  +(tx.length?pTbl(tc,trow,{attr:tx.map(x=>x.i!=null?`data-int="${x.i}"`:""),total:[tx.length+" opération"+(tx.length>1?"s":""),"","","","","",""],maxH:640})+'<div class="d">Touche un versement pour le modifier.</div>':'<div class="ovnote">Aucune transaction sur cette période.</div>');
+ return pdfCard()+(P.inc.length?`<div class="ovnote" style="margin-top:12px">⚠ Historique incomplet pour ${P.inc.map(r=>esc(supNm(r.nom))).join(", ")} : il manque des relevés (intéressement, participation, arbitrage…). Importe-les pour un PRU et un gain fiables.</div>`:"")
+  +exp2("pa","📌 Détail des Positions Actives",act)+(rep?exp2("pr","🥧 Répartition du portefeuille",rep):"")+(clo?exp2("pc","📕 Positions clôturées",clo):"")+exp2("pt","🧾 Transactions",txh)}
 /* Retraits d'épargne salariale */
 const dlgW=$("#dlgW");let wIdx=-1;
 function openRet(i=-1){wIdx=i;$("#frmW").reset();const r=i>=0?D.retraits_epargne[i]:null;
