@@ -496,7 +496,7 @@ $('#bkf').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)r
   catch(err){bkst('Import impossible : '+err.message)}};
 
 if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').then(r=>r.update()).catch(()=>{}));
-go('home'); /* on arrive toujours sur la page générale du patrimoine */
+go(location.hash.slice(1)||'home'); /* au rafraîchissement on reste sur la page ouverte (#module) ; sans module dans l'adresse : page générale */
 if(!navigator.onLine)dot('off','Hors connexion');
 later(800);
 </script>
