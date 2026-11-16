@@ -691,12 +691,13 @@ function hubNm(a){return a.label||(a.type==="CTO"&&a.id!=="cto"?"CTO "+a.id.slic
 function trAccs(){const o=[];hubAll().forEach(a=>{if(a.id==="epargne"){o.push(["epargne:PEE","🎁 Épargne salariale · PEE"],["epargne:PERCO","🎁 Épargne salariale · PERCO"],["epargne:PEG","🎁 Épargne salariale · PEG"]);return}o.push([a.id,(HIC[a.type]||TYI2[a.type]||"•")+" "+hubNm(a)+(a.broker?" ("+a.broker+")":"")])});return o}
 const accLabel=v=>v?((trAccs().find(x=>x[0]===v)||[0,v])[1]):"";
 /* Livrets : le solde est calculé automatiquement = transferts reçus − transferts émis + intérêts crédités. Un livret dont le solde revient à 0 est clôturé automatiquement. */
+const rd2=x=>Math.round(x*100)/100;
 const livAll=()=>hubAcc().filter(a=>a.type==="Livret");
 function livMoves(a){const m=[];(D.transferts||[]).forEach((r,i)=>{if(!r.date)return;const v=+r.montant||0;
  if(r.vers===a.id)m.push({d:r.date,v,k:"tr",ti:i,o:r.de,lib:r.libelle});if(r.de===a.id)m.push({d:r.date,v:-v,k:"tr",ti:i,o:r.vers,lib:r.libelle})});
  (D.livrets_lignes||[]).forEach((l,i)=>{if(l.acc===a.id&&l.type==="cred"&&l.date)m.push({d:l.date,v:+l.v||0,k:"int",li:i})});
  return m.sort((x,y)=>x.d.localeCompare(y.d)||(y.v>0)-(x.v>0))}
-function livBal(a,d){const m=livMoves(a);if(!m.length)return+a.balance||0;d=d||TODAY();return r2(m.filter(x=>x.d<=d).reduce((t,x)=>t+x.v,0))}
+function livBal(a,d){const m=livMoves(a);if(!m.length)return+a.balance||0;d=d||TODAY();return rd2(m.filter(x=>x.d<=d).reduce((t,x)=>t+x.v,0))}
 function livClosed(a){const m=livMoves(a),T=TODAY();return m.some(x=>x.d<=T)&&Math.abs(livBal(a,T))<.005}
 const livOpen=()=>livAll().filter(a=>!livClosed(a)),livShut=()=>livAll().filter(livClosed);
 /* Solde d'un compte bancaire = solde initial (réglages, saisi une seule fois) + revenus − dépenses ± transferts rattachés au compte, à partir de la date d'initialisation */
@@ -1625,7 +1626,7 @@ const dlgH=$("#dlgH");
 function openHist(id){
  const all=livAll(),sel=id?all.filter(a=>a.id===id):all,T=TODAY();if(!sel.length)return;
  const rows=[];let cin=0,cout=0,cint=0,seq=0;
- sel.forEach(a=>{let run=0;livMoves(a).forEach(x=>{run=r2(run+x.v);if(x.d<=T){if(x.k==="int")cint+=x.v;else if(x.v>0)cin+=x.v;else cout-=x.v}rows.push({...x,a,run,s:seq++})})});
+ sel.forEach(a=>{let run=0;livMoves(a).forEach(x=>{run=rd2(run+x.v);if(x.d<=T){if(x.k==="int")cint+=x.v;else if(x.v>0)cin+=x.v;else cout-=x.v}rows.push({...x,a,run,s:seq++})})});
  rows.sort((x,y)=>y.d.localeCompare(x.d)||y.s-x.s);
  const tot=sel.reduce((t,a)=>t+livBal(a),0),one=sel.length===1,ico=x=>x.k==="int"?"💰":x.v>0?"📥":"📤",
   lab=x=>x.k==="int"?"Intérêts crédités":(x.v>0?"Transfert reçu de ":"Transfert vers ")+(accLabel(x.o)||"compte non précisé"),
