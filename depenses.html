@@ -298,8 +298,8 @@ details.exp .in{display:flex;flex-direction:column;gap:.8rem;padding:0 .8rem 1re
  <label>Date de versement</label><input id="iDate" type="date" required>
  <label>Montant brut (€)</label><input id="iBrut" type="number" step="0.01" min="0" inputmode="decimal">
  <label>Montant net (€)</label><input id="iNet" type="number" step="0.01" min="0.01" inputmode="decimal" required>
- <div id="iDestW"><label>Destination</label><select id="iDest"><option>Perçu (versé sur le compte)</option><option>Placé (PEE / PERCO)</option></select></div><div class="d hide" id="iAbN" style="margin-top:6px">L'abondement est versé directement sur ton plan d'épargne : il est toujours placé (PEE / PERCO).</div>
- <div id="iPlanW"><label>Plan</label><select id="iPlan"><option value="PEE">PEE</option><option value="PERCO">PERCO</option></select></div>
+ <div id="iDestW"><label>Destination</label><select id="iDest"><option value="Perçu (versé sur le compte)">Perçu (versé sur le compte)</option><option value="Placé (PEE / PERCO)">Placé (PEE / PERCO / PEG)</option></select></div><div class="d hide" id="iAbN" style="margin-top:6px">L'abondement est versé directement sur ton plan d'épargne : il est toujours placé (PEE / PERCO / PEG).</div>
+ <div id="iPlanW"><label>Plan</label><select id="iPlan"><option value="PEE">PEE</option><option value="PERCO">PERCO</option><option value="PEG">PEG</option></select></div>
  <label>Entreprise</label><select id="iEmp"></select>
  <div class="rqn">Les champs encadrés en rouge sont obligatoires.</div>
  <div class="row" style="margin-top:14px"><button type="button" class="sec" id="iCancel" style="flex:1">Annuler</button><button type="submit" style="flex:2">Enregistrer</button></div>
@@ -307,7 +307,7 @@ details.exp .in{display:flex;flex-direction:column;gap:.8rem;padding:0 .8rem 1re
 </form></dialog>
 
 <dialog id="dlgPdf"><form method="dialog" id="frmPdf">
- <h3 style="margin:0 0 4px">📄 Relevés Amundi lus</h3>
+ <h3 style="margin:0 0 4px">📄 Relevés lus</h3>
  <div class="d" style="margin-bottom:6px">Coche ce que tu veux ajouter. Les lignes « déjà présent » sont décochées.</div>
  <div id="pdfBody"></div>
  <div class="row" style="margin-top:14px"><button type="button" class="sec" id="pdfCancel" style="flex:1">Annuler</button><button type="submit" style="flex:2">Importer</button></div>
@@ -318,7 +318,7 @@ details.exp .in{display:flex;flex-direction:column;gap:.8rem;padding:0 .8rem 1re
  <label>Date du retrait</label><input id="wDate" type="date" required>
  <label>Montant retiré (€)</label><input id="wMt" type="number" step="0.01" min="0.01" inputmode="decimal" required>
  <label>Employeur / plan (facultatif)</label><input id="wEmp" type="text" list="wEmps"><datalist id="wEmps"></datalist>
- <label>Plan</label><select id="wPlan"><option value="">— Non précisé —</option><option value="PEE">PEE</option><option value="PERCO">PERCO</option></select>
+ <label>Plan</label><select id="wPlan"><option value="">— Non précisé —</option><option value="PEE">PEE</option><option value="PERCO">PERCO</option><option value="PEG">PEG</option></select>
  <label>Motif (facultatif)</label><input id="wMotif" type="text" placeholder="Ex : déblocage anticipé, fin de blocage…">
  <div class="rqn">Les champs encadrés en rouge sont obligatoires.</div>
  <div class="row" style="margin-top:14px"><button type="button" class="sec" id="wCancel" style="flex:1">Annuler</button><button type="submit" style="flex:2">Enregistrer</button></div>
@@ -664,7 +664,7 @@ function hubAcc(){try{return(JSON.parse(localStorage.getItem("hub_acc"))||{}).li
 const HACCD=[{id:"pea",type:"PEA"},{id:"cto",type:"CTO"},{id:"epargne",type:"Épargne salariale"},{id:"crypto",type:"Crypto"}],TYO=["Compte bancaire","Livret","PEA","CTO","Épargne salariale","Crypto"],TYI2={PEA:"📈",CTO:"🏦","Épargne salariale":"🎁",Crypto:"₿"};
 function hubAll(){const l=hubAcc().map(a=>({...a}));HACCD.forEach(d=>{if(!l.some(a=>a.id===d.id))l.push({...d})});return l.sort((a,b)=>TYO.indexOf(a.type)-TYO.indexOf(b.type)||String(a.id).localeCompare(String(b.id),"fr",{numeric:true}))}
 function hubNm(a){return a.label||(a.type==="CTO"&&a.id!=="cto"?"CTO "+a.id.slice(3):HBK.includes(a.type)?(a.type+" "+(a.id.replace(/^\D+/,"")||"")).trim():a.type)}
-function trAccs(){const o=[];hubAll().forEach(a=>{if(a.id==="epargne"){o.push(["epargne:PEE","🎁 Épargne salariale · PEE"],["epargne:PERCO","🎁 Épargne salariale · PERCO"]);return}o.push([a.id,(HIC[a.type]||TYI2[a.type]||"•")+" "+hubNm(a)+(a.broker?" ("+a.broker+")":"")])});return o}
+function trAccs(){const o=[];hubAll().forEach(a=>{if(a.id==="epargne"){o.push(["epargne:PEE","🎁 Épargne salariale · PEE"],["epargne:PERCO","🎁 Épargne salariale · PERCO"],["epargne:PEG","🎁 Épargne salariale · PEG"]);return}o.push([a.id,(HIC[a.type]||TYI2[a.type]||"•")+" "+hubNm(a)+(a.broker?" ("+a.broker+")":"")])});return o}
 const accLabel=v=>v?((trAccs().find(x=>x[0]===v)||[0,v])[1]):"";
 /* Solde d'un compte bancaire = solde initial (réglages, saisi une seule fois) + revenus − dépenses ± transferts rattachés au compte, à partir de la date d'initialisation */
 function acctBal(a){const s=+a.balance||0;if(a.type!=="Compte bancaire")return s;const d0=a.initDate||"";let t=s;
@@ -823,22 +823,22 @@ function vInt(){
 function planStats(){
  const all=(D.interessement||[]).filter(s=>s.date),isP=s=>String(s.dest||"").startsWith("Placé"),pl=all.filter(isP),rt=D.retraits_epargne||[],sv=D.solde_epargne||null,keys=["PEE","PERCO"];
  [...pl,...rt].forEach(x=>{const k=x.plan||"";if(!keys.includes(k))keys.push(k)});
- const P=keys.map(k=>{const placed=sum(pl.filter(s=>(s.plan||"")===k),"montant"),ret=sum(rt.filter(r=>(r.plan||"")===k),"montant"),base=Math.max(0,placed-ret),ent=k==="PEE"?(sv&&sv.pee!=null?sv.pee:null):k==="PERCO"?(sv&&sv.perco!=null?sv.perco:null):null;
+ const P=keys.map(k=>{const placed=sum(pl.filter(s=>(s.plan||"")===k),"montant"),ret=sum(rt.filter(r=>(r.plan||"")===k),"montant"),base=Math.max(0,placed-ret),ent=k&&sv&&sv[k.toLowerCase()]!=null&&typeof sv[k.toLowerCase()]==="number"?sv[k.toLowerCase()]:null;
   return{k,lb:k||"Plan non précisé",placed,ret,base,ent,val:ent!=null?ent:base}});
- const per=!!(sv&&(sv.pee!=null||sv.perco!=null)),legacy=sv&&!per&&sv.valeur>=0?sv.valeur:null;
+ const per=!!(sv&&(sv.pee!=null||sv.perco!=null||sv.peg!=null)),legacy=sv&&!per&&sv.valeur>=0?sv.valeur:null;
  return{all,pl,P,sv,per,legacy,tot:legacy!=null?legacy:P.reduce((t,x)=>t+x.val,0),tp:sum(pl,"montant"),tr:sum(rt,"montant"),tc:sum(all.filter(s=>!isP(s)),"montant"),anyEnt:per||legacy!=null}}
 function vCpt(){
  const S=planStats();
  if(!S.all.length)return pdfCard()+`<div class="card" style="margin-top:0"><div class="empty">Aucun versement enregistré.<br>Ajoute-les dans l'onglet Historique ou lis un relevé PDF ci-dessus.</div></div>`;
  const byT={},byE={};S.pl.forEach(s=>{byT[s.type]=(byT[s.type]||0)+s.montant;const k=s.employeur||"Sans employeur";byE[k]=(byE[k]||0)+s.montant});
  const kp=(l,v,c,w)=>`<div class="kpi${w?" wide":""}" style="--c:var(--${c})"><span>${l}</span><b>${eur(v)}</b></div>`,pv=S.tot+S.tr-S.tp,pc=S.P.filter(x=>x.k||x.placed||x.ret);
- const inp=["PEE","PERCO"].map(k=>{const x=S.P.find(z=>z.k===k);return`<label>${k} : montant réel sur ton compte (€)</label><input id="cpt${k}" type="number" step="0.01" min="0" inputmode="decimal" value="${x.ent??""}" placeholder="${Math.round(x.base)}">`}).join("");
+ const PK=["PEE","PERCO",...(S.P.some(z=>z.k==="PEG"&&(z.placed||z.ret||z.ent!=null))?["PEG"]:[])],inp=PK.map(k=>{const x=S.P.find(z=>z.k===k)||{ent:null,base:0};return`<label>${k} : montant réel sur ton compte (€)</label><input id="cpt${k}" type="number" step="0.01" min="0" inputmode="decimal" value="${x.ent??""}" placeholder="${Math.round(x.base)}">`}).join("");
  const tbl=`<div class="tw"><table class="rc"><thead><tr><th>Plan</th><th>Placé</th><th>Retiré</th><th>Sur le compte</th><th>Plus-value</th></tr></thead><tbody>${pc.map(x=>{const g=x.ent!=null?x.val+x.ret-x.placed:null;return`<tr><th>${esc(x.lb)}</th><td>${eur(x.placed)}</td><td class="neg">${x.ret?"−"+eur(x.ret):"—"}</td><td><b>${eur(x.val)}</b></td><td class="${g==null?"":g>=0?"pos":"neg"}">${g==null?"—":eur(g)}</td></tr>`}).join("")}</tbody></table></div>`;
  return`<div class="card" style="margin-top:0"><div class="sh">💰 Valeur actuelle de chaque plan</div>${inp}<div class="d" style="margin-top:6px">${S.sv&&S.sv.date?"Saisi le "+fdy(S.sv.date)+". ":""}Sans montant saisi pour un plan : versements placés − retraits.${S.legacy!=null?` Montant global saisi auparavant : ${eur2(S.legacy)} (tous plans confondus) : saisis-le maintenant par plan, il sera remplacé.`:""}</div></div>
- ${pdfCard()}<div class="kpis">${kp("Sur les comptes (PEE + PERCO)",S.tot,"bleu",1)}${pc.filter(x=>x.k).map(x=>kp(x.lb,x.val,x.k==="PEE"?"violet":"vert")).join("")}${kp("Versements placés",S.tp,"violet")}${kp("Retiré des comptes",S.tr,"rouge")}${kp("Déjà perçu (hors compte)",S.tc,"orange")}${S.anyEnt?kp("Plus-value",pv,pv>=0?"vert":"rouge"):""}</div>
- ${card("cpt-p","Par plan (PEE / PERCO)",tbl)}${supCard(S)}${card("cpt-t","Placé par type",bars(byT,null))}${card("cpt-e","Placé par employeur",bars(byE,null))}`}
-document.addEventListener("change",e=>{const id=e.target.id;if(id!=="cptPEE"&&id!=="cptPERCO")return;const k=id==="cptPEE"?"pee":"perco",v=parseFloat(e.target.value),o={...(D.solde_epargne||{})};
- if(o.pee==null&&o.perco==null)delete o.valeur;if(v>=0)o[k]=Math.round(v*100)/100;else delete o[k];o.date=TODAY();D.solde_epargne=(o.pee!=null||o.perco!=null)?o:null;save();render()});
+ ${pdfCard()}<div class="kpis">${kp("Sur les comptes ("+PK.join(" + ")+")",S.tot,"bleu",1)}${pc.filter(x=>x.k).map(x=>kp(x.lb,x.val,x.k==="PEE"?"violet":x.k==="PEG"?"orange":"vert")).join("")}${kp("Versements placés",S.tp,"violet")}${kp("Retiré des comptes",S.tr,"rouge")}${kp("Déjà perçu (hors compte)",S.tc,"orange")}${S.anyEnt?kp("Plus-value",pv,pv>=0?"vert":"rouge"):""}</div>
+ ${card("cpt-p","Par plan ("+PK.join(" / ")+")",tbl)}${supCard(S)}${card("cpt-t","Placé par type",bars(byT,null))}${card("cpt-e","Placé par employeur",bars(byE,null))}`}
+document.addEventListener("change",e=>{const id=e.target.id;if(id!=="cptPEE"&&id!=="cptPERCO"&&id!=="cptPEG")return;const k=id.slice(3).toLowerCase(),v=parseFloat(e.target.value),o={...(D.solde_epargne||{})};
+ if(o.pee==null&&o.perco==null&&o.peg==null)delete o.valeur;if(v>=0)o[k]=Math.round(v*100)/100;else delete o[k];o.date=TODAY();if(o.dates&&o.dates[k])o.dates={...o.dates,[k]:TODAY()};D.solde_epargne=(o.pee!=null||o.perco!=null||o.peg!=null)?o:null;save();render()});
 function vRet(){
  const all=(D.retraits_epargne||[]).map((r,i)=>({...r,i})).filter(r=>r.date).sort((a,b)=>a.date.localeCompare(b.date));
  if(!all.length)return`<div class="card" style="margin-top:0"><div class="empty">Aucun retrait enregistré.<br>Appuie sur + pour en ajouter un.</div></div>`;
@@ -847,7 +847,7 @@ function vRet(){
  const kp=(l,v,c,w)=>`<div class="kpi${w?" wide":""}" style="--c:var(--${c})"><span>${l}</span><b>${v}</b></div>`;
  return`<div class="kpis">${kp("Total retiré",eur(tot),"rouge",1)}${kp("Retiré en "+cy,eur(sum(all.filter(r=>r.date.startsWith(cy)),"montant")),"orange")}${kp("Nombre de retraits",all.length,"bleu")}</div>
  ${card("ret-yr","Retiré par année",bars(Y,"#f97316"))}${Object.keys(E).length>1?card("ret-emp","Retiré par employeur",bars(E,null)):""}
- ${card("ret-hist","Historique des retraits · touche une ligne pour la modifier",`<div class="lst">${all.slice().reverse().map(r=>`<div class="op" data-ret="${r.i}"><div class="m"><b>${esc(r.motif||"Retrait")}</b><small>${fdy(r.date)}${r.plan?" · "+esc(r.plan):""}${r.employeur?" · "+esc(r.employeur):""}</small></div><span class="neg am">−${eur2(r.montant)}</span><span style="color:var(--mut)">✎</span></div>`).join("")}</div>`)}`}
+ ${card("ret-hist","Historique des retraits · touche une ligne pour la modifier",`<div class="lst">${all.slice().reverse().map(r=>`<div class="op" data-ret="${r.i}"><div class="m"><b>${esc(r.motif||"Retrait")}</b><small>${fdy(r.date)}${r.plan?" · "+esc(r.plan):""}${r.employeur?" · "+esc(r.employeur):""}${r.brut>0?" · brut "+eur2(r.brut)+" − prélèv. sociaux "+eur2(r.ps||0)+" − frais "+eur2(r.frais||0):""}</small></div><span class="neg am">−${eur2(r.montant)}</span><span style="color:var(--mut)">✎</span></div>`).join("")}</div>`)}`}
 /* ---------- Nouveaux onglets : Recherche, Santé, Impôts ---------- */
 const UI={sq:"",scat:"all",ssens:"Dépense",syr:"all",hAct:"gen",hPrix:null,hQty:1,fy:null,iy:"all",hs:"all",hPr:"o",hS:"n",hMon:null,hg:"all",gd:"",selMode:false,sel:new Set(),gt:"",gn:"",gp:"",addG:"",sg:""};
 const nrm=s=>String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
@@ -1224,7 +1224,7 @@ $("#frmI").onsubmit=e=>{const m=parseFloat($("#iNet").value);if(!(m>0)){e.preven
  const o={date:$("#iDate").value,type:iType,montant:Math.round(m*100)/100,brut:Math.round((parseFloat($("#iBrut").value)||0)*100)/100,dest:iType==="Abondement"?$("#iDest").options[1].value:$("#iDest").value,employeur:$("#iEmp").value.trim()};
  if(o.type==="Abondement"||String(o.dest).startsWith("Placé"))o.plan=$("#iPlan").value;
  D.interessement=D.interessement||[];if(iIdx>=0)D.interessement[iIdx]=o;else D.interessement.push(o);UI.iy="all";save();render()};
-/* ---------- Import de relevés PDF Amundi (abondement, intéressement, participation, arbitrage…) ---------- */
+/* ---------- Import de relevés PDF Amundi et Natixis (abondement, intéressement, participation, arbitrage…) ---------- */
 /*PDFPARSE-START*/
 const AMN="\\d{1,3}(?: \\d{3})+,\\d{2}|\\d+,\\d{2}",AM="("+AMN+") €",nF=s=>parseFloat(String(s).replace(/ /g,"").replace(",","."))||0,dF=s=>s?s.slice(6)+"-"+s.slice(3,5)+"-"+s.slice(0,2):"";
 function parseRel(T,DP,DC){
@@ -1255,6 +1255,92 @@ function parseRel(T,DP,DC){
  else r.warn.push("Type de relevé non reconnu");
  return r}
 /*PDFPARSE-END*/
+/* ---------- Relevés Natixis Interépargne (PEG Safran…) ---------- */
+/*NXPARSE-START*/
+const NXN="\\d{1,3}(?: \\d{3})+,\\d{2}|\\d+,\\d{2}",nxP=s=>parseFloat(String(s).replace(/ /g,"").replace(",","."))||0,nxD=s=>s?s.slice(6)+"-"+s.slice(3,5)+"-"+s.slice(0,2):"";
+const nxPL=p=>/^PEG$/i.test(p)?"PEG":/^PEE$/i.test(p)?"PEE":"PERCO";
+const nxFd=n=>{n=String(n).replace(/\s+/g," ").trim().toUpperCase();return/SAFRAN INVESTISSEMENT CLASS/.test(n)?"SAFRAN INVESTISSEMENT CLASSIQUE":n};
+function isNatixis(T){return/NATIXIS INTER[ÉE]PARGNE/i.test(T)||/interepargne\.natixis\.com/i.test(T)}
+function parseNatixis(T,DP,DC){
+ const R=re=>T.match(re),PLX="(PEG|PEE|PERCOI?|PERECO|PER COL)",
+  head=R(/\b8401 \d{9} ([A-Z]{3,6})\b/),code=head?head[1]:"",
+  av=R(new RegExp("R[ée]capitulatif de vos avoirs au (\\d{2}/\\d{2}/\\d{4})(?: Le \\d{1,2} \\S+ \\d{4} \\d+/\\d+)? ("+NXN+") ("+NXN+") ("+NXN+")","i")),
+  pm=R(new RegExp("\\b"+PLX+" - [A-Z]"));
+ let plan=pm?nxPL(pm[1]):"";
+ const r={ref:"",typ:"",avDate:av?nxD(av[1]):"",av:av?nxP(av[4]):null,sup:[],lots:[],mv:[],op:null,ret:null,warn:[],gest:"Natixis",plan,div:null};
+ /* employeur : « SAFRAN SAFRAN AIRCRAFT ENGINES SAFRAN » → « SAFRAN AIRCRAFT ENGINES » */
+ const es=R(/(?:Epargne Salariale|MONTANT TOTAL\*?|Avis d.op[ée]ration) ([A-Z0-9À-Ý&'.\- ]+?) (?:Arbitrage de|Votre |Les parts cr|Remboursement)/);
+ let emp="";if(es){let s=es[1].replace(/\s+/g," ").trim();const g=s.split(" ")[0];
+  if(s.startsWith(g+" "+g+" "))s=s.slice(g.length+1);
+  if(s.endsWith(" "+g)&&s.length>g.length+1)s=s.slice(0,-g.length-1);
+  if(s.length%2&&s.slice(0,(s.length-1)/2)===s.slice((s.length+1)/2))s=s.slice(0,(s.length-1)/2);
+  emp=s.trim()}
+ const typ=/Remboursement suite|TOTAL REGL[ÉE]/i.test(T)?"Remboursement":/Arbitrage de vos avoirs/i.test(T)?"Arbitrage":/Les parts cr[ée]+s sur le FCPE/i.test(T)?"Dividende":/Votre suppl[ée]ment d.int[ée]ressement/i.test(T)?"Supplément":/Votre (?:prime d.)?int[ée]ressement/i.test(T)?"Intéressement":/Votre (?:compl[ée]ment de )?participation/i.test(T)?"Participation":/Votre abondement/i.test(T)?"Abondement":"";
+ r.typ=typ;
+ /* tableau « Situation de vos avoirs » : une ligne par fonds et par date de disponibilité */
+ const si=T.search(/Situation de vos avoirs au/i),sit=[];
+ if(si>=0){const seg=T.slice(si).replace(new RegExp("\\b"+PLX+" - [A-Z]+ ","g"),""),
+   re=new RegExp("((?:SAFRAN|NATIXIS|[A-Z])[A-Z0-9' .\\-]*?) (\\d{2}/\\d{2}/\\d{4}) (\\d+,\\d{5}) (\\d+,\\d{4}) ("+NXN+") (\\d{2}/\\d{2}/\\d{4})","g");let m;
+  while((m=re.exec(seg)))sit.push({nom:nxFd(m[1]),dispo:nxD(m[2]),vp:nxP(m[3]),qte:nxP(m[4]),val:nxP(m[5]),dv:nxD(m[6])});
+  const tot=R(new RegExp("TOTAL\\* ("+NXN+") [¤€]"));
+  if(sit.length&&tot&&Math.abs(sit.reduce((t,x)=>t+x.val,0)-nxP(tot[1]))<=.05){
+   const by={};sit.forEach(x=>by[x.nom]=(by[x.nom]||0)+x.val);r.sup=Object.entries(by).map(([nom,val])=>({nom,val:Math.round(val*100)/100}));
+   r.lots=sit.map(x=>({nom:x.nom,dispo:x.dispo,qte:x.qte,val:x.val}))}}
+ if(!typ){r.warn.push("Type de relevé non reconnu");return r}
+ const rowRe=new RegExp("((?:SAFRAN|NATIXIS|[A-Z])[A-Z0-9' .\\-]*?) (\\d{2}/\\d{2}/\\d{4}) (\\d+,\\d{5}) (\\d+,\\d{4}) ("+NXN+")","g"),
+  strip=s=>s.replace(new RegExp("\\b"+PLX+" - [A-Z]+ ","g"),""),
+  rows=(seg,sens)=>{const o=[];let m;rowRe.lastIndex=0;seg=strip(seg);while((m=rowRe.exec(seg)))o.push({date:nxD(m[2]),fond:nxFd(m[1]),sens,qte:nxP(m[4]),prix:nxP(m[3]),montant:nxP(m[5])});return o};
+ const pl=()=>plan||"";
+ if(typ==="Arbitrage"){
+  const i0=T.search(/DESINVESTISSEMENT/),j=i0>=0?T.slice(i0+15).search(/INVESTISSEMENT Date de valorisation/):-1,i1=j>=0?i0+15+j:-1;
+  if(i0>=0&&i1>i0){const out=rows(T.slice(i0,i1),"rachat"),inn=rows(T.slice(i1,T.search(/VOS IDENTIFIANTS/)),"achat");r.mv=[...out,...inn];
+   if(!out.length||!inn.length)r.warn.push("Lignes d’arbitrage incomplètes");
+   const so=out.reduce((t,x)=>t+x.montant,0),sn=inn.reduce((t,x)=>t+x.montant,0);if(Math.abs(so-sn)>.05)r.warn.push("Montant désinvesti ≠ montant réinvesti")}
+  else r.warn.push("Tableaux d’arbitrage introuvables");
+  r.ref="NX|ARB|"+r.avDate+"|"+r.mv.filter(x=>x.sens==="achat").map(x=>x.fond.slice(0,6)+x.montant).join("+");
+ }
+ else if(typ==="Remboursement"){
+  const a=T.search(/Valeur de la part Nombre de parts Montant/i),b=T.search(/Pr[ée]l[èe]vements sociaux/i);
+  const rr=a>=0&&b>a?rows(T.slice(a,b),"rachat"):[];r.mv=rr;
+  const ps=R(new RegExp("Pr[ée]l[èe]vements sociaux -\\s?("+NXN+")")),fr=R(new RegExp("Frais de dossier[^-]*?-\\s?("+NXN+")")),tt=R(new RegExp("TOTAL REGL[ÉE] ("+NXN+") ?€")),mo=R(/(Remboursement suite [^.]*?contrat de travail)(?: le \d{2}\/\d{2}\/\d{4})?/i);
+  const brut=rr.reduce((t,x)=>t+x.montant,0);
+  if(!rr.length||!tt)r.warn.push("Montant du remboursement introuvable");
+  else{const net=nxP(tt[1]),p=ps?nxP(ps[1]):0,f=fr?nxP(fr[1]):0;
+   if(Math.abs(brut-p-f-net)>.05)r.warn.push("Le total réglé ne correspond pas à la somme des lignes");
+   r.ret={date:r.avDate,montant:net,brut:Math.round(brut*100)/100,ps:p,frais:f,plan:plan||"PEG",employeur:emp,motif:"Remboursement (fin de contrat)"};
+   r.ref="NX|VIR|"+r.avDate+"|"+net}
+  r.av=r.av==null?0:r.av;if(r.av===0)r.zero=true;
+ }
+ else if(typ==="Dividende"){
+  const fm=R(/Les parts cr[ée]+s sur le FCPE (SAFRAN INVESTISSEMENT CLASSIQUE|[A-Z][A-Z0-9' \-]+?) suite au versement/),
+   tb=R(new RegExp("(\\d{4}) (\\d+,\\d{4}) (\\d+,\\d{4,7}) ("+NXN+") (\\d+,\\d{4}) Valeur de la part")),
+   vp=R(/[àa] la date du (\d{2}\/\d{2}\/\d{4}) : (\d+,\d{5})/);
+  if(fm&&tb&&vp){const q=nxP(tb[5]),p=nxP(vp[2]);r.mv=[{date:nxD(vp[1]),fond:nxFd(fm[1]),sens:"achat",div:true,qte:q,prix:p,montant:nxP(tb[4])}];
+   r.div={exercice:+tb[1],par_part:nxP(tb[3]),parts_detenues:nxP(tb[2])};
+   r.ref="NX|REI|"+nxD(vp[1])+"|"+tb[1]+"|"+q}
+  else r.warn.push("Dividende réinvesti : lignes introuvables");
+ }
+ else{ /* Participation / Intéressement / Supplément / Abondement */
+  const net=R(new RegExp("Total net en euros ("+NXN+")")),brut=R(new RegExp("Montant attribu[ée] ("+NXN+")")),
+   tre=new RegExp("\\b"+PLX+" - [A-Z]+ ((?:SAFRAN|NATIXIS|[A-Z])[A-Z0-9' .\\-]*?) ("+NXN+") (?:(\\d{2}/\\d{2}/\\d{4}) )?(\\d+,\\d{5}) (\\d+,\\d{4}) (\\d{2}/\\d{2}/\\d{4})"),
+   m=R(tre);
+  if(net&&m){const n=nxP(net[1]);plan=nxPL(m[1]);r.plan=plan;const vers=nxP(m[3]),vp=nxP(m[5]),q=nxP(m[6]);
+   let dv=m[4]?nxD(m[4]):"";
+   if(!dv){const s=sit.find(x=>x.nom===nxFd(m[2])&&Math.abs(x.vp-vp)<1e-5);dv=s?s.dv:r.avDate}
+   if(Math.abs(vers-n)>.02)r.warn.push("Montant investi ≠ montant net");
+   if(Math.abs(q*vp-vers)>.05)r.warn.push("Parts × valeur ≠ montant investi");
+   r.mv=[{date:dv,fond:nxFd(m[2]),sens:"achat",qte:q,prix:vp,montant:vers,dispo:nxD(m[7])}];
+   const ty=typ==="Supplément"?"Intéressement":typ;
+   r.op={type:ty,date:dv,montant:n,brut:brut?nxP(brut[1]):0,dest:DP,employeur:emp,plan};
+   r.ref="NX|"+code+"|"+dv+"|"+n;
+   if(typ==="Supplément")r.warn.push("Supplément d’intéressement classé en « Intéressement »");
+   if(/compl[ée]ment de participation/i.test(T))r.warn.push("Complément de participation classé en « Participation »")}
+  else r.warn.push("Montant net ou ligne d’investissement introuvable")}
+ r.plan=plan||"PEG";
+ if(r.mv.length){r.mv.forEach(x=>{x.plan=r.plan;x.ref=r.ref;x.gest="Natixis";x.origine=typ});}
+ if(r.op)r.op.ref=r.ref;if(r.ret)r.ret.ref=r.ref;
+ return r}
+/*NXPARSE-END*/
 const PDFV="3.11.174",PDFB="https://cdn.jsdelivr.net/npm/pdfjs-dist@"+PDFV+"/build/";
 let pdfLib=null,PDFS={ops:[],last:null};
 const loadScr=u=>new Promise((ok,ko)=>{const e=document.createElement("script");e.src=u;e.onload=ok;e.onerror=()=>ko(new Error("lecteur PDF indisponible (connecte-toi une première fois à internet)"));document.head.appendChild(e)});
@@ -1265,59 +1351,79 @@ async function pdfjs(){if(pdfLib)return pdfLib;
 async function pdfTexte(f){const L=await pdfjs(),doc=await L.getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise;let t="";
  for(let p=1;p<=doc.numPages;p++){const c=await(await doc.getPage(p)).getTextContent();t+=c.items.map(i=>i.str).join(" ")+" "}
  return t.replace(/[\u00a0\u202f\u2009]/g," ").replace(/(\d)\s*,\s*(\d{2})(?!\d)/g,"$1,$2").replace(/\s+/g," ").trim()}
-const pdfCard=()=>`<div class="card" style="margin-top:0"><div class="sh">📄 Lire mes relevés Amundi (PDF)</div><div class="d" style="margin:2px 0 10px">Abondement, intéressement, participation, arbitrage… Choisis un ou plusieurs PDF : tu vérifies avant que ce soit ajouté.</div><button type="button" class="sec" id="bPdf" style="width:100%">📄 Choisir des PDF…</button><input type="file" id="pdfIn" accept="application/pdf,.pdf" multiple class="hide"></div>`;
-const supNm=n=>{const x=n.replace(/^AMUNDI /,"").replace(/ ESR - F$/,"").toLowerCase().replace("monetaire","monétaire");return x.charAt(0).toUpperCase()+x.slice(1)};
-const supCard=S=>S.sv&&S.sv.supports&&S.sv.supports.length?card("cpt-s","Répartition par fonds (relevé du "+fdy(S.sv.supports_date||"")+")",bars(Object.fromEntries(S.sv.supports.map(x=>[supNm(x.nom),x.val])),null)):"";
+const pdfCard=()=>`<div class="card" style="margin-top:0"><div class="sh">📄 Lire mes relevés (PDF)</div><div class="d" style="margin:2px 0 10px">Amundi (PEE / PERCO) et Natixis Interépargne (PEG) : abondement, intéressement, participation, dividendes réinvestis, arbitrage, remboursement… Choisis un ou plusieurs PDF : tu vérifies avant que ce soit ajouté.</div><button type="button" class="sec" id="bPdf" style="width:100%">📄 Choisir des PDF…</button><input type="file" id="pdfIn" accept="application/pdf,.pdf" multiple class="hide"></div>`;
+const NXFN={"SAFRAN INVESTISSEMENT CLASSIQUE":"Safran Investissement Classique","SAFRAN DYNAMIQUE":"Safran Dynamique","NATIXIS ES MONETAIRE I2":"Natixis ES Monétaire I2"};
+const supNm=n=>{if(NXFN[n])return NXFN[n];if(/^(SAFRAN|NATIXIS) /.test(n))return n.toLowerCase().replace(/(^|\s)\S/g,c=>c.toUpperCase()).replace("Monetaire","Monétaire");const x=n.replace(/^AMUNDI /,"").replace(/ ESR - F$/,"").toLowerCase().replace("monetaire","monétaire");return x.charAt(0).toUpperCase()+x.slice(1)};
+const supCard=S=>{const sv=S.sv||{},L=[...(sv.supports||[]),...(sv.supports_nx||[])];return L.length?card("cpt-s","Répartition par fonds (relevé du "+fdy(sv.supports_date||sv.supports_nx_date||"")+")",bars(Object.fromEntries(L.map(x=>[supNm(x.nom),x.val])),null)):""};
+function pdfDupR(o){return(D.retraits_epargne||[]).some(s=>(o.ref&&s.ref===o.ref)||(!s.ref&&Math.abs((s.montant||0)-o.montant)<.015&&Math.abs(Date.parse(s.date)-Date.parse(o.date))<=20*864e5))}
 function pdfDup(o){return(D.interessement||[]).some(s=>(o.ref&&s.ref===o.ref)||(!s.ref&&s.type===o.type&&Math.abs((s.montant||0)-o.montant)<.015&&Math.abs(Date.parse(s.date)-Date.parse(o.date))<=20*864e5))}
 document.addEventListener("click",e=>{if(e.target.closest("#bPdf"))$("#pdfIn").click()});
 document.addEventListener("change",e=>{if(e.target.id==="pdfIn"){const fs=[...e.target.files];e.target.value="";pdfPick(fs)}});
 async function pdfPick(files){if(!files.length)return;const b=$("#bPdf");if(b){b.disabled=true;b.textContent="Lecture en cours…"}
  const DP=$("#iDest").options[1].value,DC=$("#iDest").options[0].value,res=[],err=[],seen=new Set();
- for(const f of files){try{const r=parseRel(await pdfTexte(f),DP,DC);r.file=f.name;const k=r.ref||f.name+f.size;if(seen.has(k))continue;seen.add(k);res.push(r)}catch(x){err.push(f.name+" : "+x.message)}}
+ for(const f of files){try{const T=await pdfTexte(f),r=isNatixis(T)?parseNatixis(T,DP,DC):parseRel(T,DP,DC);r.file=f.name;const k=r.ref||f.name+f.size;if(seen.has(k))continue;seen.add(k);res.push(r)}catch(x){err.push(f.name+" : "+x.message)}}
  if(b){b.disabled=false;b.textContent="📄 Choisir des PDF…"}
  if(!res.length)return alert("Aucun relevé lu.\n"+err.join("\n"));
  showPdf(res,err)}
 function showPdf(res,err){
- const known=[...new Set([...(D.salaires||[]),...(D.interessement||[])].map(x=>x.employeur).filter(Boolean))],ops=[];PDFS={ops,last:null};let h="";
+ const known=[...new Set([...(D.salaires||[]),...(D.interessement||[]),...(D.retraits_epargne||[])].map(x=>x.employeur).filter(Boolean))],ops=[],rets=[];PDFS={ops,rets,last:null,nx:[]};let h="";
  res.sort((a,b)=>(a.op?a.op.date:a.avDate).localeCompare(b.op?b.op.date:b.avDate));
+ const wr=r=>r.warn.map(w=>`<small style="color:var(--orange)">⚠ ${esc(w)}</small>`).join("");
  res.forEach(r=>{
   if(r.op){const o=r.op;o.employeur=known.find(k=>nrm(k)===nrm(o.employeur))||o.employeur;const dup=pdfDup(o),i=ops.push(o)-1;
-   h+=`<label class="pdfr"><input type="checkbox" data-pi="${i}" ${dup?"":"checked"}><div class="m"><b>${esc(o.type)}</b> · ${fdy(o.date)}<small>${esc(o.employeur)}${o.plan?" · "+esc(o.plan):""} · ${esc(o.dest)}${o.brut>0?" · brut "+eur2(o.brut):""}</small>${r.warn.map(w=>`<small style="color:var(--orange)">⚠ ${esc(w)}</small>`).join("")}</div><div style="text-align:right"><b class="pos">${eur2(o.montant)}</b><small style="color:${dup?"var(--orange)":"var(--vert)"}">${dup?"déjà présent":"nouveau"}</small></div></label>`}
-  else if(r.typ==="Arbitrage"&&r.av!=null)h+=`<div class="pdfr"><span>🔁</span><div class="m"><b>Arbitrage</b> · ${fdy(r.avDate)}<small>Aucune somme nouvelle : sert à mettre à jour la valeur du compte</small></div><div style="text-align:right"><b>${eur2(r.av)}</b></div></div>`;
+   h+=`<label class="pdfr"><input type="checkbox" data-pi="${i}" ${dup?"":"checked"}><div class="m"><b>${esc(o.type)}</b> · ${fdy(o.date)}<small>${esc(o.employeur)}${o.plan?" · "+esc(o.plan):""} · ${esc(o.dest)}${o.brut>0?" · brut "+eur2(o.brut):""}</small>${wr(r)}</div><div style="text-align:right"><b class="pos">${eur2(o.montant)}</b><small style="color:${dup?"var(--orange)":"var(--vert)"}">${dup?"déjà présent":"nouveau"}</small></div></label>`}
+  else if(r.ret){const o=r.ret;o.employeur=known.find(k=>nrm(k)===nrm(o.employeur))||o.employeur;const dup=pdfDupR(o),i=rets.push(o)-1;
+   h+=`<label class="pdfr"><input type="checkbox" data-pr="${i}" ${dup?"":"checked"}><div class="m"><b>Remboursement</b> · ${fdy(o.date)}<small>${esc(o.employeur)} · ${esc(o.plan)} · ${eur2(o.brut)} − prélèvements sociaux ${eur2(o.ps)} − frais ${eur2(o.frais)}</small>${wr(r)}</div><div style="text-align:right"><b class="neg">−${eur2(o.montant)}</b><small style="color:${dup?"var(--orange)":"var(--vert)"}">${dup?"déjà présent":"nouveau"}</small></div></label>`}
+  else if(r.typ==="Dividende"&&r.mv.length){const m=r.mv[0];
+   h+=`<div class="pdfr"><span>💶</span><div class="m"><b>Dividende réinvesti</b> · ${fdy(m.date)}<small>${esc(supNm(m.fond))} · +${pQ(m.qte)} part${m.qte>1?"s":""} · ${esc(m.plan)} · enregistré dans les positions (pas un versement)</small>${wr(r)}</div><div style="text-align:right"><b>${eur2(m.montant)}</b></div></div>`}
+  else if(r.typ==="Arbitrage"&&r.av!=null){const o=r.mv.filter(x=>x.sens==="rachat"),a=r.mv.filter(x=>x.sens==="achat");
+   h+=`<div class="pdfr"><span>🔁</span><div class="m"><b>Arbitrage</b> · ${fdy(r.avDate)}<small>${r.gest&&o.length&&a.length?esc(o.map(x=>supNm(x.fond)).join(", "))+" → "+esc(a.map(x=>supNm(x.fond)).join(", "))+" · "+esc(r.plan):"Aucune somme nouvelle : sert à mettre à jour la valeur du compte"}</small>${wr(r)}</div><div style="text-align:right"><b>${eur2(r.gest&&a.length?a.reduce((t,x)=>t+x.montant,0):r.av)}</b></div></div>`}
   else h+=`<div class="pdfr"><span>❓</span><div class="m"><b>${esc(r.file)}</b><small style="color:var(--rouge)">${esc(r.warn.join(" · ")||"Non reconnu")}</small></div></div>`});
  err.forEach(x=>{h+=`<div class="pdfr"><span>❓</span><div class="m"><small style="color:var(--rouge)">${esc(x)}</small></div></div>`});
  const have=new Set((D.mouvements_epargne||[]).map(m=>m.ref)),haveS=new Set((D.releves_epargne||[]).map(m=>m.ref)),mv=[],sn=[];
- res.forEach(r=>{if(r.ref&&!have.has(r.ref))r.mv.forEach(m=>mv.push({...m,origine:r.typ}));if(r.ref&&!haveS.has(r.ref)&&r.sup.length)sn.push({ref:r.ref,date:r.avDate,total:r.av,sup:r.sup})});
+ res.forEach(r=>{if(r.ref&&!have.has(r.ref))r.mv.forEach(m=>mv.push({...m,origine:r.typ}));
+  if(r.ref&&!haveS.has(r.ref)&&(r.sup.length||r.zero))sn.push({ref:r.ref,date:r.avDate,total:r.av,sup:r.sup,...(r.gest?{gest:r.gest,plan:r.plan,lots:r.lots||[],...(r.zero?{zero:true}:{})}:{})})});
  PDFS.mv=mv;PDFS.sn=sn;
  if(mv.length||sn.length)h+=`<div class="sh" style="margin-top:14px">📊 Positions par fonds</div><label class="pdfr"><input type="checkbox" data-pmv checked><div class="m"><b>${mv.length} mouvement${mv.length>1?"s":""} sur fonds · ${sn.length} valorisation${sn.length>1?"s":""}</b><small>Parts achetées / vendues et valeur de chaque fonds : alimente l’onglet Positions (plus-values latentes et réalisées)</small></div></label>`;
- const val=res.filter(r=>r.av!=null&&r.avDate).sort((a,b)=>b.avDate.localeCompare(a.avDate))[0];
+ const val=res.filter(r=>!r.gest&&r.av!=null&&r.avDate).sort((a,b)=>b.avDate.localeCompare(a.avDate))[0],nxl={};
+ res.filter(r=>r.gest&&r.av!=null&&r.avDate).forEach(r=>{const c=nxl[r.plan];if(!c||r.avDate>c.avDate)nxl[r.plan]=r});PDFS.nx=Object.values(nxl);
+ if(val||PDFS.nx.length)h+=`<div class="sh" style="margin-top:14px">💰 Valeur du compte</div>`;
  if(val){PDFS.last=val;const cur=(D.solde_epargne&&D.solde_epargne.date)||"",on=!cur||val.avDate>cur;
-  h+=`<div class="sh" style="margin-top:14px">💰 Valeur du compte</div><label class="pdfr"><input type="checkbox" data-psolde ${on?"checked":""}><div class="m"><b>PERCO : ${eur2(val.av)}</b><small>Relevé du ${fdy(val.avDate)}${cur?" · valeur actuellement saisie le "+fdy(cur):""}</small>${val.sup.length?`<small>${val.sup.map(x=>esc(supNm(x.nom))+" "+eur(x.val)).join(" · ")}</small>`:""}</div></label>`}
+  h+=`<label class="pdfr"><input type="checkbox" data-psolde ${on?"checked":""}><div class="m"><b>PERCO : ${eur2(val.av)}</b><small>Relevé du ${fdy(val.avDate)}${cur?" · valeur actuellement saisie le "+fdy(cur):""}</small>${val.sup.length?`<small>${val.sup.map(x=>esc(supNm(x.nom))+" "+eur(x.val)).join(" · ")}</small>`:""}</div></label>`}
+ PDFS.nx.forEach((r,i)=>{const k=r.plan.toLowerCase(),so=D.solde_epargne||{},cur=(so.dates&&so.dates[k])||(so[k]!=null?so.date:"")||"",on=!cur||r.avDate>cur;
+  h+=`<label class="pdfr"><input type="checkbox" data-pnx="${i}" ${on?"checked":""}><div class="m"><b>${esc(r.plan)} (Natixis) : ${eur2(r.av)}</b><small>Relevé du ${fdy(r.avDate)}${cur?" · valeur actuellement saisie le "+fdy(cur):""}</small>${r.sup.length?`<small>${r.sup.map(x=>esc(supNm(x.nom))+" "+eur(x.val)).join(" · ")}</small>`:r.av===0?`<small>Compte soldé après le remboursement</small>`:""}</div></label>`});
  $("#pdfBody").innerHTML=h;$("#dlgPdf").showModal()}
 $("#pdfCancel").onclick=()=>$("#dlgPdf").close();
 $("#frmPdf").onsubmit=()=>{const ck=[...document.querySelectorAll("#pdfBody [data-pi]:checked")].map(x=>PDFS.ops[+x.dataset.pi]);
  D.interessement=D.interessement||[];ck.forEach(o=>D.interessement.push(o));
+ const rk=[...document.querySelectorAll("#pdfBody [data-pr]:checked")].map(x=>PDFS.rets[+x.dataset.pr]);if(rk.length){D.retraits_epargne=D.retraits_epargne||[];rk.forEach(o=>D.retraits_epargne.push(o))}
  const l=PDFS.last;if(l&&document.querySelector("#pdfBody [data-psolde]:checked")){const o={...(D.solde_epargne||{})};delete o.valeur;o.perco=Math.round(l.av*100)/100;o.date=l.avDate;if(l.sup.length){o.supports=l.sup;o.supports_date=l.avDate}D.solde_epargne=o}
+ const nk=[...document.querySelectorAll("#pdfBody [data-pnx]:checked")].map(x=>PDFS.nx[+x.dataset.pnx]);
+ if(nk.length){const o={...(D.solde_epargne||{})};delete o.valeur;o.dates={...(o.dates||{})};
+  nk.forEach(r=>{const k=r.plan.toLowerCase();o[k]=Math.round(r.av*100)/100;o.dates[k]=r.avDate;if(!o.date||r.avDate>o.date)o.date=r.avDate});
+  const lr=nk.slice().sort((a,b)=>b.avDate.localeCompare(a.avDate))[0];o.supports_nx=lr.sup;o.supports_nx_date=lr.avDate;D.solde_epargne=o}
  if(document.querySelector("#pdfBody [data-pmv]:checked")){D.mouvements_epargne=[...(D.mouvements_epargne||[]),...PDFS.mv];D.releves_epargne=[...(D.releves_epargne||[]),...PDFS.sn]}
  UI.iy="all";save();render()};
 /* ---------- Positions de l'épargne salariale : parts, PRU, plus-values latentes et réalisées (calculées depuis les relevés PDF) ---------- */
 function posEp(){
  const M=[...(D.mouvements_epargne||[])].sort((a,b)=>a.date.localeCompare(b.date)||(a.sens===b.sens?0:a.sens==="achat"?-1:1)),
-  SN=[...(D.releves_epargne||[])].sort((a,b)=>b.date.localeCompare(a.date)),sn=SN[0]||null,F={},ventes=[];
- M.forEach(m=>{const f=F[m.fond]||(F[m.fond]={nom:m.fond,plan:m.plan||"PERCO",qte:0,cout:0,inv:0,real:0,vendu:0,lp:0,ld:"",d0:"",part:false});
-  if(m.sens==="achat"){f.qte+=m.qte;f.cout+=m.montant;f.inv+=m.montant;if(!f.d0)f.d0=m.date}
+  SN=[...(D.releves_epargne||[])].sort((a,b)=>b.date.localeCompare(a.date)),sn=SN[0]||null,snG=g=>SN.find(x=>(x.gest||"")===g)||null,F={},ventes=[],
+  nf=m=>({nom:m.fond,plan:m.plan||"PERCO",gest:m.gest||"",qte:0,cout:0,inv:0,real:0,vendu:0,lp:0,ld:"",d0:"",part:false,dv:0});
+ M.forEach(m=>{const f=F[m.fond]||(F[m.fond]=nf(m));
+  if(m.sens==="achat"){f.qte+=m.qte;if(m.div)f.dv+=m.montant;else{f.cout+=m.montant;f.inv+=m.montant}if(!f.d0)f.d0=m.date}
   else{const pru=f.qte>1e-6?f.cout/f.qte:0,qv=Math.max(0,Math.min(m.qte,f.qte)),cr=qv*pru,pv=m.qte>0?m.montant*qv/m.qte:0,g=pv-cr,part=m.qte-qv>1e-4;
    if(part)f.part=true;f.real+=g;f.vendu+=m.montant;f.qte-=qv;f.cout-=cr;ventes.push({date:m.date,fond:m.fond,qte:m.qte,prix:m.prix,montant:m.montant,g,part,cr})}
   f.lp=m.prix;f.ld=m.date});
- if(sn)sn.sup.forEach(x=>{if(!F[x.nom])F[x.nom]={nom:x.nom,plan:"PERCO",qte:0,cout:0,inv:0,real:0,vendu:0,lp:0,ld:"",d0:"",part:false}});
+ [...new Set(SN.map(x=>x.gest||""))].forEach(g=>{const s=snG(g);if(s)s.sup.forEach(x=>{if(!F[x.nom])F[x.nom]=nf({fond:x.nom,plan:s.plan,gest:g})})});
  const rows=Object.values(F).map(f=>{
-  const sv=sn?(sn.sup.find(x=>x.nom===f.nom)||{}).val||0:f.qte*f.lp,days=sn&&f.ld?Math.max(0,(Date.parse(sn.date)-Date.parse(f.ld))/864e5):0,
-   inc=!!sn&&((f.qte>1e-4&&sv<=0&&sn.date>f.ld)||(f.qte<=1e-4&&sv>1)||(f.qte>1e-4&&sv>0&&f.lp>0&&Math.abs(sv/f.qte/f.lp-1)>.1+.0006*days));
-  const act=sv>1||f.qte>1e-4,ok=act&&!inc&&f.qte>1e-4&&f.cout>0;
-  return{...f,val:sv,act,inc,ok,cours:f.qte>1e-4&&sn&&!inc?sv/f.qte:f.lp,pru:f.qte>1e-4?f.cout/f.qte:0,jours:f.d0?Math.max(0,Math.round((Date.now()-Date.parse(f.d0))/864e5)):null,lat:ok?sv-f.cout:null,perf:ok?(sv-f.cout)/f.cout*100:null}});
+  const s=snG(f.gest||""),zero=!!(s&&s.zero),sv=s?(s.sup.find(x=>x.nom===f.nom)||{}).val||0:f.qte*f.lp,days=s&&f.ld?Math.max(0,(Date.parse(s.date)-Date.parse(f.ld))/864e5):0,
+   inc=!!s&&!zero&&((f.qte>1e-4&&sv<=0&&s.date>f.ld)||(f.qte<=1e-4&&sv>1)||(f.qte>1e-4&&sv>0&&f.lp>0&&Math.abs(sv/f.qte/f.lp-1)>.1+.0006*days));
+  const act=zero?false:(sv>1||f.qte>1e-4),ok=act&&!inc&&f.qte>1e-4&&f.cout>0;
+  return{...f,val:sv,act,inc,ok,cours:f.qte>1e-4&&s&&!inc&&!zero?sv/f.qte:f.lp,pru:f.qte>1e-4?f.cout/f.qte:0,jours:f.d0?Math.max(0,Math.round((Date.now()-Date.parse(f.d0))/864e5)):null,lat:ok?sv-f.cout:null,perf:ok?(sv-f.cout)/f.cout*100:null}});
  const A=rows.filter(r=>r.act),C=rows.filter(r=>!r.act&&(r.inv>0||r.vendu>0)),OK=A.filter(r=>r.ok);
  return{rows,A,C,ventes,sn,tot:A.reduce((t,r)=>t+r.val,0),lat:OK.reduce((t,r)=>t+r.lat,0),coutOk:OK.reduce((t,r)=>t+r.cout,0),real:rows.reduce((t,r)=>t+r.real,0),inc:A.filter(r=>r.inc),part:rows.some(r=>r.part),
   d0:M[0]?M[0].date:"",d1:M.length?M[M.length-1].date:""}}
+const partNote=P=>{const L=P.rows.filter(r=>r.part);return L.length?`<div class="ovnote" style="margin-top:12px">ℹ Ventes plus importantes que les parts connues pour ${L.map(r=>esc(supNm(r.nom))).join(", ")} : il manque des relevés plus anciens (intéressement, participation…). La plus-value actée n’est calculée que sur la part couverte par les relevés importés.</div>`:""};
 /* ---------- Vue d'ensemble / Positions & Transactions (mise en page reprise du tableau de bord PEA) ---------- */
 const OARU='<svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg>',OARD='<svg viewBox="0 0 24 24"><path fill="currentColor" d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z"/></svg>';
 const fN=(v,d=2)=>Number(v).toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d}).replace(/[\u202f\u00a0]/g," ").replace("−","-"),
@@ -1353,7 +1459,7 @@ document.addEventListener("click",e=>{const th=e.target.closest&&e.target.closes
  idx.forEach(k=>tb.appendChild(rows[k]))});
 function vOv(){
  const S=planStats(),P=posEp(),ap=S.tp,gt=S.tot+S.tr-S.tp,hasV=S.anyEnt,sm=(a,t)=>sum(a.filter(s=>s.type===t),"montant");
- if(!S.all.length&&!P.rows.length)return pdfCard()+`<div class="card" style="margin-top:0"><div class="empty">Aucune donnée pour le moment.<br>Ajoute un versement (➕) ou lis un relevé Amundi (PDF).</div></div>`;
+ if(!S.all.length&&!P.rows.length)return pdfCard()+`<div class="card" style="margin-top:0"><div class="empty">Aucune donnée pour le moment.<br>Ajoute un versement (➕) ou lis un relevé PDF.</div></div>`;
  const f0=S.pl.reduce((m,s)=>s.date<m?s.date:m,"9999-12-31"),ans=S.pl.length?Math.max((Date.now()-Date.parse(f0))/864e5/365.25,0):0,
   pg=hasV&&ap>0?gt/ap*100:null,pam=pg!=null&&ans>=.25&&1+pg/100>0?(Math.pow(1+pg/100,1/ans)-1)*100:null,gam=pg!=null&&ans>=.25?gt/ans:null,
   lat=P.coutOk>0?P.lat:null,pl=P.coutOk>0?P.lat/P.coutOk*100:null,real=P.real,pa=S.tot>0?real/S.tot*100:null,
@@ -1369,28 +1475,29 @@ function vOv(){
  </div></div></details>
  ${!hasV?`<div class="ovnote" style="margin-top:12px">Saisis la valeur réelle de tes comptes (onglet <b>Sur le compte</b>) ou lis un relevé PDF pour obtenir les performances.</div>`:""}
  ${P.inc.length?`<div class="ovnote" style="margin-top:12px">⚠ Historique incomplet pour ${P.inc.map(r=>esc(supNm(r.nom))).join(", ")} : plus-value latente et montant investi sont calculés sans ces fonds. Importe les relevés manquants pour les compléter.</div>`:""}
+ ${partNote(P)}
  ${P.sn?`<div class="d" style="margin:8px 4px">Dernière valorisation de fonds : ${fdy(P.sn.date)}.</div>`:""}`}
-function txList(){const a=[];(D.mouvements_epargne||[]).forEach(m=>a.push({d:m.date,t:m.sens==="achat"?"Achat":"Rachat",n:supNm(m.fond),q:m.qte,p:m.prix,m:m.montant,pl:m.plan||""}));
+function txList(){const a=[];(D.mouvements_epargne||[]).forEach(m=>a.push({d:m.date,t:m.sens==="achat"?(m.div?"Dividende réinvesti":"Achat"):"Rachat",n:supNm(m.fond),q:m.qte,p:m.prix,m:m.montant,pl:m.plan||""}));
  (D.interessement||[]).forEach((s,i)=>{if(s.date)a.push({d:s.date,t:"Versement · "+s.type,n:String(s.dest||"").startsWith("Placé")?"Placé":"Perçu",q:null,p:null,m:s.montant,pl:s.plan||"",i})});return a.sort((x,y)=>y.d.localeCompare(x.d))}
 const TXP=["Tout l'historique","Année en cours","12 derniers mois","6 derniers mois","3 derniers mois"];
 function txFrom(l){const t=new Date(),d=n=>{const x=new Date(t.getFullYear(),t.getMonth()-n,t.getDate());return x.toISOString().slice(0,10)};return l==="Année en cours"?t.getFullYear()+"-01-01":l==="12 derniers mois"?d(12):l==="6 derniers mois"?d(6):l==="3 derniers mois"?d(3):""}
 document.addEventListener("change",e=>{if(e.target.id==="txPer"){UI.txp=e.target.value;render()}if(e.target.id==="txTy"){UI.txt=e.target.value;render()}});
 function vPos(){
  const P=posEp(),all=txList();
- if(!P.rows.length&&!all.length)return pdfCard()+`<div class="card" style="margin-top:0"><div class="empty">Pas encore de positions ni de transactions.<br>Lis tes relevés Amundi (PDF) : achats, ventes et valeur de chaque fonds sont enregistrés pour calculer tes plus-values.</div></div>`;
+ if(!P.rows.length&&!all.length)return pdfCard()+`<div class="card" style="margin-top:0"><div class="empty">Pas encore de positions ni de transactions.<br>Lis tes relevés PDF (Amundi, Natixis) : achats, ventes et valeur de chaque fonds sont enregistrés pour calculer tes plus-values.</div></div>`;
  const A=P.A.slice().sort((a,b)=>b.val-a.val),cols=["Nom","Parts","PRU (€)","Prix actuel (€)","Valeur (€)","Gain latent (€)","Performance (%)","Gain réalisé (€)","Détention (j)","Perf. annuelle moy. (%)"],CC=["Gain latent (€)","Performance (%)","Gain réalisé (€)","Perf. annuelle moy. (%)"];
- const rows=A.map(r=>[supNm(r.nom)+(r.inc?" ⚠":""),r.qte>1e-4?pQ(r.qte):"",r.ok?pPx(r.pru):"",r.cours?pPx(r.cours):"",oGE(r.val),r.ok?pEA(r.lat):"",r.ok?pPf(r.perf):"",pEA(r.real),r.jours!=null&&r.qte>1e-4?String(r.jours):"",r.ok?pPf(perfAnn(r.perf,r.jours)):""]);
+ const rows=A.map(r=>[supNm(r.nom)+(r.plan==="PEG"?" · PEG":"")+(r.inc?" ⚠":""),r.qte>1e-4?pQ(r.qte):"",r.ok?pPx(r.pru):"",r.cours?pPx(r.cours):"",oGE(r.val),r.ok?pEA(r.lat):"",r.ok?pPf(r.perf):"",pEA(r.real),r.jours!=null&&r.qte>1e-4?String(r.jours):"",r.ok?pPf(perfAnn(r.perf,r.jours)):""]);
  const OK=A.filter(r=>r.ok),cap=OK.reduce((t,r)=>t+r.cout,0),T=cols.map(()=>"");T[0]="Total";T[4]=oGE(P.tot);T[5]=cap>0?pEA(P.lat):"";T[6]=cap>0?pPf(P.lat/cap*100):"";T[7]=pEA(A.reduce((t,r)=>t+r.real,0));
  const act=A.length?pTbl(cols,rows,{col:CC,total:T,maxH:1000}):'<div class="ovnote">Aucune position active.</div>';
  const m={};A.forEach(r=>{if(r.val>0)m[supNm(r.nom)]=r.val});const rep=Object.keys(m).length?bars(m,null):"";
- const cc=["Nom","Investi (€)","Vendu (€)","Gain réalisé (€)","Performance (%)"],crow=P.C.map(r=>[supNm(r.nom),oGE(r.inv),oGE(r.vendu),pEA(r.real),r.vendu-r.real>0?pPf(r.real/(r.vendu-r.real)*100):""]);
+ const cc=["Nom","Investi (€)","Vendu (€)","Gain réalisé (€)","Performance (%)"],crow=P.C.map(r=>[supNm(r.nom)+(r.plan==="PEG"?" · PEG":""),oGE(r.inv),oGE(r.vendu),pEA(r.real),r.vendu-r.real>0?pPf(r.real/(r.vendu-r.real)*100):""]);
  const clo=P.C.length?pTbl(cc,crow,{col:["Gain réalisé (€)","Performance (%)"],total:["Total",oGE(P.C.reduce((t,r)=>t+r.inv,0)),oGE(P.C.reduce((t,r)=>t+r.vendu,0)),pEA(P.C.reduce((t,r)=>t+r.real,0)),""],maxH:600}):"";
- const per=UI.txp||TXP[0],ty=UI.txt||"Tous",dmin=txFrom(per),tx=all.filter(x=>(!dmin||x.d>=dmin)&&(ty==="Tous"||(ty==="Versements"?x.t.startsWith("Versement"):ty==="Achats"?x.t==="Achat":x.t==="Rachat")));
+ const per=UI.txp||TXP[0],ty=UI.txt||"Tous",dmin=txFrom(per),tx=all.filter(x=>(!dmin||x.d>=dmin)&&(ty==="Tous"||(ty==="Versements"?x.t.startsWith("Versement"):ty==="Achats"?(x.t==="Achat"||x.t==="Dividende réinvesti"):x.t==="Rachat")));
  const tc=["Date","Type","Fonds / Statut","Parts","Prix (€)","Montant (€)","Plan"],trow=tx.map(x=>[fdy(x.d),x.t,x.n,x.q!=null?pQ(x.q):"",x.p!=null?pPx(x.p):"",oGE(x.m),x.pl]);
  const txh=`<div class="tfl"><div><label>Période</label><select id="txPer">${TXP.map(p=>`<option${p===per?" selected":""}>${p}</option>`).join("")}</select></div><div><label>Type</label><select id="txTy">${["Tous","Versements","Achats","Rachats"].map(p=>`<option${p===ty?" selected":""}>${p}</option>`).join("")}</select></div></div>`
   +(tx.length?pTbl(tc,trow,{attr:tx.map(x=>x.i!=null?`data-int="${x.i}"`:""),total:[tx.length+" opération"+(tx.length>1?"s":""),"","","","","",""],maxH:640})+'<div class="d">Touche un versement pour le modifier.</div>':'<div class="ovnote">Aucune transaction sur cette période.</div>');
  return pdfCard()+(P.inc.length?`<div class="ovnote" style="margin-top:12px">⚠ Historique incomplet pour ${P.inc.map(r=>esc(supNm(r.nom))).join(", ")} : il manque des relevés (intéressement, participation, arbitrage…). Importe-les pour un PRU et un gain fiables.</div>`:"")
-  +exp2("pa","📌 Détail des Positions Actives",act)+(rep?exp2("pr","🥧 Répartition du portefeuille",rep):"")+(clo?exp2("pc","📕 Positions clôturées",clo):"")+exp2("pt","🧾 Transactions",txh)}
+  +partNote(P)+exp2("pa","📌 Détail des Positions Actives",act)+(rep?exp2("pr","🥧 Répartition du portefeuille",rep):"")+(clo?exp2("pc","📕 Positions clôturées",clo):"")+exp2("pt","🧾 Transactions",txh)}
 /* Retraits d'épargne salariale */
 const dlgW=$("#dlgW");let wIdx=-1;
 function openRet(i=-1){wIdx=i;$("#frmW").reset();const r=i>=0?D.retraits_epargne[i]:null;
@@ -1402,7 +1509,7 @@ function openRet(i=-1){wIdx=i;$("#frmW").reset();const r=i>=0?D.retraits_epargne
 $("#wCancel").onclick=()=>dlgW.close();
 $("#wDel").onclick=()=>{if(wIdx>=0&&confirm("Supprimer ce retrait ?")){D.retraits_epargne.splice(wIdx,1);save();dlgW.close();render()}};
 $("#frmW").onsubmit=e=>{const m=parseFloat($("#wMt").value);if(!(m>0)){e.preventDefault();return}
- const o={date:$("#wDate").value,montant:Math.round(m*100)/100,employeur:$("#wEmp").value.trim(),motif:$("#wMotif").value.trim(),plan:$("#wPlan").value};
+ const o={...(wIdx>=0?D.retraits_epargne[wIdx]:{}),date:$("#wDate").value,montant:Math.round(m*100)/100,employeur:$("#wEmp").value.trim(),motif:$("#wMotif").value.trim(),plan:$("#wPlan").value};
  D.retraits_epargne=D.retraits_epargne||[];if(wIdx>=0)D.retraits_epargne[wIdx]=o;else D.retraits_epargne.push(o);save();render()};
 /* Ajout / modification d'un prêt */
 const dlgP=$("#dlgP");let pIdx=-1;

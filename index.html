@@ -228,8 +228,8 @@ const CF={get v(){return LS.g('hub_cfg')||{mode:'brut',immo:0}},set v(x){LS.s('h
 function epargne(D){const L=(D.interessement||[]).filter(s=>s.date),P=s=>String(s.dest||'').startsWith('Placé'),tp=L.filter(P).reduce((a,s)=>a+(s.montant||0),0),tc=L.filter(s=>!P(s)).reduce((a,s)=>a+(s.montant||0),0),sv=D.solde_epargne,RT=D.retraits_epargne||[],tr=RT.reduce((a,r)=>a+(r.montant||0),0);
   /* PEE et PERCO séparés : montant réel saisi par plan, sinon versements placés − retraits du plan */
   const ks=['PEE','PERCO'];[...L.filter(P),...RT].forEach(x=>{const k=x.plan||'';if(!ks.includes(k))ks.push(k)});
-  const plans={};ks.forEach(k=>{const pl=L.filter(s=>P(s)&&(s.plan||'')===k).reduce((a,s)=>a+(s.montant||0),0),rt=RT.filter(r=>(r.plan||'')===k).reduce((a,r)=>a+(r.montant||0),0),ent=k==='PEE'?(sv&&sv.pee!=null?sv.pee:null):k==='PERCO'?(sv&&sv.perco!=null?sv.perco:null):null;plans[k]=ent!=null?ent:Math.max(0,pl-rt)});
-  const per=!!(sv&&(sv.pee!=null||sv.perco!=null)),leg=!!(sv&&!per&&sv.valeur>=0);
+  const plans={};ks.forEach(k=>{const pl=L.filter(s=>P(s)&&(s.plan||'')===k).reduce((a,s)=>a+(s.montant||0),0),rt=RT.filter(r=>(r.plan||'')===k).reduce((a,r)=>a+(r.montant||0),0),ent=k&&sv&&typeof sv[k.toLowerCase()]==='number'?sv[k.toLowerCase()]:null;plans[k]=ent!=null?ent:Math.max(0,pl-rt)});
+  const per=!!(sv&&(sv.pee!=null||sv.perco!=null||sv.peg!=null)),leg=!!(sv&&!per&&sv.valeur>=0);
   return{n:L.length,tp,tc,tr,has:per||leg,plans,cur:leg?sv.valeur:per?Object.values(plans).reduce((a,v)=>a+v,0):Math.max(0,tp-tr)}}
 /* Livrets : intérêts en cours (même calcul que le module Épargne : relevé / taux / intérêts crédités) */
 function livAcc(D,a){const T=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10),dd=(x,y)=>Math.round((Date.parse(y+'T12:00:00Z')-Date.parse(x+'T12:00:00Z'))/864e5),
@@ -337,7 +337,7 @@ function renderHome(){
 
    ['pea','📈','PEA',acct(p)],
    ...ctos.map((a,i)=>ctoTile(a,cd[i])),
-   ['epargne','🎁','Épargne salariale',de.n?`<div class="v">${eur(de.cur)}</div>`+((de.plans.PEE||de.plans.PERCO)?`<div class="m">PEE ${eur(de.plans.PEE||0)} · PERCO ${eur(de.plans.PERCO||0)}</div>`:'')+pct(de.has&&de.tp>0?(de.cur+de.tr-de.tp)/de.tp*100:null):'<div class="m">Aucun versement saisi</div>'],
+   ['epargne','🎁','Épargne salariale',de.n?`<div class="v">${eur(de.cur)}</div>`+((de.plans.PEE||de.plans.PERCO||de.plans.PEG)?`<div class="m">${['PEE','PERCO','PEG'].filter(k=>k!=='PEG'||de.plans.PEG!=null).map(k=>k+' '+eur(de.plans[k]||0)).join(' · ')}</div>`:'')+pct(de.has&&de.tp>0?(de.cur+de.tr-de.tp)/de.tp*100:null):'<div class="m">Aucun versement saisi</div>'],
    ...(bkA.length?[['depenses','🏧','Comptes bancaires',`<div class="v">${eur(sb)}</div>`+bkA.map(a=>`<div class="m">${esc(nm(a))}${brokerOf(a,A)?' · '+esc(brokerOf(a,A)):''} : <b>${eur(bal(a))}</b></div>`).join('')]]:[]),
    ...(lvA.length?[['livrets','🐖','Livrets',`<div class="v">${eur(sl)}</div>`+(()=>{const li=lvA.map(a=>livAcc(D,a)),ok=li.some(x=>x.taux!=null),ti=li.reduce((t,x)=>t+x.acc,0);return ok?`<div class="m">Intérêts en cours : <b class="up">+${ti.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €</b></div>`:''})()+lvA.map(a=>`<div class="m">${esc(nm(a))}${brokerOf(a,A)?' · '+esc(brokerOf(a,A)):''} : <b>${eur(bal(a))}</b></div>`).join('')]]:[]),
    ['immo','🏡',im.nom?esc(im.nom):'Immobilier',(di.n||iv||ia)?`<div class="v">${eur(iv||immoBrut)}</div>`+(im.type?`<div class="m">${esc(im.type)}${+im.loyer>0?' · loyers '+eur(+im.loyer)+'/mois':''}</div>`:'')+(imR==null?(iv?'':'<div class="m">Valeur estimée à saisir</div>'):pct(imR)):'<div class="m">Aucun bien ni prêt saisi</div>'],
