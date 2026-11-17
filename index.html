@@ -242,12 +242,17 @@ function epargne(D){const L=(D.interessement||[]).filter(s=>s.date),P=s=>String(
   const per=!!(sv&&(sv.pee!=null||sv.perco!=null||sv.peg!=null)),leg=!!(sv&&!per&&sv.valeur>=0);
   return{n:L.length,tp,tc,tr,has:per||leg,plans,cur:leg?sv.valeur:per?Object.values(plans).reduce((a,v)=>a+v,0):Math.max(0,tp-tr)}}
 /* Livrets : intérêts en cours (même calcul que le module Épargne : relevé / taux / intérêts crédités) */
-function livAcc(D,a){const T=tdy(),dd=(x,y)=>Math.round((Date.parse(y+'T12:00:00Z')-Date.parse(x+'T12:00:00Z'))/864e5),
-  L=(D.livrets_lignes||[]).filter(l=>l.acc===a.id&&l.date).sort((x,y)=>x.date<y.date?-1:x.date>y.date?1:0),MV=livMv(a,D).map(x=>x[0]),
+function livAcc(D,a){const T=tdy(),y=T.slice(0,4),
+  L=(D.livrets_lignes||[]).filter(l=>l.acc===a.id&&l.date).sort((x,z)=>x.date<z.date?-1:x.date>z.date?1:0),MV=[...new Set(livMv(a,D).map(x=>x[0]))],
   tx=d=>{let t=null;L.forEach(l=>{if(l.type==='taux'&&l.date<=d)t=l.v});if(t==null){const f=L.find(l=>l.type==='taux');t=f?f.v:null}return t},
-  ib=(f,t)=>{if(!(t>f))return 0;const cuts=[...new Set([...L.filter(l=>l.type==='taux').map(l=>l.date),...MV].filter(x=>x>f&&x<t))].sort(),p=[f,...cuts,t];let r=0;for(let k=0;k<p.length-1;k++){const q=tx(p[k]);if(q!=null)r+=livBal(a,D,p[k])*q/100*dd(p[k],p[k+1])/365}return r},
-  cr=L.filter(l=>l.type==='cred'&&l.date<=T).pop(),c0=cr?cr.date:T.slice(0,4)+'-01-01',rel=L.filter(l=>l.type==='rel'&&l.date<=T&&l.date>=c0).pop(),taux=tx(T);
-  return{taux,acc:taux==null?0:(rel?rel.v:0)+ib(rel?rel.date:c0,T)}}
+  dAdd=(d,n)=>{const x=new Date(d+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10)},
+  qStart=d=>d.slice(0,8)+(+d.slice(8)<=15?'01':'16'),
+  quinz=Y=>{const o=[];for(let m=1;m<=12;m++){const mm=String(m).padStart(2,'0'),last=new Date(Date.UTC(Y,m,0)).getUTCDate();o.push([Y+'-'+mm+'-01',Y+'-'+mm+'-15'],[Y+'-'+mm+'-16',Y+'-'+mm+'-'+String(last).padStart(2,'0')])}return o},
+  qb=(qs,qe)=>{let m=livBal(a,D,dAdd(qs,-1));MV.forEach(d=>{if(d>=qs&&d<=qe)m=Math.min(m,livBal(a,D,d))});return Math.max(0,Math.floor(m+1e-9))},
+  sumQ=(fq,td)=>{let s=0;for(let Y=+fq.slice(0,4);Y<=+td.slice(0,4);Y++)quinz(Y).forEach(([qs,qe])=>{if(qs<fq||qe>td)return;const t=tx(qs);if(t!=null)s+=qb(qs,qe)*t/100/24});return s},
+  cr=L.filter(l=>l.type==='cred'&&l.date<=T).pop(),c0=cr&&dAdd(cr.date,1)>y+'-01-01'?dAdd(cr.date,1):y+'-01-01',
+  rel=L.filter(l=>l.type==='rel'&&l.date<=T&&l.date>=c0).pop(),taux=tx(T);
+  return{taux,acc:taux==null?0:(rel?rel.v:0)+sumQ(rel?qStart(rel.date):c0,dAdd(T,-1))}}
 /* ---------- Évolution du patrimoine ---------- */
 const MOIS=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'],mlab=d=>MOIS[+d.slice(5,7)-1]+' '+d.slice(2,4);
 const serAt=(s,d)=>{let v=0;if(s)for(const x of s){if(x[0]<=d)v=x[1];else break}return v};
