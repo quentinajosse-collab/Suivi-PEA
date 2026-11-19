@@ -267,6 +267,9 @@ canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .imp-in{margin-top:8px}.imp-in input[type=file]{width:100%;margin:2px 0 6px}.imp-hd{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 0}
 
 #toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:99999;background:#fff;color:#14202b;border:1px solid #e2e8f0;border-radius:.5rem;padding:12px 18px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:.92rem;max-width:90vw}
+.mgp{position:relative}.mglist{max-height:280px;overflow:auto;margin-top:4px;border:1px solid #d9dee5;border-radius:8px;background:var(--card,#fff);box-shadow:0 6px 18px rgba(15,23,42,.12)}
+.mgit{display:block;width:100%;text-align:left;padding:10px 12px;border:0;border-bottom:1px solid #eef0f3;background:transparent;font:inherit;font-size:.9rem;color:#31333f;cursor:pointer;height:auto;white-space:normal}
+.mgit:hover,.mgit.on{background:#eef4ff}.mgno{padding:9px 12px;font-size:.82rem;color:#64748b}
 </style>
 </head>
 <body>
@@ -353,11 +356,13 @@ function parseCSV(t){
   const h=rows.shift();
   return rows.filter(x=>x.length>1).map(x=>{const o={};h.forEach((k,i)=>o[k]=x[i]);return o});
 }
+/* Dividende, apport, retrait : jamais d'heure, toujours 00:00:00 du jour (même si le fichier importé ou un ancien enregistrement en contient une) */
+const MID0=['DIVIDENDE','APPORT','RETRAIT'];
 function norm(o,i){
   const n=k=>parseFloat(o[k])||0,D=s=>new Date(String(s).replace(' ','T'));
   return{i,nom:o.Nom,type:o.Type,tk:o.Ticker,q:n('Quantité'),p:n('Prix Unitaire (€)'),f:n('Frais Totaux (€)'),c:n('Commission (€)'),
     rompu:n('Rompu'),ttf:n('TTF (€)'),ret:n('Retenue_Source_Etrangere'),remb:n('Remboursement_Capital'),arr:n('Arrondi_Courtier'),
-    d:D(o.Date_Heure),dr:D(o.Date_Rompus||o.Date_Heure)};
+    d:D(MID0.includes(o.Type)?String(o.Date_Heure).slice(0,10)+' 00:00:00':o.Date_Heure),dr:D(o.Date_Rompus||o.Date_Heure)};
 }
 
 /* ---------- Calculs (même logique que app_perso.py) ---------- */
@@ -752,10 +757,10 @@ function sales(){const by={},out=[];S.tx.forEach(t=>{if(t.type!='APPORT'&&t.type
     else if(t.type=='DIVIDENDE'&&t.remb>0)inv=Math.max(0,inv-t.remb)})}
   return out}
 /* ===== Vue d'ensemble & Objectif : reprise exacte de l'onglet 1 du Streamlit (app_perso.py) ===== */
-const OMT_V={"PER pondéré":"Moyenne harmonique du PER (cours ÷ bénéfice par action, 12 derniers mois) des lignes, pondérée par leur valeur actuelle. ETF et valeurs sans bénéfice exclus.",
+const OMT_V0={"PER pondéré":"Moyenne harmonique du PER (cours ÷ bénéfice par action, 12 derniers mois) des lignes, pondérée par leur valeur actuelle. ETF et valeurs sans bénéfice exclus.",
 "P/B pondéré":"Moyenne harmonique du ratio cours ÷ valeur comptable par action, pondérée par la valeur actuelle des lignes. ETF et valeurs sans donnée exclus.",
 "PEG pondéré":"Moyenne harmonique du PEG (PER ÷ croissance attendue des bénéfices), pondérée par la valeur actuelle des lignes. Valeurs sans PEG exclues."};
-const OMT={"Performance Globale":"% = gains cumulés (plus-values latentes + actées + dividendes) ÷ total des apports nets.",
+const OMT0={"Performance Globale":"% = gains cumulés (plus-values latentes + actées + dividendes) ÷ total des apports nets.",
 "Performance YTD":"% = gain depuis le 1er janvier (latent + actée + dividendes) ÷ valeur du portefeuille au 31 décembre précédent.",
 "Performance du Mois":"% = gain depuis le 1er du mois ÷ valeur du portefeuille à la fin du mois précédent.",
 "Performance du Jour":"% = gain du jour ÷ valeur du portefeuille à la clôture de la veille (hors apports et retraits).",
@@ -767,6 +772,7 @@ const OMT={"Performance Globale":"% = gains cumulés (plus-values latentes + act
 "Rendement sur cours":"% = dividendes nets annuels (reçus ÷ nombre d'années depuis l'ouverture, après 3 mois) ÷ valeur actuelle des titres détenus (cours du jour). La flèche indique le dividende annuel moyen en €.",
 "Rendement sur coût":"% = dividendes nets annuels (reçus ÷ nombre d'années depuis l'ouverture, après 3 mois) ÷ coût de revient des titres détenus (PRU × quantités). La flèche indique le dividende annuel moyen en €.",
 "Drawdown Maximum":"% = plus forte baisse du portefeuille depuis un sommet, calculée sur la performance quotidienne (hors apports et retraits). La flèche indique l'écart actuel par rapport au dernier sommet."};
+const OMT_V={},OMT={};
 const ospc=x=>String(x).replace(/[\u202f\u00a0]/g,' ');
 const oGE=v=>isFinite(v)?ospc((v<0?'-':'')+nf(2).format(Math.abs(v)))+' €':'N/A';
 const oDE=g=>ospc((g<0?'-':'+')+nf(2).format(Math.abs(g)))+' €';
@@ -852,7 +858,7 @@ function ovX(v){
   const num=(id,lab,val,step,min,max)=>`<div><label>${lab}</label><div class="nin"><input type="number" inputmode="decimal" data-cfg="${id}" value="${val}" step="${step}" min="${min}"${max!=null?` max="${max}"`:''}><button type="button" data-step="-${step}" aria-label="Diminuer">−</button><button type="button" data-step="${step}" aria-label="Augmenter">+</button></div></div>`;
   v.innerHTML=`<details class="exp" open><summary>📊 Vue d'ensemble du Portefeuille</summary><div class="in"><div class="dcard">
     <p class="dst">💰 Capital & Investissement</p>
-    <div class="mcols mc4">${omt('Valeur Actuelle',oGE(tot),null,'cap')}${omt('Montant Investi',oGE(inv),null,'cap')}${omt('Cash Disponible',oGE(R.cash),null,'cap')}${omt('Total Apports',oGE(ap),null,'cap')}</div>
+    <div class="mcols mc4">${omt('Valeur Actuelle',oGE(tot),null,'cap')}${omt('Montant Investi',oGE(inv),null,'cap')}${omt('Cash Disponible',oGE(R.cash),null,'cap')}${omt('Apports nets',oGE(S.tx.filter(t=>!t.virt).reduce((s,t)=>s+(t.type=='APPORT'?t.q:t.type=='RETRAIT'?-t.q:0),0)),null,'cap')}</div>
     <p class="dst" style="margin-top:16px">📈 Performances</p>
     <div class="mcols mc2">${omt('Performance Globale',oPT(pg),oDE(tg),'perf')}${pm(yv,'Performance YTD')}</div>
     <div class="mcols mc2">${pm(mv,'Performance du Mois')}${pm(jv,'Performance du Jour')}</div>
@@ -1059,8 +1065,8 @@ function efHTML(f){
   else h+=`<div><label>Date</label><div class="din"><input type="date" data-ef="d" value="${esc(f.d)}"></div></div>`;
   return`<div class="tform">${h}<div><button type="button" class="sbtn2" id="mgsave">✅ Valider les modifications</button></div></div>`}
 function mgHTML(){
-  const M=S.mg,rows=[...S.tx].sort((a,b)=>b.d-a.d);if(M.sel!==''&&!S.raw[+M.sel])M.sel='';
-  let h=`<h4 class="h4">🛠️ Gestion des transactions (Modifier / Supprimer)</h4><div><label>Sélectionner une transaction pour agir dessus :</label>${selBox('data-mg="sel"',rows.map(t=>[String(t.i),`${dmy(t.d)} | ${t.type} | ${t.nom||''}`]),M.sel,'Choisir...')}</div>`;
+  const M=S.mg;if(M.sel!==''&&!S.raw[+M.sel])M.sel='';
+  let h=`<h4 class="h4">🛠️ Gestion des transactions (Modifier / Supprimer)</h4><div class="mgp"><label>Sélectionner une transaction pour agir dessus :</label><div class="din"><input type="search" id="mgq" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="🔎 Tape pour chercher (date, type, nom, montant…)" value="${esc(M.sel!==''?mgLabelOf(M.sel):'')}"></div><div id="mglist" class="mglist" hidden></div></div>`;
   if(M.sel!==''){
     h+=`<div class="rrad" role="radiogroup"><span style="flex-basis:100%;font-size:14px;color:#31333f">Action</span>${['Modifier','Supprimer'].map(a=>`<label><input type="radio" name="mgact" data-mg="act" value="${a}"${M.act==a?' checked':''}>${a}</label>`).join('')}</div>`;
     if(M.act=='Supprimer')h+='<div><button type="button" class="pbtn" id="mgdel">🗑️ Confirmer la suppression</button></div>';
@@ -1083,7 +1089,7 @@ async function mgDelete(){S.raw.splice(+S.mg.sel,1);S.mg.sel='';S.mg.f=null;awai
 /* --- 4) Classement des actions par gain --- */
 function claHTML(){
   const P=R.pos;if(!P.length)return'<div class="info">Aucune donnée disponible pour le classement des gains.</div>';
-  const inv=P.reduce((s,p)=>s+p.inv,0),cost=P.reduce((s,p)=>s+p.ach,0),base=R.apports>0?R.apports:(cost>0?cost:inv);
+  const inv=P.reduce((s,p)=>s+p.inv,0),cost=P.reduce((s,p)=>s+p.ach,0),base=cost>0?cost:inv; /* classement : ni apports ni retraits dans la base */
   const S2=[...P].sort((a,b)=>b.tot-a.tot),cols=['N°','Nom','Gain Réalisé (€)','Gain Latent (€)','Dividendes Reçus (€)','Gain Total Global (€)','Performance (%)','Contribution perf. (%)','Perf. annuelle moy. (%)','Nombre de mouvements','Détention (jour)'];
   const EQ=['Gain Total Global (€)','Performance (%)','Contribution perf. (%)','Perf. annuelle moy. (%)'],FL=['Gain Réalisé (€)','Gain Latent (€)','Gain Total Global (€)','Performance (%)','Contribution perf. (%)','Perf. annuelle moy. (%)'];
   const ctb=p=>base>0?p.tot/base*100:NaN;
@@ -1122,6 +1128,27 @@ document.addEventListener('change',e=>{const el=e.target;if(!el||!el.dataset)ret
   if(el.dataset.mg=='act'){S.mg.act=el.value;if(el.value=='Modifier'&&S.mg.sel!=='')S.mg.f=efInit(S.raw[+S.mg.sel]);draw();return}
   if(el.dataset.ef){const k=el.dataset.ef;if(!S.mg.f)return;S.mg.f[k]=el.value;if(k=='type')draw()}});
 document.addEventListener('input',e=>{const el=e.target;if(el&&el.dataset&&el.dataset.ef&&el.dataset.ef!='type'&&S.mg.f)S.mg.f[el.dataset.ef]=el.value});
+/* Recherche d'une transaction à modifier / supprimer : liste filtrable (plusieurs mots, sans accents), pensée pour des milliers de lignes */
+const mgNorm=s=>String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+function mgRows(){
+  if(S.mgc&&S.mgc.tx===S.tx)return S.mgc.rows;
+  const rows=S.tx.filter(t=>!t.virt).sort((a,b)=>b.d-a.d).map(t=>{
+    const ty=t.type=='INTERET'?'INTÉRÊTS':t.type,l=`${dmy(t.d)} | ${ty} | ${t.nom||''} | ${pEur(montantBrut(t))}`;
+    return{i:t.i,l,s:mgNorm(l+' '+dstr(t.d)+' '+dmy(t.d).replace(/-/g,'/')+' '+(t.tk||''))}});
+  S.mgc={tx:S.tx,rows};return rows}
+function mgLabelOf(i){const r=mgRows().find(x=>String(x.i)===String(i));return r?r.l:''}
+function mgList(q){const box=document.getElementById('mglist');if(!box)return;
+  const tk=mgNorm(q).split(/\s+/).filter(Boolean),all=mgRows(),hit=tk.length?all.filter(r=>tk.every(w=>r.s.includes(w))):all,sh=hit.slice(0,40);
+  box.innerHTML=(sh.length?sh.map(r=>`<button type="button" class="mgit${String(r.i)===String(S.mg.sel)?' on':''}" data-mgi="${r.i}">${esc(r.l)}</button>`).join(''):'<div class="mgno">Aucune transaction ne correspond.</div>')
+    +(hit.length>sh.length?`<div class="mgno">${hit.length-sh.length} autre(s) résultat(s) : continue à taper pour affiner.</div>`:'');
+  box.hidden=false}
+document.addEventListener('focusin',e=>{if(e.target&&e.target.id=='mgq'){e.target.select();mgList('')}});
+document.addEventListener('input',e=>{if(!e.target||e.target.id!='mgq')return;const v=e.target.value;
+  if(v===''&&S.mg.sel!==''){S.mg.sel='';S.mg.f=null;draw();setTimeout(()=>{const q=document.getElementById('mgq');if(q)q.focus()},0);return}
+  mgList(v)});
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-mgi]');
+  if(b){S.mg.sel=b.dataset.mgi;S.mg.f=efInit(S.raw[+b.dataset.mgi]);draw();return}
+  if(!(e.target.closest&&e.target.closest('.mgp'))){const bx=document.getElementById('mglist');if(bx)bx.hidden=true}});
 
 /* ===== Apports : reprise de l'onglet 3 du Streamlit (jauge, courbe, barres, cartographies) ===== */
 const PLAFOND=150000;
@@ -1161,8 +1188,8 @@ function appX(v){
   if(!mv.length){v.innerHTML='<div class="info">Aucun apport enregistré pour le moment.</div>';return}
   const ap=mv.filter(t=>t.type=='APPORT'),rt=mv.filter(t=>t.type=='RETRAIT'),verse=ap.reduce((a,t)=>a+t.q,0),net=verse-rt.reduce((a,t)=>a+t.q,0);
   const ys=[...new Set(mv.map(t=>t.d.getFullYear()))].sort(),sy=(a,y)=>a.filter(t=>t.d.getFullYear()==y).reduce((x,t)=>x+t.q,0);
-  const day={};mv.forEach(t=>{const k=dstr(t.d);day[k]=(day[k]||0)+(t.type=='APPORT'?t.q:-t.q)});
-  const D=[],V=[];let c=0,cur=midnight(mv[0].d);const last=midnight(mv[mv.length-1].d),end=last>midnight(new Date())?last:midnight(new Date());
+  const day={};mv.forEach(t=>{const k=dstr(t.d);day[k]=(day[k]||0)+(t.type=='APPORT'?t.q:0)});
+  const D=[],V=[];let c=0,cur=midnight((ap.length?ap:mv)[0].d);const last=midnight(mv[mv.length-1].d),end=last>midnight(new Date())?last:midnight(new Date());
   for(;cur<=end;cur=new Date(cur.getFullYear(),cur.getMonth(),cur.getDate()+1)){c+=day[dstr(cur)]||0;D.push(cur);V.push(c)}
   const open=S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d),CY='#06b6d4';
   const ex=(k,t,b)=>exp2(k,t,b),cv='<div class="cv" style="height:340px"><canvas id="%"></canvas></div>';
@@ -1178,7 +1205,7 @@ function appX(v){
   chart('c4',{type:'line',data:{labels:D.map(fd),datasets:[{data:V,stepped:'after',fill:'origin',borderColor:CY,borderWidth:3,pointRadius:0,pointHoverRadius:0,
       backgroundColor:x=>{const a=x.chart.chartArea;if(!a)return CY+'2e';const g=x.chart.ctx.createLinearGradient(0,a.top,0,a.bottom);g.addColorStop(0,CY+'6b');g.addColorStop(1,CY+'00');return g}}]},
     plugins:[spikeP,pl],options:{maintainAspectRatio:false,interaction:{intersect:false,mode:'index',axis:'x'},layout:{padding:{right:8}},
-      plugins:{legend:{display:false},tooltip:extTip(i=>`<b>${fd(D[i])}</b><br>Apports nets cumulés : ${pEur(V[i])}`)},
+      plugins:{legend:{display:false},tooltip:extTip(i=>`<b>${fd(D[i])}</b><br>Apports cumulés : ${pEur(V[i])}`)},
       scales:{x:{grid:{display:false},border:{display:false},ticks:{maxTicksLimit:5,maxRotation:0,callback:(_,i)=>`${pad(D[i].getMonth()+1)}/${String(D[i].getFullYear()).slice(2)}`}},
         y:{beginAtZero:true,border:{display:false},grid:gridY,ticks:{callback:yTick,maxTicksLimit:6}}}}});
   barsAp('c9',ys.map(String),ys.map(y=>sy(ap,y)),CY,'Versements');
@@ -1302,7 +1329,7 @@ function fondX(){
   if(FOND_SRC=='Portefeuille'){
     const tot=ok.reduce((s,u)=>s+(u.val||0),0),pond=k=>{let n=0,d=0;ok.forEach(u=>{const x=u.d[k];if(u.val&&x&&x>0){n+=u.val;d+=u.val/x}});return[d>0?n/d:null,n]};let cov=0;
     const c3=[['PER pondéré','per'],['P/B pondéré','pb'],['PEG pondéré','peg']].map(([l,k])=>{const[v,c]=pond(k);cov=Math.max(cov,c);return`<div class="mtr tp" data-mt="${esc(OMT_V[l])}"><div class="ml">${l}</div><div class="mv">${v!=null?fr(v,1):'N/A'}</div></div>`}).join('');
-    o+=exp('📐 Valorisation pondérée du portefeuille',`<div class="c3m">${c3}</div>`+(tot>0?`<div class="cap">Calculés sur ${(cov/tot*100).toFixed(0)} % de la valeur du portefeuille (ETF et valeurs sans donnée exclus).</div>`:''))}
+    o+=exp('📐 Valorisation pondérée du portefeuille',`<div class="c3m">${c3}</div>`)}
   /* 26. Qualité financière par ligne */
   const NIV=['background-color:rgba(239,68,68,.14);color:#b91c1c;font-weight:700;','background-color:rgba(245,158,11,.16);color:#92400e;font-weight:700;','background-color:rgba(34,197,94,.16);color:#15803d;font-weight:700;'];
   const rq=ok.filter(u=>!(u.d.marge==null&&u.d.roe==null&&u.d.dn==null)).map(u=>[u.nom,u.d.marge!=null?(u.d.marge*100).toFixed(1).replace('.',',')+' %':'—',u.d.roe!=null?(u.d.roe*100).toFixed(1).replace('.',',')+' %':'—',u.d.dn!=null?fr(u.d.dn,1)+'x':'—']);
@@ -1793,6 +1820,12 @@ const dfr=d=>`${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
 const clTrim=k=>k.slice(0,4)+'-T'+(Math.floor((+k.slice(5,7)-1)/3)+1);
 let CLQ=[];
 /* Barres horizontales : une ligne par mouvement, infobulle sur toute la ligne, valeur après la barre */
+const rkMc=document.createElement('canvas').getContext('2d');
+/* tronque par la FIN (« Nom de l'actio… ») pour que le début du nom reste lisible */
+function rkCut(s,max,fs){s=String(s==null?'':s);if(!(max>30))return s;rkMc.font=fs+'px '+((window.Chart&&Chart.defaults.font.family)||'sans-serif');
+  if(rkMc.measureText(s).width<=max)return s;let lo=0,hi=s.length;
+  while(lo<hi){const m=(lo+hi+1)>>1;if(rkMc.measureText(s.slice(0,m).trimEnd()+'…').width<=max)lo=m;else hi=m-1}
+  return s.slice(0,lo).trimEnd()+'…'}
 function rkBar(id,labels,vals,col,txt,tip){
   const mx=Math.max(...vals.map(Math.abs))||1,fs=innerWidth<=640?10:11;
   const lb={id:'rklbl',afterDatasetsDraw(c){const{ctx}=c,m=c.getDatasetMeta(0);ctx.save();ctx.font=fs+'px Manrope, Inter, sans-serif';ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='middle';
@@ -1800,7 +1833,7 @@ function rkBar(id,labels,vals,col,txt,tip){
   chart(id,{type:'bar',data:{labels,datasets:[{data:vals.map(Math.abs),backgroundColor:col,barPercentage:.74,categoryPercentage:1}]},plugins:[lb],
     options:{indexAxis:'y',maintainAspectRatio:false,interaction:{intersect:false,mode:'index',axis:'y'},layout:{padding:{left:2,right:56,top:6,bottom:6}},
       plugins:{legend:{display:false},tooltip:extTip(tip)},
-      scales:{x:{display:false,min:0,max:mx*1.25,grid:{display:false}},y:{grid:{display:false},border:{color:'#e2e8f0'},ticks:{font:{size:fs},autoSkip:false,color:'#334155'}}}}})}
+      scales:{x:{display:false,min:0,max:mx*1.25,grid:{display:false}},y:{grid:{display:false},border:{color:'#e2e8f0'},ticks:{font:{size:fs},autoSkip:false,color:'#334155',callback(v){return rkCut(this.getLabelForValue(v),this.chart.width*.42,fs)}}}}}})}
 const rkCv=(id,n)=>`<div class="cv" style="height:${Math.max(220,34*n+40)}px"><canvas id="${id}"></canvas></div>`;
 const sbsP=(l,r)=>`<div class="sbs"><div>${l}</div><div>${r}</div></div>`;
 const sbsT=t=>`<p class="sbp"><b>${t}</b></p>`;
@@ -1850,7 +1883,7 @@ function drawCla(v){
   else{
     const pl=sl.filter(x=>x.g>0).reduce((a,x)=>a+x.g,0),ml=sl.filter(x=>x.g<0).reduce((a,x)=>a+x.g,0),
       G=[...sl.filter(x=>x.g>0)].sort((a,b)=>b.g-a.g).slice(0,10),Pt=[...sl.filter(x=>x.g<0)].sort((a,b)=>a.g-b.g).slice(0,10),
-      lab=x=>x.nom.length<=14?x.nom:x.nom.slice(0,13)+'…',
+      lab=x=>x.nom,
       mk=(id,arr,col,w)=>{if(!arr.length)return`<p class="cap">${w=='g'?'Aucun gain réalisé pour le moment.':'Aucune perte réalisée pour le moment.'}</p>`;
         CLQ.push(()=>rkBar(id,arr.map(lab),arr.map(x=>x.g),col,arr.map(x=>pEur(x.g)),i=>{const x=arr[i];
           return`<b>${esc(x.nom)}</b><br>${dfr(x.d)}<br>${cMont(w=='g'?'Plus-value':'Moins-value',x.g)}<br>${cMont('Performance',isFinite(x.pct)?x.pct:x.g).replace(/>[^<]*<\/span>/,'>'+cPct(x.pct)+'</span>')}`}));
@@ -1979,7 +2012,7 @@ function drawFra(v){
 S.sim=S.sim||{};
 const SIM_V=(k,d)=>S.sim[k]!==undefined?S.sim[k]:d;
 const clampN=(x,a,b)=>Math.min(Math.max(x,a),b);
-function snum(k,lab,val,step,min,max,dec,help,ph){return`<div><div class="nl">${lab}${help?helpI(help):''}</div><div class="nin"><input type="number" inputmode="decimal" data-sim="${k}" value="${val===''?'':(+val).toFixed(dec)}" placeholder="${esc(ph||'')}" step="${step}" min="${min}"${max!=null?` max="${max}"`:''}><button type="button" data-step="-${step}" aria-label="Diminuer">−</button><button type="button" data-step="${step}" aria-label="Augmenter">+</button></div></div>`}
+function snum(k,lab,val,step,min,max,dec,help,ph){return`<div><div class="nl">${lab}</div><div class="nin"><input type="number" inputmode="decimal" data-sim="${k}" value="${val===''?'':(+val).toFixed(dec)}" placeholder="${esc(ph||'')}" step="${step}" min="${min}"${max!=null?` max="${max}"`:''}><button type="button" data-step="-${step}" aria-label="Diminuer">−</button><button type="button" data-step="${step}" aria-label="Augmenter">+</button></div></div>`}
 function colorCard(label,value,color,big){return`<div style="background:${color}14;border:1px solid ${color}55;border-radius:12px;padding:8px 4px;text-align:center;min-width:0;display:flex;flex-direction:column;justify-content:center;"><div style="font-size:min(${big?'0.74rem':'0.68rem'},${big?'2.9vw':'2.6vw'});color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:0.03em;line-height:1.25;">${label}</div><div style="font-size:min(${big?'1.3rem':'1.1rem'},${big?'5vw':'4vw'});font-weight:800;color:${color};margin-top:3px;line-height:1.25;">${value}</div></div>`}
 const colorCardsRow=cs=>`<div style="display:grid;gap:6px;margin-top:8px;grid-template-columns:repeat(${Math.max(cs.length,1)},minmax(0,1fr));">${cs.join('')}</div>`;
 function progressBar(pct,grad,glow,texte){const c=Math.max(0,Math.min(+pct,100));
@@ -2114,7 +2147,7 @@ function impCsvRows(objs,X){
   const rows=[];
   for(let i=0;i<objs.length;i++){const o=objs[i],r={};
     const dh=impDate(o.Date_Heure,X);if(!dh)return{err:`Erreur lors de la lecture du fichier : date invalide à la ligne ${i+2} (« ${o.Date_Heure} »).`};
-    IMP_COLS.forEach(k=>{r[k]=o[k]});r.Date_Heure=dh;r.Date_Rompus=impDate(o.Date_Rompus,X);
+    IMP_COLS.forEach(k=>{r[k]=o[k]});r.Date_Heure=MID0.includes(String(o.Type||'').trim())?dh.slice(0,10)+' 00:00:00':dh;r.Date_Rompus=impDate(o.Date_Rompus,X);
     rows.push(toRaw(Object.fromEntries(Object.entries(r).map(([k,v])=>[k,typeof v=='number'?String(v):v]))))}
   return{rows}}
 S.impc=null;

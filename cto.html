@@ -267,6 +267,9 @@ canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .imp-in{margin-top:8px}.imp-in input[type=file]{width:100%;margin:2px 0 6px}.imp-hd{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 0}
 
 #toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:99999;background:#fff;color:#14202b;border:1px solid #e2e8f0;border-radius:.5rem;padding:12px 18px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:.92rem;max-width:90vw}
+.mgp{position:relative}.mglist{max-height:280px;overflow:auto;margin-top:4px;border:1px solid #d9dee5;border-radius:8px;background:var(--card,#fff);box-shadow:0 6px 18px rgba(15,23,42,.12)}
+.mgit{display:block;width:100%;text-align:left;padding:10px 12px;border:0;border-bottom:1px solid #eef0f3;background:transparent;font:inherit;font-size:.9rem;color:#31333f;cursor:pointer;height:auto;white-space:normal}
+.mgit:hover,.mgit.on{background:#eef4ff}.mgno{padding:9px 12px;font-size:.82rem;color:#64748b}
 </style>
 </head>
 <body>
@@ -333,9 +336,10 @@ const LS={g(k){try{return JSON.parse(localStorage.getItem(k))}catch{return null}
 const _P=new URLSearchParams(location.search),CRY=_P.get('v')==='crypto',
 /* Compte qui porte la crypto (réglé dans ⚙️ Réglages de la page Général) : '' = compte crypto dédié */
 CRYACC=((((LS.g('hub_acc')||{}).list)||[]).find(a=>a.type==='Crypto')||{}).inCto||'',
-ACC=(_P.get('a')||(CRY?(CRYACC||'crypto'):'cto')).replace(/[^a-z0-9_]/gi,''),ACC_L=_P.get('l')||'',
+_LST=((LS.g('hub_acc')||{}).list||[]).filter(a=>a.type==='CTO').map(a=>a.id),_MULTI=new Set(['cto',..._LST]).size>1,
+ACC=(_P.get('a')||(CRY?(CRYACC||'crypto'):(_MULTI?((x=>x==='all'||new Set(['cto',..._LST]).has(x)?x:'all')(LS.g('hub_cto_sel')||'all')):'cto'))).replace(/[^a-z0-9_]/gi,''),ALL=!CRY&&ACC==='all',ACC_L=ALL?'Tous les comptes':(_P.get('l')||''),
 /* SHR : les opérations crypto sont saisies dans ce CTO ; il les laisse à la page Crypto, qui les affiche (même stockage, deux vues) */
-SHR=CRY?ACC!=='crypto':ACC===CRYACC,
+SHR=CRY?ACC!=='crypto':(ALL?!!CRYACC:ACC===CRYACC),
 AX=ACC+(CRY&&SHR?'_cry':''); /* caches propres à chaque vue (cours, historique, réglages) */
 const isCry=r=>/-(EUR|USD|USDT|USDC|GBP)$/i.test(String((r&&(r.Ticker||r.tk))||'')),
 vis=r=>!SHR||(CRY?isCry(r):!isCry(r));
@@ -356,11 +360,13 @@ function parseCSV(t){
   const h=rows.shift();
   return rows.filter(x=>x.length>1).map(x=>{const o={};h.forEach((k,i)=>o[k]=x[i]);return o});
 }
+/* Dividende, apport, retrait, intérêts : jamais d'heure, toujours 00:00:00 du jour (même si le fichier importé ou un ancien enregistrement en contient une) */
+const MID0=['DIVIDENDE','APPORT','RETRAIT','INTERET'];
 function norm(o,i){
   const n=k=>parseFloat(o[k])||0,D=s=>new Date(String(s).replace(' ','T'));
   return{i,nom:o.Nom,type:o.Type,tk:o.Ticker,q:n('Quantité'),p:n('Prix Unitaire (€)'),f:n('Frais Totaux (€)'),c:n('Commission (€)'),
     rompu:n('Rompu'),ttf:n('TTF (€)'),ret:n('Retenue_Source_Etrangere'),remb:n('Remboursement_Capital'),arr:n('Arrondi_Courtier'),
-    d:D(o.Date_Heure),dr:D(o.Date_Rompus||o.Date_Heure)};
+    d:D(MID0.includes(o.Type)?String(o.Date_Heure).slice(0,10)+' 00:00:00':o.Date_Heure),dr:D(o.Date_Rompus||o.Date_Heure)};
 }
 
 /* ---------- Calculs (même logique que app_perso.py) ---------- */
@@ -368,7 +374,7 @@ function addDays(set,a,b){const e=new Date(b.getFullYear(),b.getMonth(),b.getDat
 function compute(tx,prices){
   const now=new Date(),by={},pos=[];let divTot=0,fees=0,cost=0,real=0;
   tx.forEach(t=>{if(t.type=='ACHAT'||t.type=='VENTE')fees+=t.f;
-    if(t.type!='APPORT'&&t.type!='RETRAIT')(by[t.tk]=by[t.tk]||[]).push(t)});
+    if(t.type!='APPORT'&&t.type!='RETRAIT'&&t.type!='INTERET')(by[t.tk]=by[t.tk]||[]).push(t)});
   const key=t=>{const d=new Date(t.d);if(t.type=='SPLIT')d.setHours(0,0,0,0);return d.getTime()};
   for(const tk in by){
     const g=by[tk].sort((a,b)=>key(a)-key(b));
@@ -395,6 +401,7 @@ function compute(tx,prices){
   tx.map(t=>({t,k:t.type=='SPLIT'?t.dr:t.d})).filter(x=>x.k<=eod).sort((a,b)=>a.k-b.k).forEach(({t})=>{
     if(t.type=='APPORT')cash=r2(cash+t.q);
     else if(t.type=='RETRAIT')cash=r2(cash-t.q);
+    else if(t.type=='INTERET')cash=r2(cash+t.q);
     else if(t.type=='ACHAT')cash=r2(cash-r2(t.q*t.p+t.f));
     else if(t.type=='VENTE')cash=r2(cash+r2(t.q*t.p-t.f));
     else if(t.type=='DIVIDENDE')cash=r2(cash+t.p-t.ret-t.c+t.remb+t.arr);
@@ -403,9 +410,10 @@ function compute(tx,prices){
   /* net_divs_total du Streamlit (Vue d'ensemble) : Prix - Commission - Retenue sur chaque DIVIDENDE (sans l'arrondi courtier)
      + rompus de SPLIT déjà versés ; différent de la somme par ligne (qui, elle, inclut l'arrondi) */
   let divNet=0;tx.forEach(t=>{if(t.type=='DIVIDENDE')divNet+=t.p-t.c-t.ret;else if(t.type=='SPLIT'&&t.rompu>0&&t.dr<=now)divNet+=t.rompu});
+  let interets=0;tx.forEach(t=>{if(t.type=='INTERET'&&t.d<=eod)interets+=t.q});
   const apports=tx.reduce((s,t)=>s+(t.type=='APPORT'?t.q:t.type=='RETRAIT'?-t.q:0),0);
   const valeur=pos.reduce((s,p)=>s+p.val,0),day=pos.reduce((s,p)=>s+p.day,0);
-  return{pos,cash,apports,valeur,total:valeur+cash,gain:valeur+cash-apports,divTot,divNet,fees,real,day,
+  return{pos,cash,apports,valeur,total:valeur+cash,gain:valeur+cash-apports,divTot,divNet,interets,fees,real,day,
     anyLive:pos.some(p=>p.open&&p.live)};
 }
 
@@ -425,8 +433,9 @@ function mkTx(){const out=[];
     else if(n.type=='ACHAT')out.push(V('RETRAIT',n.q*n.p+n.f));
     else if(n.type=='VENTE')out.push(V('APPORT',n.q*n.p-n.f))});
   return out}
-function rebuild(){S.tx=mkTx();R=compute(S.tx,S.prices);try{localStorage.setItem(CRY?'hub_crypto':'hub_'+ACC,JSON.stringify({total:R.total,valeur:R.valeur,cash:R.cash,apports:R.apports,gain:R.gain,day:R.day,acc:ACC,cry:CRY?0:(S.raw.some(isCry)?1:0),t:Date.now()}))}catch(e){}}
-function load(){let raw=LS.g(ACC+'_raw');if(!raw){const t=LS.g(ACC+'_csv');raw=t?parseCSV(t).map(toRaw):[]}S.raw=raw;rebuild()}
+function rebuild(){S.tx=mkTx();R=compute(S.tx,S.prices);if(!ALL)try{localStorage.setItem(CRY?'hub_crypto':'hub_'+ACC,JSON.stringify({total:R.total,valeur:R.valeur,cash:R.cash,apports:R.apports,gain:R.gain,day:R.day,acc:ACC,cry:CRY?0:(S.raw.some(isCry)?1:0),t:Date.now()}))}catch(e){}}
+const rawOf=id=>{let raw=LS.g(id+'_raw');if(!raw){const t=LS.g(id+'_csv');raw=t?parseCSV(t).map(toRaw):[]}return raw};
+function load(){S.raw=ALL?CTOS.flatMap(c=>rawOf(c.id)):rawOf(ACC);rebuild()}
 const st=m=>{$('#st').textContent=m||''};
 /* ---------- Supabase (API REST, connexion par code e-mail) ---------- */
 const SB={get s(){return LS.g('sb')||{}},set s(v){LS.s('sb',v)}};
@@ -439,11 +448,12 @@ async function ensure(){let s=SB.s;if(s.access&&s.exp>Date.now()/1000+60)return 
   return SB.s.access}
 const connected=()=>!!(SB.s.url&&SB.s.refresh);
 async function pull(){if(!connected())return;
+  if(ALL){try{const tok=await ensure();for(const c of CTOS){const j=await raw(`/rest/v1/app_storage?select=value&key=eq.transactions_${c.id}&user_id=eq.${SB.s.uid}`,{},tok);if(j.length&&Array.isArray(j[0].value))LS.s(c.id+'_raw',j[0].value)}S.synced=true;load();draw();refreshPrices();st('Synchronisé avec Supabase')}catch(e){st('Synchronisation impossible : '+e.message)}return}
   try{const j=await raw(`/rest/v1/app_storage?select=value&key=eq.transactions_${ACC}&user_id=eq.${SB.s.uid}`,{},await ensure());
     S.synced=true;if(j.length&&Array.isArray(j[0].value)){S.raw=j[0].value;LS.s(ACC+'_raw',S.raw);rebuild();draw();refreshPrices()}st('Synchronisé avec Supabase')}
   catch(e){S.synced=false;st('Synchronisation impossible : '+e.message);return}
   S.cfgOk=false;await cfgLoad()}
-async function save(){LS.s(ACC+'_raw',S.raw);if(!connected())return;
+async function save(){if(ALL){load();draw();st('Vue « Tous les comptes » en lecture seule : choisis un compte pour modifier ses opérations');return}LS.s(ACC+'_raw',S.raw);if(!connected())return;
   if(!S.synced)return st('Enregistré sur cet appareil seulement : la lecture en ligne a échoué, écriture bloquée par sécurité');
   try{await raw('/rest/v1/app_storage?on_conflict=user_id,key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
     body:JSON.stringify({user_id:SB.s.uid,key:'transactions_'+ACC,value:S.raw})},await ensure());st('Enregistré dans Supabase ✓')}
@@ -451,7 +461,7 @@ async function save(){LS.s(ACC+'_raw',S.raw);if(!connected())return;
 /* ---------- Saisie d'opérations ---------- */
 const $v=id=>$(id).value,nn=id=>parseFloat($v(id))||0;
 /* ===== Fenêtre « 📝 Nouvelle opération » — port de dialog_saisie_operation (app_perso.py) ===== */
-const OPL={ACHAT:'🛒  Achat',APPORT:'💰  Apport',RETRAIT:'💸  Retrait',VENTE:'📤  Vente',DIVIDENDE:'💶  Dividende',SPLIT:'🔀  Split/Regroupement'},OPNEW='➕ Ajouter un nouveau nom...',
+const OPL={ACHAT:'🛒  Achat',APPORT:'💰  Apport',RETRAIT:'💸  Retrait',VENTE:'📤  Vente',DIVIDENDE:'💶  Dividende',INTERET:'🪙  Intérêts',SPLIT:'🔀  Split/Regroupement'},OPNEW='➕ Ajouter un nouveau nom...',
   OPMSG="⚠️ Impossible d'enregistrer l'opération : tous les champs obligatoires (encadrés en rouge) ne sont pas renseignés.";
 const dtl=s=>s?String(s).replace(' ','T'):'';
 const opHeld=n=>R&&R.pos.find(p=>p.nom==n);
@@ -467,7 +477,7 @@ function buildOp(){
   $('#opf').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px"><h2 id="opt" style="margin:0;font-size:1.2rem;font-weight:800;letter-spacing:-.02em">📝 Nouvelle opération</h2><button type="button" id="o_no" aria-label="Fermer">✕</button></div>
   <div id="imp_box"></div>
   <div class="cap" id="o_cap">Sélectionnez un type d'opération pour afficher le formulaire correspondant.</div>
-  <select id="o_type"><option value="" selected disabled hidden>Choisissez un type d'opération...</option>${['ACHAT','APPORT','RETRAIT','VENTE','DIVIDENDE','SPLIT'].map(t=>`<option value="${t}">${OPL[t]}</option>`).join('')}</select>
+  <select id="o_type"><option value="" selected disabled hidden>Choisissez un type d'opération...</option>${['ACHAT','APPORT','RETRAIT','VENTE','DIVIDENDE',...(CRY?[]:['INTERET']),'SPLIT'].map(t=>`<option value="${t}">${OPL[t]}</option>`).join('')}</select>
   <div id="o_body" hidden>
     <div data-g="sel">${opLab("Nom de l'action / ETF")}${opW('o_sel','<select id="o_sel"></select>')}</div>
     <div data-g="nom">${opLab("Nom de l'action / ETF",null,'l_nom')}${opW('o_nom','<input id="o_nom" list="dl_nom" autocomplete="off" placeholder="Choisissez une action existante ou tapez un nouveau nom..."><datalist id="dl_nom"></datalist>')}</div>
@@ -490,7 +500,7 @@ function buildOp(){
 const gShow=(k,b)=>{const e=document.querySelector(`#op [data-g=${k}]`);if(e)e.hidden=!b};
 const oEmpty=id=>{const e=$('#'+id);return !e||String(e.value).trim()===''};
 /* champs encadrés en rouge tant qu'ils sont vides ; blk = bloque l'enregistrement (champs « suivis » de _req_field) */
-function opReq(){const t=$v('#o_type');if(!t)return[];const a=t=='ACHAT',v=t=='VENTE',ap=t=='APPORT'||t=='RETRAIT',dv=t=='DIVIDENDE',sp=t=='SPLIT',L=[],add=(id,blk=true)=>L.push({id,blk});
+function opReq(){const t=$v('#o_type');if(!t)return[];const a=t=='ACHAT',v=t=='VENTE',ap=t=='APPORT'||t=='RETRAIT'||t=='INTERET',dv=t=='DIVIDENDE',sp=t=='SPLIT',L=[],add=(id,blk=true)=>L.push({id,blk});
   const sel=$v('#o_sel'),nw=sel==OPNEW;
   if(a){add('o_nom');if(!oEmpty('o_nom'))add('o_tk');add('o_q');add('o_p');add('o_c')}
   else if(v||dv||sp){add('o_sel');
@@ -507,13 +517,13 @@ function opFrames(){const L=opReq(),ids=new Set(L.map(x=>x.id));
   document.querySelectorAll('#op .rq[data-rq]').forEach(w=>{const id=w.dataset.rq;w.classList.toggle('req',ids.has(id)&&oEmpty(id))})}
 function fields(){const t=$v('#o_type'),has=!!t;$('#o_body').hidden=!has;$('#o_ok').hidden=!has;
   if(!has){$('#o_err').innerHTML='';return}
-  const a=t=='ACHAT',v=t=='VENTE',ap=t=='APPORT'||t=='RETRAIT',dv=t=='DIVIDENDE',sp=t=='SPLIT',sel=$v('#o_sel'),nw=sel==OPNEW,pick=!!sel&&!nw;
+  const a=t=='ACHAT',v=t=='VENTE',ap=t=='APPORT'||t=='RETRAIT'||t=='INTERET',dv=t=='DIVIDENDE',sp=t=='SPLIT',sel=$v('#o_sel'),nw=sel==OPNEW,pick=!!sel&&!nw;
   gShow('sel',v||dv||sp);gShow('nom',a||((v||dv||sp)&&nw));
   gShow('tk',a?!oEmpty('o_nom'):(v||dv||sp)&&(nw||pick));
   gShow('q',true);gShow('p',v||a||dv);gShow('c',a||v);gShow('t',a);gShow('r',dv);gShow('b',dv);gShow('ar',dv);gShow('ro',sp);gShow('dr',sp);
   gShow('dl',a||v);gShow('hh',a||v);
   $('#l_nom').firstChild.textContent=a?"Nom de l'action / ETF":"Nom de l'action / ETF";
-  $('#l_q').firstChild.textContent=ap?'Montant (€)':sp?'Facteur de Split/Regroupement':'Quantité';
+  $('#l_q').firstChild.textContent=ap?(t=='INTERET'?'Montant des intérêts perçus (€)':'Montant (€)'):sp?'Facteur de Split/Regroupement':'Quantité';
   $('#l_p').firstChild.textContent=dv?'Montant brut perçu (€)':'Prix unitaire (€)';
   const q=$('#o_q'),qn=q.parentElement;
   if(ap){q.min=0;q.placeholder='0';qn.querySelectorAll('button').forEach((b,i)=>b.dataset.fs=(i?'':'-')+'10');qn.querySelectorAll('button').forEach(b=>b.dataset.dec=2)}
@@ -538,7 +548,7 @@ function openOp(i){S.editing=i==null?null:i;const r=i==null?null:S.raw[i];if(S.i
   $('#dl_nom').innerHTML=opAll().map(n=>`<option value="${n.replace(/"/g,'&quot;')}">`).join('');
   opClear();$('#o_err').innerHTML='';
   if(!r){$('#o_type').value='';fields();$('#op').showModal();return}
-  $('#o_type').value=r.Type;const t=r.Type,a=t=='ACHAT',ap=t=='APPORT'||t=='RETRAIT';
+  $('#o_type').value=r.Type;const t=r.Type,a=t=='ACHAT',ap=t=='APPORT'||t=='RETRAIT'||t=='INTERET';
   const z=k=>r[k]?r[k]:'',g=k=>r[k]!=null?r[k]:'';
   if(!ap){if(a)$('#o_nom').value=g('Nom');else{const own=opOwned();opSelFill(t,own.includes(r.Nom)?r.Nom:OPNEW);if(!own.includes(r.Nom))$('#o_nom').value=g('Nom')}$('#o_tk').value=g('Ticker')}
   $('#o_q').value=g('Quantité');$('#o_p').value=ap||t=='SPLIT'?'':g('Prix Unitaire (€)');
@@ -551,7 +561,7 @@ function readOp(){const t=$v('#o_type');
   if(!t){$('#o_err').innerHTML='<div class="err">⚠️ Choisissez un type d’opération.</div>';return null}
   if(opReq().some(x=>x.blk&&oEmpty(x.id))){opFrames();$('#o_err').innerHTML=`<div class="err">${OPMSG}</div>`;return null}
   $('#o_err').innerHTML='';
-  const a=t=='ACHAT',v=t=='VENTE',ap=t=='APPORT'||t=='RETRAIT',sp=t=='SPLIT',dv=t=='DIVIDENDE',sel=$v('#o_sel');
+  const a=t=='ACHAT',v=t=='VENTE',ap=t=='APPORT'||t=='RETRAIT'||t=='INTERET',sp=t=='SPLIT',dv=t=='DIVIDENDE',sel=$v('#o_sel');
   const nom=ap?'Compte Courant':(a||sel==OPNEW)?$v('#o_nom').trim():sel,tk=ap?t:$v('#o_tk').trim().toUpperCase();
   const dd=$v('#o_dd')||dstr(new Date()),dh=opDT(dd,(a||v)?($v('#o_hh')||'12:00:00'):'');
   const r={};COLS.forEach(k=>r[k]=TXT.includes(k)?null:0);
@@ -594,7 +604,7 @@ async function cfgSave(patch){S.cfg={...S.cfg,...patch};LS.s(AX+'_cfg',S.cfg);if
     body:JSON.stringify({user_id:SB.s.uid,key:'config_'+AX,value:S.cfg})},await ensure())}
   catch(e){st('Échec de l’enregistrement des réglages : '+e.message)}}
 S.hist=LS.g(AX+'_hist')||{};S.hbusy=false;S.hmsg='';S.htry=null;
-const histTickers=()=>[...new Set(S.raw.filter(r=>vis(r)&&r.Ticker&&r.Ticker!='APPORT').map(r=>r.Ticker))];
+const histTickers=()=>[...new Set(S.raw.filter(r=>vis(r)&&r.Ticker&&r.Ticker!='APPORT'&&r.Ticker!='INTERET').map(r=>r.Ticker))];
 async function ensureHist(){
   if(S.hbusy||!S.url||!S.tx.length)return;
   const from=dstr(S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d)),tks=[...new Set([...histTickers(),...IDX.map(x=>x[0])])].sort(),key=tks.join(',')+'|'+from;
@@ -631,7 +641,8 @@ function perfCalc(){
       else if(t.type=='SPLIT')sh[k]=(sh[k]||0)*t.q;
       else if(t.type=='DIVIDENDE'){const nd=t.p-t.ret-t.c+t.remb+t.arr;cash+=nd;dvc+=nd;if(t.remb>0)iv[k]=Math.max(0,(iv[k]||0)-t.remb)}
       else if(t.type=='APPORT'){cash+=t.q;f+=t.q}
-      else if(t.type=='RETRAIT'){cash-=t.q;f-=t.q}}
+      else if(t.type=='RETRAIT'){cash-=t.q;f-=t.q}
+      else if(t.type=='INTERET'){cash+=t.q}}
     let v=cash,av=0,ci=0;for(const k in sh)if(Math.abs(sh[k])>1e-9&&PX[k]){av+=sh[k]*PX[k][i];ci+=iv[k]||0}v+=av;
     V.push(v);F.push(f);RC.push(rl);DC.push(dvc);AV.push(av);CI.push(ci)}
   return{D,V,F,IX,RC,DC,AV,CI}}
@@ -757,7 +768,7 @@ let _pubS='';
 const pubHist=(C,key)=>{try{if(!C||!C.D||!C.V||!C.D.length)return;const m=new Map();C.D.forEach((d,i)=>m.set(String(d).slice(0,7),[String(d),Math.round(C.V[i]*100)/100]));const a=[...m.values()].sort((x,y)=>x[0]<y[0]?-1:1),str=JSON.stringify(a);if(str!==_pubS){_pubS=str;localStorage.setItem(key,str)}}catch(e){}};
 const getC=()=>{if(!Object.keys(S.hist).length)return null;try{const C=perfCalc();pubHist(C,(CRY?'hub_crypto':'hub_'+ACC)+'_hist');return C}catch(e){return null}};
 const needHist=()=>`<p class="hint">${S.hbusy?'Chargement de l’historique des cours…':'Historique des cours indisponible : vérifie l’adresse du script Google dans Réglages.'}</p>`;
-function sales(){const by={},out=[];S.tx.forEach(t=>{if(t.type!='APPORT'&&t.type!='RETRAIT')(by[t.tk]=by[t.tk]||[]).push(t)});
+function sales(){const by={},out=[];S.tx.forEach(t=>{if(t.type!='APPORT'&&t.type!='RETRAIT'&&t.type!='INTERET')(by[t.tk]=by[t.tk]||[]).push(t)});
   const key=t=>{const d=new Date(t.d);if(t.type=='SPLIT')d.setHours(0,0,0,0);return d.getTime()};
   for(const tk in by){let sh=0,inv=0;by[tk].sort((a,b)=>key(a)-key(b)).forEach(t=>{
     if(t.type=='ACHAT'){sh+=t.q;inv+=t.q*t.p+t.f}
@@ -766,10 +777,10 @@ function sales(){const by={},out=[];S.tx.forEach(t=>{if(t.type!='APPORT'&&t.type
     else if(t.type=='DIVIDENDE'&&t.remb>0)inv=Math.max(0,inv-t.remb)})}
   return out}
 /* ===== Vue d'ensemble & Objectif : reprise exacte de l'onglet 1 du Streamlit (app_perso.py) ===== */
-const OMT_V={"PER pondéré":"Moyenne harmonique du PER (cours ÷ bénéfice par action, 12 derniers mois) des lignes, pondérée par leur valeur actuelle. ETF et valeurs sans bénéfice exclus.",
+const OMT_V0={"PER pondéré":"Moyenne harmonique du PER (cours ÷ bénéfice par action, 12 derniers mois) des lignes, pondérée par leur valeur actuelle. ETF et valeurs sans bénéfice exclus.",
 "P/B pondéré":"Moyenne harmonique du ratio cours ÷ valeur comptable par action, pondérée par la valeur actuelle des lignes. ETF et valeurs sans donnée exclus.",
 "PEG pondéré":"Moyenne harmonique du PEG (PER ÷ croissance attendue des bénéfices), pondérée par la valeur actuelle des lignes. Valeurs sans PEG exclues."};
-const OMT={"Performance Globale":"% = gains cumulés (plus-values latentes + actées + dividendes) ÷ total des apports nets.",
+const OMT0={"Performance Globale":"% = gains cumulés (plus-values latentes + actées + dividendes) ÷ total des apports nets.",
 "Performance YTD":"% = gain depuis le 1er janvier (latent + actée + dividendes) ÷ valeur du portefeuille au 31 décembre précédent.",
 "Performance du Mois":"% = gain depuis le 1er du mois ÷ valeur du portefeuille à la fin du mois précédent.",
 "Performance du Jour":"% = gain du jour ÷ valeur du portefeuille à la clôture de la veille (hors apports et retraits).",
@@ -781,6 +792,7 @@ const OMT={"Performance Globale":"% = gains cumulés (plus-values latentes + act
 "Rendement sur cours":"% = dividendes nets annuels (reçus ÷ nombre d'années depuis l'ouverture, après 3 mois) ÷ valeur actuelle des titres détenus (cours du jour). La flèche indique le dividende annuel moyen en €.",
 "Rendement sur coût":"% = dividendes nets annuels (reçus ÷ nombre d'années depuis l'ouverture, après 3 mois) ÷ coût de revient des titres détenus (PRU × quantités). La flèche indique le dividende annuel moyen en €.",
 "Drawdown Maximum":"% = plus forte baisse du portefeuille depuis un sommet, calculée sur la performance quotidienne (hors apports et retraits). La flèche indique l'écart actuel par rapport au dernier sommet."};
+const OMT_V={},OMT={};
 const ospc=x=>String(x).replace(/[\u202f\u00a0]/g,' ');
 const oGE=v=>isFinite(v)?ospc((v<0?'-':'')+nf(2).format(Math.abs(v)))+' €':'N/A';
 const oDE=g=>ospc((g<0?'-':'+')+nf(2).format(Math.abs(g)))+' €';
@@ -833,7 +845,7 @@ function ovHistX(inv){const C=getC();if(!C)return null;const{D,V,F}=C,n=D.length
   if(n>=3){let idx=1,pk=1,mn=0,lastdd=0;for(let i=1;i<n;i++){const p=V[i-1],r=p>0?(V[i]-p-F[i])/p:0;idx*=1+r;pk=Math.max(pk,idx);const d=(idx/pk-1)*100;if(d<mn)mn=d;lastdd=d}dd=mn;cur=lastdd}
   return{y:per(y+'-01-01'),m:per(y+'-'+pad(m+1)+'-01'),j:per(dstr(yest),true),dd,cur}}
 function ovX(v){
-  const op=R.pos.filter(p=>p.open),inv=op.reduce((s,p)=>s+p.inv,0),val=R.valeur,pnl=val-inv,real=R.real,dv=R.divNet,tg=pnl+real+dv,ap=R.apports,tot=R.total,fees=R.fees,cst=R.pos.reduce((x,p)=>x+p.ach,0);
+  const op=R.pos.filter(p=>p.open),inv=op.reduce((s,p)=>s+p.inv,0),val=R.valeur,pnl=val-inv,real=R.real,dv=R.divNet,it=R.interets||0,tg=pnl+real+dv+it,ap=R.apports,tot=R.total,fees=R.fees,cst=R.pos.reduce((x,p)=>x+p.ach,0);
   const base=ap>0?ap:(cst>0?cst:inv),pg=base>0?tg/base*100:0;
   const f0=S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d),ans=Math.max(Math.floor((new Date()-f0)/864e5)/365.25,0);
   const pam=(ans>=.25&&1+pg/100>0)?(Math.pow(1+pg/100,1/ans)-1)*100:null,gam=ans>=.25?tg/ans:null;
@@ -866,7 +878,7 @@ function ovX(v){
   const num=(id,lab,val,step,min,max)=>`<div><label>${lab}</label><div class="nin"><input type="number" inputmode="decimal" data-cfg="${id}" value="${val}" step="${step}" min="${min}"${max!=null?` max="${max}"`:''}><button type="button" data-step="-${step}" aria-label="Diminuer">−</button><button type="button" data-step="${step}" aria-label="Augmenter">+</button></div></div>`;
   v.innerHTML=`<details class="exp" open><summary>📊 Vue d'ensemble du Portefeuille</summary><div class="in"><div class="dcard">
     <p class="dst">💰 Capital & Investissement</p>
-    <div class="mcols mc4">${omt('Valeur Actuelle',oGE(tot),null,'cap')}${omt('Montant Investi',oGE(inv),null,'cap')}${omt('Cash Disponible',oGE(R.cash),null,'cap')}${omt('Total Apports',oGE(ap),null,'cap')}</div>
+    <div class="mcols mc4">${omt('Valeur Actuelle',oGE(tot),null,'cap')}${omt('Montant Investi',oGE(inv),null,'cap')}${omt('Cash Disponible',oGE(R.cash),null,'cap')}${omt('Apports nets',oGE(S.tx.filter(t=>!t.virt).reduce((s,t)=>s+(t.type=='APPORT'?t.q:t.type=='RETRAIT'?-t.q:0),0)),null,'cap')}</div>
     <p class="dst" style="margin-top:16px">📈 Performances</p>
     <div class="mcols mc2">${omt('Performance Globale',oPT(pg),oDE(tg),'perf')}${pm(yv,'Performance YTD')}</div>
     <div class="mcols mc2">${pm(mv,'Performance du Mois')}${pm(jv,'Performance du Jour')}</div>
@@ -874,6 +886,7 @@ function ovX(v){
     <p class="dst" style="margin-top:16px">🏷️ Plus-values, Dividendes & Frais</p>
     <div class="mcols mc2">${omt('Plus-Value Latente',oGE(pnl),oDP(pl),'gain')}${omt('Plus-Value Actée',oGE(real),oDP(pa),'gain')}</div>
     <div class="mcols mc2">${omt('Dividendes Reçus',oGE(dv),pd!=null?oDP(pd):null,'gain')}${omt('Frais Totaux',oGE(fees),pf!=null?pf.toFixed(2).replace('.',',')+'%':null,'gain',1)}</div>
+    ${it>0?`<div class="mcols mc2">${omt('Intérêts Reçus',oGE(it),ap>0?oDP(it/ap*100):null,'gain')}</div>`:''}
     <div class="mcols mc2">${omt('Rendement sur cours',rc,dam!=null?oDE(dam):null,'gain')}${omt('Rendement sur coût',rk,dam!=null?oDE(dam):null,'gain')}</div>
   </div></div></details>
   <details class="exp" open><summary>🎯 Objectif</summary><div class="in">
@@ -927,7 +940,7 @@ function subM(d,n){const r=new Date(d.getFullYear(),d.getMonth()-n,1),l=new Date
 function periodeDebut(l){const t=midnight(new Date());
   return l=='Mois en cours'?new Date(t.getFullYear(),t.getMonth(),1):l=='3 derniers mois'?subM(t,3):l=='6 derniers mois'?subM(t,6):l=='12 derniers mois'?subM(t,12):
     l=='Année en cours'?new Date(t.getFullYear(),0,1):l=='3 dernières années'?subM(t,36):l=='5 dernières années'?subM(t,60):l=='10 dernières années'?subM(t,120):null}
-const montantBrut=t=>t.type=='ACHAT'?t.q*t.p+t.f:t.type=='VENTE'?t.q*t.p-t.f:t.type=='APPORT'||t.type=='RETRAIT'?t.q:t.type=='DIVIDENDE'?t.p-t.c-t.ret+t.arr:t.type=='SPLIT'?(t.rompu||0):0;
+const montantBrut=t=>t.type=='ACHAT'?t.q*t.p+t.f:t.type=='VENTE'?t.q*t.p-t.f:t.type=='APPORT'||t.type=='RETRAIT'||t.type=='INTERET'?t.q:t.type=='DIVIDENDE'?t.p-t.c-t.ret+t.arr:t.type=='SPLIT'?(t.rompu||0):0;
 const dmy=d=>`${pad(d.getDate())}-${pad(d.getMonth()+1)}-${d.getFullYear()}`;
 const dmyhms=d=>`${dmy(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 const exp2=(k,t,b)=>`<details class="exp" data-ex="${k}"${S.exc.has(k)?'':' open'}><summary>${t}</summary><div class="in">${b}</div></details>`;
@@ -1038,22 +1051,22 @@ function txHTML(){
   if(lo!=null)L=L.filter(t=>montantBrut(t)>=lo);if(hi!=null)L=L.filter(t=>montantBrut(t)<=hi);
   if(!L.length)h+='<div class="info">Aucune transaction trouvée avec ces critères.</div>';
   else{L=[...L].sort((a,b)=>b.d-a.d);
-    const BG={ACHAT:'#f0f7ff',VENTE:'#fdf2f2',DIVIDENDE:'#f2fcf5',APPORT:'#e6f4ea',RETRAIT:'#f5f3ff',SPLIT:'#fff7ed',REGROUPEMENT:'#fff7ed','SPLIT/REGROUPEMENT':'#fff7ed'};
+    const BG={ACHAT:'#f0f7ff',VENTE:'#fdf2f2',DIVIDENDE:'#f2fcf5',APPORT:'#e6f4ea',RETRAIT:'#f5f3ff','INTÉRÊTS':'#fef3c7',SPLIT:'#fff7ed',REGROUPEMENT:'#fff7ed','SPLIT/REGROUPEMENT':'#fff7ed'};
     const cols=['Date','Type','Nom','Quantité','Prix','Frais','Montant'];
     const rows=L.map(t=>{const raw=S.raw[t.i]||{},ttf=+raw['TTF (€)']||0;
-      const ty=t.type=='SPLIT'?(t.q>1?'SPLIT':t.q<1?'REGROUPEMENT':'SPLIT/REGROUPEMENT'):t.type;
-      const q=t.type=='APPORT'||t.type=='RETRAIT'?'N/A':pQty(t.q,t.type=='ACHAT'||t.type=='VENTE'?'dot':'comma');
-      const px=t.type=='APPORT'||t.type=='RETRAIT'?'N/A':t.type=='SPLIT'?(t.rompu>0?pEur(t.rompu)+' (Rompu)':'N/A'):pPx(t.p);
+      const ty=t.type=='SPLIT'?(t.q>1?'SPLIT':t.q<1?'REGROUPEMENT':'SPLIT/REGROUPEMENT'):t.type=='INTERET'?'INTÉRÊTS':t.type;
+      const q=t.type=='APPORT'||t.type=='RETRAIT'||t.type=='INTERET'?'N/A':pQty(t.q,t.type=='ACHAT'||t.type=='VENTE'?'dot':'comma');
+      const px=t.type=='APPORT'||t.type=='RETRAIT'||t.type=='INTERET'?'N/A':t.type=='SPLIT'?(t.rompu>0?pEur(t.rompu)+' (Rompu)':'N/A'):pPx(t.p);
       const fr=(t.f>0?pEur(t.f):'0,00 €')+(ttf>0?` (Dont TTF : ${pEur(ttf)})`:'');
-      const mt=t.type=='ACHAT'?pEur(t.q*t.p+t.f):t.type=='VENTE'?pEur(t.q*t.p-t.f):t.type=='APPORT'||t.type=='RETRAIT'?pEur(t.q):t.type=='DIVIDENDE'?pEur(t.p-t.c-t.ret+t.arr):t.type=='SPLIT'?(t.rompu>0?pEur(t.rompu):'N/A'):'N/A';
+      const mt=t.type=='ACHAT'?pEur(t.q*t.p+t.f):t.type=='VENTE'?pEur(t.q*t.p-t.f):t.type=='APPORT'||t.type=='RETRAIT'||t.type=='INTERET'?pEur(t.q):t.type=='DIVIDENDE'?pEur(t.p-t.c-t.ret+t.arr):t.type=='SPLIT'?(t.rompu>0?pEur(t.rompu):'N/A'):'N/A';
       return[dmyhms(t.d),ty,t.nom||'',q,px,fr,mt]}).map(r=>dashRow(r,cols,[]));
     const n=rows.length;
     h+=peaTable(cols,rows,{row:rows.map(r=>BG[r[1]]?`background-color: ${BG[r[1]]};`:''),index:rows.map((_,i)=>n-i),indexLabel:'N°',maxH:350})}
   return h+mgHTML()}
 
 /* Gestion des transactions (Modifier / Supprimer) */
-const EFT=['ACHAT','VENTE','APPORT','RETRAIT','DIVIDENDE','SPLIT'];
-function efInit(r){const nm=r.Nom&&r.Nom!='Compte Courant'?r.Nom:'',tk=r.Ticker&&r.Ticker!='APPORT'&&r.Ticker!='RETRAIT'?r.Ticker:'',ty=r.Type,AV=ty=='ACHAT'||ty=='VENTE',MV=ty=='APPORT'||ty=='RETRAIT';
+const EFT=['ACHAT','VENTE','APPORT','RETRAIT','DIVIDENDE','INTERET','SPLIT'].filter(x=>!(CRY&&x=='INTERET'));
+function efInit(r){const nm=r.Nom&&r.Nom!='Compte Courant'?r.Nom:'',tk=r.Ticker&&r.Ticker!='APPORT'&&r.Ticker!='RETRAIT'?r.Ticker:'',ty=r.Type,AV=ty=='ACHAT'||ty=='VENTE',MV=ty=='APPORT'||ty=='RETRAIT'||ty=='INTERET';
   const dt=String(r.Date_Heure||'').replace('T',' '),tm=dt.slice(11,19)||'00:00:00',z=k=>+r[k]||0;
   return{type:EFT.includes(ty)?ty:'ACHAT',nom:nm,tk,qa:String(AV?z('Quantité'):1),pa:(AV?z('Prix Unitaire (€)'):0).toFixed(4),c:(AV?z('Commission (€)'):0).toFixed(2),tt:(AV?z('TTF (€)'):0).toFixed(2),
     mt:(MV?z('Quantité'):100).toFixed(2),qd:String(ty=='DIVIDENDE'?z('Quantité'):1),bd:(ty=='DIVIDENDE'?z('Prix Unitaire (€)'):0).toFixed(2),ret:z('Retenue_Source_Etrangere').toFixed(2),remb:z('Remboursement_Capital').toFixed(2),arr:z('Arrondi_Courtier').toFixed(2),
@@ -1062,9 +1075,9 @@ const helpI=t=>`<span class="hlp" data-ti="${TIPS.push(t)-1}">?</span>`;
 function efHTML(f){
   const t=f.type,inp=(k,l,ph)=>`<div><label>${l}</label><div class="din"><input type="text" data-ef="${k}" value="${esc(f[k])}" placeholder="${ph||''}" autocomplete="off"></div></div>`,
     nu=(k,l,step,dec,min,help)=>`<div><label>${l}${help?' '+helpI(help):''}</label>${numIn(`data-ef="${k}"`,f[k],'',step,dec,min)}</div>`;
-  let h=`<div><label>Type d'opération</label>${selBox('data-ef="type"',EFT.map(x=>[x,x]),t)}</div>`;
+  let h=`<div><label>Type d'opération</label>${selBox('data-ef="type"',EFT.map(x=>[x,x=='INTERET'?'INTÉRÊTS':x]),t)}</div>`;
   if(t=='ACHAT'||t=='VENTE')h+=inp('nom',"Nom de l'action / ETF")+inp('tk','Ticker')+nu('qa','Quantité',.00000001,8,0)+nu('pa','Prix unitaire (€)',.0001,4,0)+nu('c','Commission (€)',.01,2,0)+nu('tt','TTF (€)',.01,2,0);
-  else if(t=='APPORT'||t=='RETRAIT')h+=nu('mt','Montant (€)',10,2,0);
+  else if(t=='APPORT'||t=='RETRAIT'||t=='INTERET')h+=nu('mt',t=='INTERET'?'Montant des intérêts perçus (€)':'Montant (€)',t=='INTERET'?.01:10,2,0);
   else if(t=='DIVIDENDE')h+=inp('nom',"Nom de l'action / ETF")+inp('tk','Ticker')+nu('qd','Quantité',.000001,6,0)+nu('bd','Montant brut perçu (€)',.01,2,0)+nu('ret','Retenue à la source (div) (€)',.01,2,0)
     +nu('remb','Remboursement de capital inclus (€) — optionnel',.01,2,0,"À renseigner uniquement si une partie de la distribution reçue n'est pas un dividende mais un remboursement de capital. => Cela a pour impact la réduction du PRU de la ligne.")
     +nu('arr','Arrondi du courtier (€) — optionnel',.01,2,null,"À renseigner lorsque le courtier applique un arrondi tel que « Montant brut perçu » soustrait de la « Retenue à la source » ne tombe pas exactement sur le montant net réellement crédité sur le compte. Indiquez ici l'écart, avec son signe, entre le montant net attendu (calculé) et le montant net réellement reçu : par exemple -0,01 si 0,01 € de moins a été crédité.");
@@ -1074,8 +1087,8 @@ function efHTML(f){
   else h+=`<div><label>Date</label><div class="din"><input type="date" data-ef="d" value="${esc(f.d)}"></div></div>`;
   return`<div class="tform">${h}<div><button type="button" class="sbtn2" id="mgsave">✅ Valider les modifications</button></div></div>`}
 function mgHTML(){
-  const M=S.mg,rows=S.tx.filter(t=>!t.virt).sort((a,b)=>b.d-a.d);if(M.sel!==''&&!S.raw[+M.sel])M.sel='';
-  let h=`<h4 class="h4">🛠️ Gestion des transactions (Modifier / Supprimer)</h4><div><label>Sélectionner une transaction pour agir dessus :</label>${selBox('data-mg="sel"',rows.map(t=>[String(t.i),`${dmy(t.d)} | ${t.type} | ${t.nom||''}`]),M.sel,'Choisir...')}</div>`;
+  const M=S.mg;if(M.sel!==''&&!S.raw[+M.sel])M.sel='';
+  let h=`<h4 class="h4">🛠️ Gestion des transactions (Modifier / Supprimer)</h4><div class="mgp"><label>Sélectionner une transaction pour agir dessus :</label><div class="din"><input type="search" id="mgq" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="🔎 Tape pour chercher (date, type, nom, montant…)" value="${esc(M.sel!==''?mgLabelOf(M.sel):'')}"></div><div id="mglist" class="mglist" hidden></div></div>`;
   if(M.sel!==''){
     h+=`<div class="rrad" role="radiogroup"><span style="flex-basis:100%;font-size:14px;color:#31333f">Action</span>${['Modifier','Supprimer'].map(a=>`<label><input type="radio" name="mgact" data-mg="act" value="${a}"${M.act==a?' checked':''}>${a}</label>`).join('')}</div>`;
     if(M.act=='Supprimer')h+='<div><button type="button" class="pbtn" id="mgdel">🗑️ Confirmer la suppression</button></div>';
@@ -1088,7 +1101,7 @@ async function mgSave(){
   if(!f.d||isNaN(new Date(dh.replace(' ','T'))))return alert('La date est invalide.');
   if((t=='ACHAT'||t=='VENTE'||t=='DIVIDENDE'||t=='SPLIT')&&(!f.nom.trim()||!f.tk.trim()))return alert('Le nom et le ticker sont obligatoires.');
   const r={...old,Type:t,Date_Heure:dh,Date_Rompus:t=='SPLIT'?(f.dr||f.d)+' 00:00:00':dh};
-  if(t=='APPORT'||t=='RETRAIT')Object.assign(r,{Nom:'Compte Courant',Ticker:t,'Quantité':n('mt'),'Prix Unitaire (€)':1,'Commission (€)':0,'TTF (€)':0,'Frais Totaux (€)':0,Rompu:0,Retenue_Source_Etrangere:0,Remboursement_Capital:0,Arrondi_Courtier:0});
+  if(t=='APPORT'||t=='RETRAIT'||t=='INTERET')Object.assign(r,{Nom:'Compte Courant',Ticker:t,'Quantité':n('mt'),'Prix Unitaire (€)':1,'Commission (€)':0,'TTF (€)':0,'Frais Totaux (€)':0,Rompu:0,Retenue_Source_Etrangere:0,Remboursement_Capital:0,Arrondi_Courtier:0});
   else if(t=='SPLIT')Object.assign(r,{Nom:f.nom.trim(),Ticker:f.tk.trim().toUpperCase(),'Quantité':n('sf'),'Prix Unitaire (€)':0,'Commission (€)':0,'TTF (€)':0,'Frais Totaux (€)':0,Rompu:n('ro'),Retenue_Source_Etrangere:0,Remboursement_Capital:0,Arrondi_Courtier:0});
   else if(t=='DIVIDENDE')Object.assign(r,{Nom:f.nom.trim(),Ticker:f.tk.trim().toUpperCase(),'Quantité':n('qd'),'Prix Unitaire (€)':n('bd'),'Commission (€)':0,'TTF (€)':0,'Frais Totaux (€)':n('ret'),Rompu:0,Retenue_Source_Etrangere:n('ret'),Remboursement_Capital:n('remb'),Arrondi_Courtier:n('arr')});
   else Object.assign(r,{Nom:f.nom.trim(),Ticker:f.tk.trim().toUpperCase(),'Quantité':n('qa'),'Prix Unitaire (€)':n('pa'),'Commission (€)':n('c'),'TTF (€)':n('tt'),'Frais Totaux (€)':Number((n('c')+n('tt')).toFixed(6)),Rompu:0,Retenue_Source_Etrangere:0,Remboursement_Capital:0,Arrondi_Courtier:0});
@@ -1098,7 +1111,7 @@ async function mgDelete(){S.raw.splice(+S.mg.sel,1);S.mg.sel='';S.mg.f=null;awai
 /* --- 4) Classement des actions par gain --- */
 function claHTML(){
   const P=R.pos;if(!P.length)return'<div class="info">Aucune donnée disponible pour le classement des gains.</div>';
-  const inv=P.reduce((s,p)=>s+p.inv,0),cost=P.reduce((s,p)=>s+p.ach,0),base=R.apports>0?R.apports:(cost>0?cost:inv);
+  const inv=P.reduce((s,p)=>s+p.inv,0),cost=P.reduce((s,p)=>s+p.ach,0),base=cost>0?cost:inv; /* classement : ni apports ni retraits dans la base */
   const S2=[...P].sort((a,b)=>b.tot-a.tot),cols=['N°','Nom','Gain Réalisé (€)','Gain Latent (€)','Dividendes Reçus (€)','Gain Total Global (€)','Performance (%)','Contribution perf. (%)','Perf. annuelle moy. (%)','Nombre de mouvements','Détention (jour)'];
   const EQ=['Gain Total Global (€)','Performance (%)','Contribution perf. (%)','Perf. annuelle moy. (%)'],FL=['Gain Réalisé (€)','Gain Latent (€)','Gain Total Global (€)','Performance (%)','Contribution perf. (%)','Perf. annuelle moy. (%)'];
   const ctb=p=>base>0?p.tot/base*100:NaN;
@@ -1137,6 +1150,27 @@ document.addEventListener('change',e=>{const el=e.target;if(!el||!el.dataset)ret
   if(el.dataset.mg=='act'){S.mg.act=el.value;if(el.value=='Modifier'&&S.mg.sel!=='')S.mg.f=efInit(S.raw[+S.mg.sel]);draw();return}
   if(el.dataset.ef){const k=el.dataset.ef;if(!S.mg.f)return;S.mg.f[k]=el.value;if(k=='type')draw()}});
 document.addEventListener('input',e=>{const el=e.target;if(el&&el.dataset&&el.dataset.ef&&el.dataset.ef!='type'&&S.mg.f)S.mg.f[el.dataset.ef]=el.value});
+/* Recherche d'une transaction à modifier / supprimer : liste filtrable (plusieurs mots, sans accents), pensée pour des milliers de lignes */
+const mgNorm=s=>String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+function mgRows(){
+  if(S.mgc&&S.mgc.tx===S.tx)return S.mgc.rows;
+  const rows=S.tx.filter(t=>!t.virt).sort((a,b)=>b.d-a.d).map(t=>{
+    const ty=t.type=='INTERET'?'INTÉRÊTS':t.type,l=`${dmy(t.d)} | ${ty} | ${t.nom||''} | ${pEur(montantBrut(t))}`;
+    return{i:t.i,l,s:mgNorm(l+' '+dstr(t.d)+' '+dmy(t.d).replace(/-/g,'/')+' '+(t.tk||''))}});
+  S.mgc={tx:S.tx,rows};return rows}
+function mgLabelOf(i){const r=mgRows().find(x=>String(x.i)===String(i));return r?r.l:''}
+function mgList(q){const box=document.getElementById('mglist');if(!box)return;
+  const tk=mgNorm(q).split(/\s+/).filter(Boolean),all=mgRows(),hit=tk.length?all.filter(r=>tk.every(w=>r.s.includes(w))):all,sh=hit.slice(0,40);
+  box.innerHTML=(sh.length?sh.map(r=>`<button type="button" class="mgit${String(r.i)===String(S.mg.sel)?' on':''}" data-mgi="${r.i}">${esc(r.l)}</button>`).join(''):'<div class="mgno">Aucune transaction ne correspond.</div>')
+    +(hit.length>sh.length?`<div class="mgno">${hit.length-sh.length} autre(s) résultat(s) : continue à taper pour affiner.</div>`:'');
+  box.hidden=false}
+document.addEventListener('focusin',e=>{if(e.target&&e.target.id=='mgq'){e.target.select();mgList('')}});
+document.addEventListener('input',e=>{if(!e.target||e.target.id!='mgq')return;const v=e.target.value;
+  if(v===''&&S.mg.sel!==''){S.mg.sel='';S.mg.f=null;draw();setTimeout(()=>{const q=document.getElementById('mgq');if(q)q.focus()},0);return}
+  mgList(v)});
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-mgi]');
+  if(b){S.mg.sel=b.dataset.mgi;S.mg.f=efInit(S.raw[+b.dataset.mgi]);draw();return}
+  if(!(e.target.closest&&e.target.closest('.mgp'))){const bx=document.getElementById('mglist');if(bx)bx.hidden=true}});
 
 /* ===== Apports : reprise de l'onglet 3 du Streamlit (jauge, courbe, barres, cartographies) ===== */
 const PLAFOND=150000;
@@ -1176,8 +1210,8 @@ function appX(v){
   if(!mv.length){v.innerHTML='<div class="info">Aucun apport enregistré pour le moment.</div>';return}
   const ap=mv.filter(t=>t.type=='APPORT'),rt=mv.filter(t=>t.type=='RETRAIT'),verse=ap.reduce((a,t)=>a+t.q,0),net=verse-rt.reduce((a,t)=>a+t.q,0);
   const ys=[...new Set(mv.map(t=>t.d.getFullYear()))].sort(),sy=(a,y)=>a.filter(t=>t.d.getFullYear()==y).reduce((x,t)=>x+t.q,0);
-  const day={};mv.forEach(t=>{const k=dstr(t.d);day[k]=(day[k]||0)+(t.type=='APPORT'?t.q:-t.q)});
-  const D=[],V=[];let c=0,cur=midnight(mv[0].d);const last=midnight(mv[mv.length-1].d),end=last>midnight(new Date())?last:midnight(new Date());
+  const day={};mv.forEach(t=>{const k=dstr(t.d);day[k]=(day[k]||0)+(t.type=='APPORT'?t.q:0)});
+  const D=[],V=[];let c=0,cur=midnight((ap.length?ap:mv)[0].d);const last=midnight(mv[mv.length-1].d),end=last>midnight(new Date())?last:midnight(new Date());
   for(;cur<=end;cur=new Date(cur.getFullYear(),cur.getMonth(),cur.getDate()+1)){c+=day[dstr(cur)]||0;D.push(cur);V.push(c)}
   const open=S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d),CY='#06b6d4';
   const ex=(k,t,b)=>exp2(k,t,b),cv='<div class="cv" style="height:340px"><canvas id="%"></canvas></div>';
@@ -1192,7 +1226,7 @@ function appX(v){
   chart('c4',{type:'line',data:{labels:D.map(fd),datasets:[{data:V,stepped:'after',fill:'origin',borderColor:CY,borderWidth:3,pointRadius:0,pointHoverRadius:0,
       backgroundColor:x=>{const a=x.chart.chartArea;if(!a)return CY+'2e';const g=x.chart.ctx.createLinearGradient(0,a.top,0,a.bottom);g.addColorStop(0,CY+'6b');g.addColorStop(1,CY+'00');return g}}]},
     plugins:[spikeP,pl],options:{maintainAspectRatio:false,interaction:{intersect:false,mode:'index',axis:'x'},layout:{padding:{right:8}},
-      plugins:{legend:{display:false},tooltip:extTip(i=>`<b>${fd(D[i])}</b><br>Apports nets cumulés : ${pEur(V[i])}`)},
+      plugins:{legend:{display:false},tooltip:extTip(i=>`<b>${fd(D[i])}</b><br>Apports cumulés : ${pEur(V[i])}`)},
       scales:{x:{grid:{display:false},border:{display:false},ticks:{maxTicksLimit:5,maxRotation:0,callback:(_,i)=>`${pad(D[i].getMonth()+1)}/${String(D[i].getFullYear()).slice(2)}`}},
         y:{beginAtZero:true,border:{display:false},grid:gridY,ticks:{callback:yTick,maxTicksLimit:6}}}}});
   barsAp('c9',ys.map(String),ys.map(y=>sy(ap,y)),CY,'Versements');
@@ -1316,7 +1350,7 @@ function fondX(){
   if(FOND_SRC=='Portefeuille'){
     const tot=ok.reduce((s,u)=>s+(u.val||0),0),pond=k=>{let n=0,d=0;ok.forEach(u=>{const x=u.d[k];if(u.val&&x&&x>0){n+=u.val;d+=u.val/x}});return[d>0?n/d:null,n]};let cov=0;
     const c3=[['PER pondéré','per'],['P/B pondéré','pb'],['PEG pondéré','peg']].map(([l,k])=>{const[v,c]=pond(k);cov=Math.max(cov,c);return`<div class="mtr tp" data-mt="${esc(OMT_V[l])}"><div class="ml">${l}</div><div class="mv">${v!=null?fr(v,1):'N/A'}</div></div>`}).join('');
-    o+=exp('📐 Valorisation pondérée du portefeuille',`<div class="c3m">${c3}</div>`+(tot>0?`<div class="cap">Calculés sur ${(cov/tot*100).toFixed(0)} % de la valeur du portefeuille (ETF et valeurs sans donnée exclus).</div>`:''))}
+    o+=exp('📐 Valorisation pondérée du portefeuille',`<div class="c3m">${c3}</div>`)}
   /* 26. Qualité financière par ligne */
   const NIV=['background-color:rgba(239,68,68,.14);color:#b91c1c;font-weight:700;','background-color:rgba(245,158,11,.16);color:#92400e;font-weight:700;','background-color:rgba(34,197,94,.16);color:#15803d;font-weight:700;'];
   const rq=ok.filter(u=>!(u.d.marge==null&&u.d.roe==null&&u.d.dn==null)).map(u=>[u.nom,u.d.marge!=null?(u.d.marge*100).toFixed(1).replace('.',',')+' %':'—',u.d.roe!=null?(u.d.roe*100).toFixed(1).replace('.',',')+' %':'—',u.d.dn!=null?fr(u.d.dn,1)+'x':'—']);
@@ -1387,7 +1421,7 @@ function heat(rows,o){
 /* Capital investi moyen par mois (coût d'achat des lignes détenues, moyenne de tous les jours calendaires du mois, comme app_perso.py),
    utilisé pour le rendement mensuel des dividendes = dividendes nets du mois ÷ capital investi moyen du mois */
 function invMonthly(){
-  const by={};S.tx.forEach(t=>{if(t.type!='APPORT'&&t.type!='RETRAIT')(by[t.tk]=by[t.tk]||[]).push(t)});
+  const by={};S.tx.forEach(t=>{if(t.type!='APPORT'&&t.type!='RETRAIT'&&t.type!='INTERET')(by[t.tk]=by[t.tk]||[]).push(t)});
   const ev=[];
   for(const tk in by){
     const key=t=>{const d=new Date(t.d);if(t.type=='SPLIT')d.setHours(0,0,0,0);return d.getTime()};
@@ -1809,6 +1843,12 @@ const dfr=d=>`${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
 const clTrim=k=>k.slice(0,4)+'-T'+(Math.floor((+k.slice(5,7)-1)/3)+1);
 let CLQ=[];
 /* Barres horizontales : une ligne par mouvement, infobulle sur toute la ligne, valeur après la barre */
+const rkMc=document.createElement('canvas').getContext('2d');
+/* tronque par la FIN (« Nom de l'actio… ») pour que le début du nom reste lisible */
+function rkCut(s,max,fs){s=String(s==null?'':s);if(!(max>30))return s;rkMc.font=fs+'px '+((window.Chart&&Chart.defaults.font.family)||'sans-serif');
+  if(rkMc.measureText(s).width<=max)return s;let lo=0,hi=s.length;
+  while(lo<hi){const m=(lo+hi+1)>>1;if(rkMc.measureText(s.slice(0,m).trimEnd()+'…').width<=max)lo=m;else hi=m-1}
+  return s.slice(0,lo).trimEnd()+'…'}
 function rkBar(id,labels,vals,col,txt,tip){
   const mx=Math.max(...vals.map(Math.abs))||1,fs=innerWidth<=640?10:11;
   const lb={id:'rklbl',afterDatasetsDraw(c){const{ctx}=c,m=c.getDatasetMeta(0);ctx.save();ctx.font=fs+'px Manrope, Inter, sans-serif';ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='middle';
@@ -1816,7 +1856,7 @@ function rkBar(id,labels,vals,col,txt,tip){
   chart(id,{type:'bar',data:{labels,datasets:[{data:vals.map(Math.abs),backgroundColor:col,barPercentage:.74,categoryPercentage:1}]},plugins:[lb],
     options:{indexAxis:'y',maintainAspectRatio:false,interaction:{intersect:false,mode:'index',axis:'y'},layout:{padding:{left:2,right:56,top:6,bottom:6}},
       plugins:{legend:{display:false},tooltip:extTip(tip)},
-      scales:{x:{display:false,min:0,max:mx*1.25,grid:{display:false}},y:{grid:{display:false},border:{color:'#e2e8f0'},ticks:{font:{size:fs},autoSkip:false,color:'#334155'}}}}})}
+      scales:{x:{display:false,min:0,max:mx*1.25,grid:{display:false}},y:{grid:{display:false},border:{color:'#e2e8f0'},ticks:{font:{size:fs},autoSkip:false,color:'#334155',callback(v){return rkCut(this.getLabelForValue(v),this.chart.width*.42,fs)}}}}}})}
 const rkCv=(id,n)=>`<div class="cv" style="height:${Math.max(220,34*n+40)}px"><canvas id="${id}"></canvas></div>`;
 const sbsP=(l,r)=>`<div class="sbs"><div>${l}</div><div>${r}</div></div>`;
 const sbsT=t=>`<p class="sbp"><b>${t}</b></p>`;
@@ -1837,14 +1877,15 @@ function claData(cut){
   const C=getC();if(!C)return null;const{D,V,F}=C,ach=S.tx.filter(t=>t.type=='ACHAT');if(!ach.length)return{days:[],per:{}};
   const fp=dstr(ach.reduce((m,t)=>t.d<m?t.d:m,ach[0].d)),i0=D.findIndex(x=>x>=fp);if(i0<0)return{days:[],per:{}};
   const cs=cut?dstr(cut):null,A=[];let c=0;for(let i=0;i<D.length;i++){c+=F[i];A.push(c)}
-  const vte={},ach_={},div={},rom={},add=(o,k,x)=>{o[k]=(o[k]||0)+x};
+  const vte={},ach_={},div={},rom={},itr={},add=(o,k,x)=>{o[k]=(o[k]||0)+x};
   sales().forEach(x=>add(vte,dstr(x.d),x.g));
   S.tx.forEach(t=>{if(t.type=='ACHAT')add(ach_,dstr(t.d),-t.f);
     else if(t.type=='DIVIDENDE')add(div,dstr(t.d),t.p-t.c-t.ret+t.remb+t.arr);
+    else if(t.type=='INTERET')add(itr,dstr(t.d),t.q);
     else if(t.type=='SPLIT'&&t.rompu>0)add(rom,dstr(t.dr||t.d),t.rompu)});
   const sum=(o,a,b)=>Object.keys(o).reduce((s,k)=>k>=a&&k<=b?s+o[k]:s,0);
-  const brk=(a,b,pnl,lab)=>{const vv=sum(vte,a,b),va=sum(ach_,a,b),vd=sum(div,a,b),vr=sum(rom,a,b),L=[cMont(lab,pnl-vv-va-vd-vr)];
-    if(Math.abs(vv)>.005)L.push(cMont('Vente',vv));if(Math.abs(vd)>.005)L.push(cMont('Dividende',vd));if(Math.abs(vr)>.005)L.push(cMont('Rompu',vr));return L.join('<br>')};
+  const brk=(a,b,pnl,lab)=>{const vv=sum(vte,a,b),va=sum(ach_,a,b),vd=sum(div,a,b),vr=sum(rom,a,b),vi=sum(itr,a,b),L=[cMont(lab,pnl-vv-va-vd-vr-vi)];
+    if(Math.abs(vv)>.005)L.push(cMont('Vente',vv));if(Math.abs(vd)>.005)L.push(cMont('Dividende',vd));if(Math.abs(vr)>.005)L.push(cMont('Rompu',vr));if(Math.abs(vi)>.005)L.push(cMont('Intérêts',vi));return L.join('<br>')};
   const days=[];
   for(let i=i0+1;i<D.length;i++){const pv=V[i-1],pnl=V[i]-V[i-1]-F[i],imp=pv>1?pnl/pv*100:NaN;
     if(!isFinite(imp)||Math.abs(pnl)<=.01||(cs&&D[i]<cs))continue;days.push({k:D[i],pnl,imp})}
@@ -1866,7 +1907,7 @@ function drawCla(v){
   else{
     const pl=sl.filter(x=>x.g>0).reduce((a,x)=>a+x.g,0),ml=sl.filter(x=>x.g<0).reduce((a,x)=>a+x.g,0),
       G=[...sl.filter(x=>x.g>0)].sort((a,b)=>b.g-a.g).slice(0,10),Pt=[...sl.filter(x=>x.g<0)].sort((a,b)=>a.g-b.g).slice(0,10),
-      lab=x=>x.nom.length<=14?x.nom:x.nom.slice(0,13)+'…',
+      lab=x=>x.nom,
       mk=(id,arr,col,w)=>{if(!arr.length)return`<p class="cap">${w=='g'?'Aucun gain réalisé pour le moment.':'Aucune perte réalisée pour le moment.'}</p>`;
         CLQ.push(()=>rkBar(id,arr.map(lab),arr.map(x=>x.g),col,arr.map(x=>pEur(x.g)),i=>{const x=arr[i];
           return`<b>${esc(x.nom)}</b><br>${dfr(x.d)}<br>${cMont(w=='g'?'Plus-value':'Moins-value',x.g)}<br>${cMont('Performance',isFinite(x.pct)?x.pct:x.g).replace(/>[^<]*<\/span>/,'>'+cPct(x.pct)+'</span>')}`}));
@@ -1906,14 +1947,14 @@ function drawSai(v){
   const grp=(n,ix)=>{const g=Array(n).fill(0),c=Array(n).fill(0);sl.forEach(x=>{const i=ix(x.d);if(i>=0&&i<n){g[i]+=x.g;c[i]++}});return[g,c]};
   const sec=(k,t,id,labels,ix,note)=>{if(!sl.length)return exp2(k,t,none);const[g,c]=grp(labels.length,ix);Q.push(()=>saiBar(id,labels,g,c));return exp2(k,t,cv(id)+(note?note():''))};
   const MOIS_=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-  const hm=m=>`${Math.floor(m/60)}h${pad(m%60)}`,O=540,Cl=1050,NT=(Cl-O)/30,TR=[...Array(NT)].map((_,i)=>`${hm(O+i*30)} – ${hm(O+(i+1)*30)}`);
+  const hm=m=>`${Math.floor(m/60)}h${pad(m%60)}`,O=420,Cl=1320,NT=(Cl-O)/30,TR=[...Array(NT)].map((_,i)=>`${hm(O+i*30)} – ${hm(O+(i+1)*30)}`);
   const mn=d=>d.getHours()*60+d.getMinutes();
   let h=sec('s1','🗓️ Plus-Values Actées par Trimestre','sa1',['T1 (Jan–Mar)','T2 (Avr–Juin)','T3 (Juil–Sep)','T4 (Oct–Déc)'],d=>Math.floor(d.getMonth()/3))
     +sec('s2',"🗓️ Plus-Values Actées par Mois de l'Année",'sa2',MOIS_,d=>d.getMonth())
     +sec('s3','📅 Plus-Values Actées par Jour de la Semaine','sa3',['Lundi','Mardi','Mercredi','Jeudi','Vendredi'],d=>(d.getDay()+6)%7,()=>{const o=sl.filter(x=>(x.d.getDay()+6)%7>4);
       return o.length?`<p class="cap">ℹ️ ${o.length} vente(s) enregistrée(s) un week-end, pour ${pEur(o.reduce((a,x)=>a+x.g,0))}, non représentée(s) ci-dessus.</p>`:''})
     +sec('s4','⏰ Plus-Values Actées par Tranche Horaire','sa4',TR,d=>mn(d)>=O&&mn(d)<Cl?Math.floor((mn(d)-O)/30):-1,()=>{const o=sl.filter(x=>mn(x.d)<O||mn(x.d)>=Cl);
-      return o.length?`<p class="cap">ℹ️ ${o.length} vente(s) enregistrée(s) avec une heure hors séance (avant 9h00 ou après 17h30), pour ${pEur(o.reduce((a,x)=>a+x.g,0))}, non représentée(s) ci-dessus.</p>`:''});
+      return o.length?`<p class="cap">ℹ️ ${o.length} vente(s) enregistrée(s) avec une heure hors séance (avant 7h00 ou après 22h00), pour ${pEur(o.reduce((a,x)=>a+x.g,0))}, non représentée(s) ci-dessus.</p>`:''});
   v.innerHTML=h;Q.forEach(f=>f())}
 
 /* Historique : performances quotidienne, mensuelle, annuelle */
@@ -1995,7 +2036,7 @@ function drawFra(v){
 S.sim=S.sim||{};
 const SIM_V=(k,d)=>S.sim[k]!==undefined?S.sim[k]:d;
 const clampN=(x,a,b)=>Math.min(Math.max(x,a),b);
-function snum(k,lab,val,step,min,max,dec,help,ph){return`<div><div class="nl">${lab}${help?helpI(help):''}</div><div class="nin"><input type="number" inputmode="decimal" data-sim="${k}" value="${val===''?'':(+val).toFixed(dec)}" placeholder="${esc(ph||'')}" step="${step}" min="${min}"${max!=null?` max="${max}"`:''}><button type="button" data-step="-${step}" aria-label="Diminuer">−</button><button type="button" data-step="${step}" aria-label="Augmenter">+</button></div></div>`}
+function snum(k,lab,val,step,min,max,dec,help,ph){return`<div><div class="nl">${lab}</div><div class="nin"><input type="number" inputmode="decimal" data-sim="${k}" value="${val===''?'':(+val).toFixed(dec)}" placeholder="${esc(ph||'')}" step="${step}" min="${min}"${max!=null?` max="${max}"`:''}><button type="button" data-step="-${step}" aria-label="Diminuer">−</button><button type="button" data-step="${step}" aria-label="Augmenter">+</button></div></div>`}
 function colorCard(label,value,color,big){return`<div style="background:${color}14;border:1px solid ${color}55;border-radius:12px;padding:8px 4px;text-align:center;min-width:0;display:flex;flex-direction:column;justify-content:center;"><div style="font-size:min(${big?'0.74rem':'0.68rem'},${big?'2.9vw':'2.6vw'});color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:0.03em;line-height:1.25;">${label}</div><div style="font-size:min(${big?'1.3rem':'1.1rem'},${big?'5vw':'4vw'});font-weight:800;color:${color};margin-top:3px;line-height:1.25;">${value}</div></div>`}
 const colorCardsRow=cs=>`<div style="display:grid;gap:6px;margin-top:8px;grid-template-columns:repeat(${Math.max(cs.length,1)},minmax(0,1fr));">${cs.join('')}</div>`;
 function progressBar(pct,grad,glow,texte){const c=Math.max(0,Math.min(+pct,100));
@@ -2125,7 +2166,7 @@ function impCsvRows(objs,X){
   const rows=[];
   for(let i=0;i<objs.length;i++){const o=objs[i],r={};
     const dh=impDate(o.Date_Heure,X);if(!dh)return{err:`Erreur lors de la lecture du fichier : date invalide à la ligne ${i+2} (« ${o.Date_Heure} »).`};
-    IMP_COLS.forEach(k=>{r[k]=o[k]});r.Date_Heure=dh;r.Date_Rompus=impDate(o.Date_Rompus,X);
+    IMP_COLS.forEach(k=>{r[k]=o[k]});r.Date_Heure=MID0.includes(String(o.Type||'').trim())?dh.slice(0,10)+' 00:00:00':dh;r.Date_Rompus=impDate(o.Date_Rompus,X);
     rows.push(toRaw(Object.fromEntries(Object.entries(r).map(([k,v])=>[k,typeof v=='number'?String(v):v]))))}
   return{rows}}
 S.impc=null;
@@ -2206,6 +2247,7 @@ function buildXml(){const K=expKpi(),n=new Date(),o=[];
   sec('Liste_Splits','Split',{t:'SPLIT',f:r=>{el(4,'Date',xDate(r.Date_Heure));el(4,'Nom',nm(r));el(4,'Ratio',xmlNum(r['Quantité'],'',{dyn:1}));
     el(4,'Rompu',xmlOpt(r.Rompu,'€'));el(4,'DateRompu',+r.Rompu>0&&r.Date_Rompus?xDate(r.Date_Rompus):'N/A')}});
   sec('Liste_Retraits','Retrait',{t:'RETRAIT',f:r=>{el(4,'Date',xDate(r.Date_Heure));el(4,'Montant',xmlNum(r['Quantité'],'€'))}});
+  sec('Liste_Interets','Interet',{t:'INTERET',f:r=>{el(4,'Date',xDate(r.Date_Heure));el(4,'Montant',xmlNum(r['Quantité'],'€'))}});
   close(1,'Liste_Transactions');close(0,'Extrait_CTO');return o.join('\n')+'\n'}
 $('#expx').onclick=()=>{if(!R)return alert('Aucune donnée à exporter.');dl('ExportXML_'+ACC.toUpperCase()+'_'+stamp()+'.xml',buildXml(),'application/xml')};
 /* PDF : page imprimable A4 paysage (vue d'ensemble, positions actives, puis une table par type, chacune sur sa page) */
@@ -2231,7 +2273,8 @@ $('#expp').onclick=()=>{if(!R)return alert('Aucune donnée à exporter.');
     +sec('Liste des Ventes','VENTE',['Date','Heure','Nom','Quantité','Prix','Commission'],r=>[pDate(r.Date_Heure),pHeure(r.Date_Heure),r.Nom||'',pdE(r['Quantité'],{qty:1}),pdE(r['Prix Unitaire (€)'],{dyn:1})+' €',pdE(r['Commission (€)'])+' €'])
     +sec('Liste des Dividendes','DIVIDENDE',['Date','Nom','Quantité','Montant Brut','Retenue Source','Remb. Capital'],r=>[pDate(r.Date_Heure),r.Nom||'',pdE(r['Quantité'],{qty:1}),pdE(r['Prix Unitaire (€)'])+' €',pOpt(r.Retenue_Source_Etrangere,'€'),pOpt(r.Remboursement_Capital,'€')])
     +sec('Liste des Splits','SPLIT',['Date','Nom','Ratio','Rompu','Date Rompu'],r=>[pDate(r.Date_Heure),r.Nom||'',pdE(r['Quantité'],{dyn:1}),pOpt(r.Rompu,'€'),+r.Rompu>0&&r.Date_Rompus?pDate(r.Date_Rompus):'N/A'])
-    +sec('Liste des Retraits','RETRAIT',['Date','Montant'],r=>[pDate(r.Date_Heure),pdE(r['Quantité'])+' €']);
+    +sec('Liste des Retraits','RETRAIT',['Date','Montant'],r=>[pDate(r.Date_Heure),pdE(r['Quantité'])+' €'])
+    +sec('Liste des Intérêts','INTERET',['Date','Montant'],r=>[pDate(r.Date_Heure),pdE(r['Quantité'])+' €']);
   const css='@page{size:A4 landscape;margin:1.5cm}body{font:8pt/10pt Helvetica,Arial,sans-serif;color:#14202b;margin:0}h1{font-size:22pt;text-align:center;color:#0f172a;margin:0 0 6pt}.sub{font-size:9pt;color:#64748b;text-align:center;margin:0 0 20pt}'
     +'h2{font-size:17pt;line-height:20pt;color:#1d4ed8;margin:0 0 8pt}section{break-before:page}table{border-collapse:collapse;width:100%}th,td{border:.5pt solid #cbd5e1;padding:4pt 5pt;text-align:center;vertical-align:middle}'
     +'thead{display:table-header-group}th{background:#0284c7;color:#fff}tbody tr:nth-child(even){background:#f8fafc}tr{break-inside:avoid}.empty{font-size:9pt;color:#94a3b8}'
@@ -2620,10 +2663,12 @@ document.addEventListener('toggle',e=>{if(e.target.id=='imp_d'&&S.imp)S.imp.open
 /* ---------- Pop-up de premier lancement (reprise de _dialog_premier_lancement) ---------- */
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',draw);
 if(!CRY&&CTOS.length>1){const b=document.createElement('div');b.id='ctosw';
-  b.style.cssText='position:sticky;top:0;z-index:30;display:flex;gap:6px;overflow-x:auto;padding:8px 10px;background:var(--card);border-bottom:1px solid var(--line)';
-  b.innerHTML=[['ctos.html','📊 Ensemble',0],...CTOS.map(c=>[c.id==='cto'?'cto.html':'cto.html?a='+c.id+'&l='+encodeURIComponent(c.l),'🏦 '+c.l.replace(/[&<>"]/g,''),c.id===ACC])]
-    .map(([h,t,on])=>`<a href="${h}" style="flex:none;padding:6px 12px;border-radius:999px;border:1px solid ${on?'var(--acc)':'var(--line)'};background:${on?'var(--acc)':'var(--alt)'};color:${on?'#fff':'var(--ink)'};text-decoration:none;font-size:13px;font-weight:600">${t}</a>`).join('');
-  document.body.insertBefore(b,document.body.firstChild)}
+  b.style.cssText='margin:10px auto 0;max-width:1100px;padding:10px 14px;border-radius:14px;background:var(--card,#fff);border:1px solid var(--line,#e2e8f0);display:flex;align-items:center;gap:10px;flex-wrap:wrap';
+  b.innerHTML='<span style="font-weight:700;font-size:.92rem">🏦 Quel compte afficher ?</span><select id="ctosel" style="flex:1;min-width:200px;padding:8px 10px;border-radius:10px;border:1px solid var(--line,#e2e8f0);background:var(--alt,#f6f8fa);color:inherit;font:inherit"><option value="all"'+(ALL?' selected':'')+'>📊 Tous les comptes (total)</option>'+CTOS.map(c=>'<option value="'+c.id+'"'+(c.id===ACC?' selected':'')+'>🏦 '+c.l.replace(/[&<>"]/g,'')+'</option>').join('')+'</select>';
+  document.body.insertBefore(b,document.body.firstChild);
+  b.querySelector('select').onchange=e=>{const v=e.target.value,c=CTOS.find(x=>x.id===v);LS.s('hub_cto_sel',v);try{sessionStorage.setItem('cto_tab',S.tab)}catch(_){}
+    location.href='cto.html?a='+v+(c?'&l='+encodeURIComponent(c.l):'')}}
+try{const t=sessionStorage.getItem('cto_tab');sessionStorage.removeItem('cto_tab');if(t&&TABS.some(x=>x[0]===t))S.tab=t}catch(_){}
 load();draw();refreshPrices();pull();wlFetch();cfgLoad();
 addEventListener('message',e=>{if(e.source===parent&&e.data&&e.data.hubHome){document.querySelectorAll('dialog[open]').forEach(d=>{try{d.close()}catch(_){}});if(S.tab!=='ov'){S.tab='ov';draw()}scrollTo(0,0)}}); /* retour à la page générale quand le hub le demande */
 </script>

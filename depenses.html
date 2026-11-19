@@ -356,7 +356,7 @@ dialog#dlgH{width:min(560px,94vw);max-height:88vh;overflow:auto}
  <h3 id="lTitle" style="margin:0 0 4px">Nouvelle ligne</h3>
  <label id="lAccL">Livret</label><select id="lAcc" required></select>
  <div id="lMulti" class="hide"><label>Appliquer à</label><div id="lChk"></div><button type="button" class="sec" id="lAll" style="width:100%;margin-top:6px">Tout cocher / décocher</button></div>
- <label>Type de ligne</label><select id="lType"><option value="rel">🔎 Relevé des intérêts en cours</option><option value="taux">📈 Taux (changement de taux)</option><option value="cred">💰 Intérêts crédités</option></select>
+ <label>Type de ligne</label><select id="lType"><option value="taux">📈 Taux (changement de taux)</option><option value="cred">💰 Intérêts crédités</option></select>
  <label>Date</label><input id="lDate" type="date" required>
  <label id="lVL">Intérêts en cours (€)</label><input id="lV" type="number" step="0.01" min="0" inputmode="decimal" required>
  <div class="d" id="lHint" style="margin-top:6px"></div>
@@ -598,7 +598,7 @@ function vHome(){
 function vAna(){
  fixPer();
  const{a,b}=perRange(),L=OPS().filter(o=>o.date>=a&&o.date<=b),g=gran;
- const d=L.filter(o=>!isRev(o)).reduce((s,o)=>s+o.montant,0),r=L.filter(isRev).reduce((s,o)=>s+o.montant,0),days=diffD(a,b)+1;
+ const d=L.filter(o=>!isRev(o)).reduce((s,o)=>s+o.montant,0),r=L.filter(isRev).reduce((s,o)=>s+o.montant,0),days=Math.max(1,diffD((()=>{const fe=OPS().filter(o=>!isRev(o)).reduce((m,o)=>o.date<m?o.date:m,"9999-99-99");return fe!=="9999-99-99"&&a<fe?fe:a})(),b)+1);
  const cat={},cnt={};L.filter(o=>!isRev(o)).forEach(o=>{cat[o.categorie]=(cat[o.categorie]||0)+o.montant;cnt[o.categorie]=(cnt[o.categorie]||0)+1});
  const ta=trunc(a,b,g),BK=aggr(L,ta,b,g);
  const main=barChart(BK.map((x,i)=>{const[l1,l2]=lbl(g,x.k,i);return{l1,l2,v:x.d,tip:bTip(g,x)}}),{col:"#dc2626",bw:BW[g],vals:g==="mois"||g==="annee",
@@ -720,7 +720,7 @@ function vBanks(){
  const L=hubAcc().filter(a=>a.type==="Compte bancaire");
  if(!L.length)return card("home-bk","🏧 Comptes bancaires",'<div class="d">Aucun compte bancaire. Ajoute-en dans ⚙️ Réglages du tableau de bord général (nom, banque, solde de départ).</div>',"margin-top:0");
  const tot=L.reduce((t,a)=>t+acctBal(a),0),one=L.length===1;
- return`<div class="bkx"><div class="bal tot"><small>🏧 ${one?esc(hubNm(L[0]))+(L[0].broker?" · "+esc(L[0].broker):""):"Total des comptes bancaires"}</small><b>${eur2(tot)}</b><div class="s">${one?"":L.length+" comptes · "}solde calculé selon tes opérations</div></div>${one?"":L.map(a=>`<div class="bal"><small>${esc(hubNm(a))}${a.broker?" · "+esc(a.broker):""}</small><b>${eur2(acctBal(a))}</b></div>`).join("")}</div>`}
+ return`<div class="bkx"><div class="bal tot"><small>🏧 ${one?esc(hubNm(L[0]))+(L[0].broker?" · "+esc(L[0].broker):""):"Total des comptes bancaires"}</small><b>${eur2(tot)}</b><div class="s">${one?"":L.length+" comptes"}</div></div>${one?"":L.map(a=>`<div class="bal"><small>${esc(hubNm(a))}${a.broker?" · "+esc(a.broker):""}</small><b>${eur2(acctBal(a))}</b></div>`).join("")}</div>`}
 /* ---------- Bien immobilier : estimation + apport (stockés dans D.immo, synchronisés avec les dépenses) ---------- */
 const IMT=["Résidence principale","Résidence secondaire","Investissement locatif","SCI","Autre"];
 function vImmo(pc,crd,cap0,nb){
@@ -751,7 +751,7 @@ function vImmo(pc,crd,cap0,nb){
  <div class="dst">📈 Patrimoine</div><div class="mcols mc3">${mt("Capital déjà remboursé",eur(pc),"vert")}${mt("Patrimoine immo net",eur(app+pc),"bleu")}${val>0?mt("Valeur − restant dû",eur(val-crd),"orange"):""}</div>
  ${kLoc}
  <button type="button" class="sec" id="imEd" style="width:100%;margin-top:14px">✏️ Modifier le bien (valeur, apport${loc?", loyers":""}…)</button>
- <div class="d" style="margin-top:8px">Le « Patrimoine Net » du tableau de bord général compte l'apport + le capital déjà remboursé de tous les prêts.${loc?" Rendement = loyers annuels ÷ valeur estimée du bien. Plus-value latente = valeur estimée − (apport + capital emprunté).":" Plus-value latente = valeur estimée − (apport + capital emprunté)."}</div>`,"margin-top:0")+addP}
+ `,"margin-top:0")+addP}
 document.addEventListener("change",e=>{if(!/^im(Val|App|Type|Nom|Loy|Chg|Tax)$/.test(e.target.id||""))return;const g=id=>$("#"+id),n=id=>g(id)?Math.max(0,parseFloat(g(id).value)||0):0,o={...(D.immo||{})};
  o.valeur=n("imVal");o.apport=n("imApp");o.type=g("imType").value;o.nom=g("imNom").value.trim();if(g("imLoy")){o.loyer=n("imLoy");o.charges=n("imChg");o.taxe=n("imTax")}
  UI.immoEdit=true;D.immo=o;save();render()});
@@ -824,7 +824,7 @@ function taxCard(y){const t=taxEst(y);if(!(t.proj>0))return"";
  ks.push(k("Impôt déjà payé",eur(t.imp),"rouge"),k("Reste à payer estimé",eur(t.reste),"violet"));
  if(cy)ks.push(k("Taux à indiquer sur impots.gouv (pour le reste de l'année)",t.rest>0?(t.reste>0?fp(t.tauxR*100):"0 % (impôt déjà couvert)"):"—","vert",1));
  return card("sal-taxe","Impôt estimé en "+y,`<div class="kpis" style="margin-top:0">${ks.join("")}</div>
- <div class="d" style="margin-top:8px">${cy?`Net avant impôts estimé de l'année = déjà reçu (${eur(t.recu)}) + ${t.rest} mois × ${eur(t.moy)} (moyenne mensuelle des salaires déjà reçus cette année). Taux à indiquer = reste à payer estimé ÷ net avant impôts des mois restants (${eur(t.pr)}), soit ${eur(t.prNet)} de net après impôts sur le reste de l'année. `:"Année terminée : salaires réellement reçus. "}Taux moyen = impôt estimé ÷ net avant impôts de l'année. Impôt qui aurait dû être payé à ce jour = taux moyen × net avant impôts déjà reçu (comparé à l'impôt déjà payé : avance si payé > dû, retard sinon). Nombre de parts : onglet Simulateur d'impôts.</div>`)}
+ `)}
 /* ---------- Salaires : brut, net avant impôts, impôt payé, net après impôt ---------- */
 /* Un salaire du suivi est toujours relié à un revenu « Salaire » des dépenses (champ « lien ») */
 const salAmt=s=>Math.round(((+s.net||0)-(+s.impot||0))*100)/100;
@@ -848,7 +848,7 @@ function vSal(){
  const yr=salY==="all"?(ys[0]||cy):salY;
  /* Tableau compact par année : 5 lignes visibles puis défilement (même principe que les autres tableaux) */
  const ev=p=>p==null?"":` (<span class="${p>=0?"pos":"neg"}">${p>=0?"+":""}${p.toFixed(1).replace(".",",")} %</span>)`,evI=p=>p==null?"":` (<span class="${p>=0?"neg":"pos"}">${p>=0?"+":""}${p.toFixed(1).replace(".",",")} %</span>)`;
- const yrT=`<div class="tw"><table class="rc"><thead><tr><th>Année</th><th>Brut</th><th>Net avant impôts</th><th>Impôt payé</th><th>Net après impôts</th></tr></thead><tbody>${YR.slice().reverse().map(r=>{const d=r.d||{};return`<tr><th>${r.y}<div class="d">${r.c} vers.</div></th><td style="color:var(--violet);font-weight:700">${r.b>0?eur(r.b):"—"}${r.b>0?`<div class="d">${eur(r.moyB)}/mois${ev(d.mb)}</div>`:""}</td><td style="color:var(--bleu);font-weight:700">${eur(r.n)}<div class="d">${eur(r.moy)}/mois${ev(d.mn)}</div></td><td style="color:var(--orange);font-weight:700">${eur(r.im)}<div class="d">${eur(r.moyIm)}/mois${evI(d.mi)}</div></td><td class="pos">${eur(r.ap)}<div class="d">${eur(r.moyAp)}/mois${ev(d.ma)}</div></td></tr>`}).join("")}</tbody></table></div><div class="d" style="margin-top:6px">Sous chaque total : moyenne mensuelle (calculée sur les mois réellement versés) et, entre parenthèses, son évolution par rapport à l'année précédente</div>`;
+ const yrT=`<div class="tw"><table class="rc"><thead><tr><th>Année</th><th>Brut</th><th>Net avant impôts</th><th>Impôt payé</th><th>Net après impôts</th></tr></thead><tbody>${YR.slice().reverse().map(r=>{const d=r.d||{};return`<tr><th>${r.y}<div class="d">${r.c} vers.</div></th><td style="color:var(--violet);font-weight:700">${r.b>0?eur(r.b):"—"}${r.b>0?`<div class="d">${eur(r.moyB)}/mois${ev(d.mb)}</div>`:""}</td><td style="color:var(--bleu);font-weight:700">${eur(r.n)}<div class="d">${eur(r.moy)}/mois${ev(d.mn)}</div></td><td style="color:var(--orange);font-weight:700">${eur(r.im)}<div class="d">${eur(r.moyIm)}/mois${evI(d.mi)}</div></td><td class="pos">${eur(r.ap)}<div class="d">${eur(r.moyAp)}/mois${ev(d.ma)}</div></td></tr>`}).join("")}</tbody></table></div>`;
  const hist=L.slice().reverse().map(s=>`<div class="op" data-sal="${s.i}"><div class="m"><b>${esc(s.employeur)}</b><small>${fdy(s.date)} · ${esc(s.type)}${s.notes?` · ${esc(s.notes)}`:""}</small><div class="tri"><div style="--c:var(--violet)"><small>Brut</small><b>${s.brut>0?eur2(s.brut):"—"}</b></div><div style="--c:var(--bleu)"><small>Net av. impôts</small><b>${eur2(s.net)}</b></div><div style="--c:var(--orange)"><small>Impôt</small><b>${s.impot>0?"−"+eur2(s.impot):"0 €"}</b></div><div class="nt" style="--c:var(--vert)"><small>Net après</small><b>${eur2(s.net-(s.impot||0))}</b></div></div></div><span style="color:var(--mut)">✎</span></div>`).join("");
  return`${salLink()}<div class="card" style="margin-top:0"><div class="sh">🗓️ Période affichée</div><label>Année</label><select id="sSel"><option value="all">Toutes les années</option>${ysel.map(y=>`<option value="${y}" ${y===salY?"selected":""}>${y}</option>`).join("")}</select></div>
  <div class="kpis k3"><div class="kpi" style="--c:var(--violet)"><span>Salaire brut</span><b>${brut>0?eur(brut):"—"}</b></div><div class="kpi" style="--c:var(--bleu)"><span>Net avant impôts</span><b>${eur(net)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Impôt payé</span><b>${eur(imp)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Net après impôts</span><b>${eur(net-imp)}</b></div>
@@ -877,7 +877,7 @@ function vMvt(){
  ${addBtn}
  ${card("int-hist","Versements et retraits · touche une ligne pour la modifier",`<div class="lst">${H.map(x=>x.h).join("")}</div>`)}`}
 function planStats(){
- const all=(D.interessement||[]).filter(s=>s.date),isP=s=>String(s.dest||"").startsWith("Placé"),pl=all.filter(isP),rt=D.retraits_epargne||[],sv=D.solde_epargne||null,keys=["PEE","PERCO"];
+ const all=(D.interessement||[]).filter(s=>s.date),isP=s=>String(s.dest||"").startsWith("Placé"),pl=all.filter(isP),rt=D.retraits_epargne||[],sv=D.solde_epargne||null,keys=EPF?[EPF]:["PEE","PERCO"];
  [...pl,...rt].forEach(x=>{const k=x.plan||"";if(!keys.includes(k))keys.push(k)});
  const P=keys.map(k=>{const placed=sum(pl.filter(s=>(s.plan||"")===k),"montant"),ret=sum(rt.filter(r=>(r.plan||"")===k),"montant"),base=Math.max(0,placed-ret),ent=k&&sv&&sv[k.toLowerCase()]!=null&&typeof sv[k.toLowerCase()]==="number"?sv[k.toLowerCase()]:null;
   return{k,lb:k||"Plan non précisé",placed,ret,base,ent,val:ent!=null?ent:base}});
@@ -885,14 +885,14 @@ function planStats(){
  return{all,pl,P,sv,per,legacy,tot:legacy!=null?legacy:P.reduce((t,x)=>t+x.val,0),tp:sum(pl,"montant"),tr:sum(rt,"montant"),tc:sum(all.filter(s=>!isP(s)),"montant"),anyEnt:per||legacy!=null}}
 function planBlock(){
  const S=planStats();if(!S.all.length)return"";
- const pc=S.P.filter(x=>x.k||x.placed||x.ret),PK=["PEE","PERCO",...(S.P.some(z=>z.k==="PEG"&&(z.placed||z.ret||z.ent!=null))?["PEG"]:[])],
+ const pc=S.P.filter(x=>x.k||x.placed||x.ret),PK=EPF?[EPF]:["PEE","PERCO",...(S.P.some(z=>z.k==="PEG"&&(z.placed||z.ret||z.ent!=null))?["PEG"]:[])],
   inp=PK.map(k=>{const x=S.P.find(z=>z.k===k)||{ent:null,base:0};return`<label>${k} : montant réel sur ton compte (€)</label><input id="cpt${k}" type="number" step="0.01" min="0" inputmode="decimal" value="${x.ent??""}" placeholder="${Math.round(x.base)}">`}).join("");
  const tbl=`<div class="tw"><table class="rc"><thead><tr><th>Plan</th><th>Placé</th><th>Retiré</th><th>Sur le compte</th><th>Plus-value</th></tr></thead><tbody>${pc.map(x=>{const g=x.ent!=null?x.val+x.ret-x.placed:null;return`<tr><th>${esc(x.lb)}</th><td>${eur(x.placed)}</td><td class="neg">${x.ret?"−"+eur(x.ret):"—"}</td><td><b>${eur(x.val)}</b></td><td class="${g==null?"":g>=0?"pos":"neg"}">${g==null?"—":eur(g)}</td></tr>`}).join("")}</tbody></table></div>`;
  return card("cpt-in","💰 Valeur actuelle de chaque plan",inp+`<div class="d" style="margin-top:6px">${S.sv&&S.sv.date?"Saisi le "+fdy(S.sv.date)+". ":""}Sans montant saisi pour un plan : versements placés − retraits.${S.legacy!=null?` Montant global saisi auparavant : ${eur2(S.legacy)} (tous plans confondus) : saisis-le maintenant par plan, il sera remplacé.`:""}</div>`)+card("cpt-p","Par plan ("+PK.join(" / ")+")",tbl)}
 document.addEventListener("change",e=>{const id=e.target.id;if(id!=="cptPEE"&&id!=="cptPERCO"&&id!=="cptPEG")return;const k=id.slice(3).toLowerCase(),v=parseFloat(e.target.value),o={...(D.solde_epargne||{})};
  if(o.pee==null&&o.perco==null&&o.peg==null)delete o.valeur;if(v>=0)o[k]=Math.round(v*100)/100;else delete o[k];o.date=TODAY();if(o.dates&&o.dates[k])o.dates={...o.dates,[k]:TODAY()};D.solde_epargne=(o.pee!=null||o.perco!=null||o.peg!=null)?o:null;save();render()});
 /* ---------- Nouveaux onglets : Recherche, Santé, Impôts ---------- */
-const UI={sq:"",scat:"all",ssens:"Dépense",syr:"all",hAct:"gen",hPrix:null,hQty:1,fy:null,iy:"all",hs:"all",hPr:"o",hS:"n",hMon:null,hg:"all",gd:"",selMode:false,sel:new Set(),gt:"",gn:"",gp:"",addG:"",sg:""};
+let EPF="";const UI={epp:"all",sq:"",scat:"all",ssens:"Dépense",syr:"all",hAct:"gen",hPrix:null,hQty:1,fy:null,iy:"all",hs:"all",hPr:"o",hS:"n",hMon:null,hg:"all",gd:"",selMode:false,sel:new Set(),gt:"",gn:"",gp:"",addG:"",sg:""};
 const nrm=s=>String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 const fp=v=>(+v.toFixed(1)+"").replace(".",",")+" %";
 const opt=(v,l,cur)=>`<option value="${esc(v)}" ${String(v)===String(cur)?"selected":""}>${esc(l)}</option>`;
@@ -1033,7 +1033,24 @@ function sortTables(){document.querySelectorAll("#app table.rc").forEach((tb,ti)
  ths.forEach((th,c)=>{if(!th)return;th.setAttribute("data-sc","1");th.title="Trier cette colonne";if(!th.querySelector(".so"))th.insertAdjacentHTML("beforeend",'<span class="so"></span>');
   th.onclick=()=>{const s=SORTS[key];SORTS[key]=s&&s.c===c?{c,d:-s.d}:{c,d:1};applySort(tb,key,ths);fitLists()}});
  applySort(tb,key,ths)})}
-function render(){hideTip();const t=TABS.find(x=>x[0]===tab);$("#app").innerHTML=t[3]();
+/* ---------- Épargne salariale : choix du compte (PEE / PERCO / PEG…) quand il y en a plusieurs ---------- */
+const epUp=(x,d)=>String(x&&x.plan||d||"").trim().toUpperCase();
+function epPlans(){const s=new Set(),add=p=>{p=String(p||"").trim().toUpperCase();if(p)s.add(p)};
+ (D.interessement||[]).forEach(x=>{if(x.date&&String(x.dest||"").startsWith("Placé"))add(x.plan)});(D.retraits_epargne||[]).forEach(x=>add(x.plan));
+ (D.mouvements_epargne||[]).forEach(x=>add(x.plan||"PERCO"));(D.releves_epargne||[]).forEach(x=>add(x.plan));
+ const sv=D.solde_epargne||{};["pee","perco","peg"].forEach(k=>{if(typeof sv[k]==="number")add(k)});return[...s].sort()}
+function epView(p){const k=p.toLowerCase(),sv=D.solde_epargne,s2=sv&&typeof sv[k]==="number"?{[k]:sv[k],date:sv.date,dates:sv.dates}:null;
+ return{...D,interessement:(D.interessement||[]).map(x=>epUp(x)===p?x:{...x,date:"",montant:0}),retraits_epargne:(D.retraits_epargne||[]).map(x=>epUp(x)===p?x:{...x,date:"",montant:0}),
+  mouvements_epargne:(D.mouvements_epargne||[]).filter(x=>epUp(x,"PERCO")===p),releves_epargne:(D.releves_epargne||[]).filter(x=>epUp(x,"PERCO")===p),solde_epargne:s2}}
+function epSel(pl){return`<div class="card" style="margin-top:0"><div class="sh">🎁 Quel compte afficher ?</div><select id="epSel"><option value="all">Tous les comptes (total)</option>${pl.map(p=>`<option value="${p}"${p===UI.epp?" selected":""}>${p}</option>`).join("")}</select></div>`}
+try{UI.epp=localStorage.getItem("hub_ep_sel")||"all"}catch(e){}
+document.addEventListener("change",e=>{if(e.target.id==="epSel"){UI.epp=e.target.value;try{localStorage.setItem("hub_ep_sel",UI.epp)}catch(x){}render()}});
+function render(){hideTip();const t=TABS.find(x=>x[0]===tab);
+ let html;const pl=(MOD==="epargne"||!MOD)&&["ov","pos","int"].includes(tab)?epPlans():[];
+ if(pl.length>1){if(UI.epp!=="all"&&!pl.includes(UI.epp))UI.epp="all";
+  if(UI.epp!=="all"){const D0=D;D=epView(UI.epp);EPF=UI.epp;try{html=t[3]()}finally{D=D0;EPF=""}}else html=t[3]();
+  html=epSel(pl)+html}else html=t[3]();
+ $("#app").innerHTML=html;
  const nv=$("#nav"),sl=nv.scrollLeft;nv.style.display=TIDS.length>1?"":"none";nv.innerHTML=TABS.filter(x=>TIDS.includes(x[0])).map(x=>`<button data-t="${x[0]}" class="${x[0]===tab?"on":""}">${x[1]} ${x[2]}</button>`).join("");
  const on=nv.querySelector(".on");if(on)nv.scrollLeft=on.offsetLeft-(nv.clientWidth-on.offsetWidth)/2;else nv.scrollLeft=sl;
  $("#sub").textContent="v"+VER+" · "+D.depenses.length+" opérations";bind();sortTables();$("#fab").style.display=["sante","tax","sal"].includes(tab)?"none":"";document.querySelectorAll(".sc[data-end]").forEach(e=>{e.scrollLeft=e.scrollWidth});fitLists()}
@@ -1475,7 +1492,7 @@ const fN=(v,d=2)=>Number(v).toLocaleString("fr-FR",{minimumFractionDigits:d,maxi
  pPx=v=>{if(v==null||isNaN(v))return"N/A";const t=v.toFixed(4);return fN(v,t.endsWith("00")?2:t.endsWith("0")?3:4)+" €"},pQ=q=>q%1===0?fN(q,0):fN(q,4).replace(/0+$/,"").replace(/,$/,""),
  perfAnn=(p,j)=>{if(p==null||isNaN(p)||j==null||j<30)return NaN;const g=1+p/100;return g<=0?-100:(Math.pow(g,365/j)-1)*100},
  perfCell=v=>{const t=String(v);return t.startsWith("▲")?"color:#16a34a;font-weight:700;":t.startsWith("▼")?"color:#dc2626;font-weight:700;":"color:var(--mut);font-weight:700;"};
-const OMT={"Performance Globale":"% = gain total (valeur du compte + retraits − versements placés) ÷ versements placés. Demande la valeur réelle des comptes (en bas de la Vue d'ensemble ou relevés PDF).","Performance Annuelle Moyenne":"% = (1 + performance globale) ^ (1 ÷ années depuis le premier versement) − 1, soit un taux annuel composé (calculé après 3 mois).","Plus-Value Latente":"% = plus-value latente ÷ capital investi dans les fonds encore détenus (fonds à historique complet uniquement).","Plus-Value Actée":"% = plus-value actée lors des ventes et arbitrages ÷ valeur actuelle du compte.","Abondement Reçu":"% = abondement de l'employeur ÷ total des versements placés.","Intéressement & Participation":"% = intéressement + participation + PPV placés ÷ total des versements placés."};
+const OMT={};const OMT0={"Performance Globale":"% = gain total (valeur du compte + retraits − versements placés) ÷ versements placés. Demande la valeur réelle des comptes (en bas de la Vue d'ensemble ou relevés PDF).","Performance Annuelle Moyenne":"% = (1 + performance globale) ^ (1 ÷ années depuis le premier versement) − 1, soit un taux annuel composé (calculé après 3 mois).","Plus-Value Latente":"% = plus-value latente ÷ capital investi dans les fonds encore détenus (fonds à historique complet uniquement).","Plus-Value Actée":"% = plus-value actée lors des ventes et arbitrages ÷ valeur actuelle du compte.","Abondement Reçu":"% = abondement de l'employeur ÷ total des versements placés.","Intéressement & Participation":"% = intéressement + participation + PPV placés ÷ total des versements placés."};
 function omt(label,val,delta,sec,inv){let d="";if(delta!=null){const neg=delta[0]=="-",good=inv?neg:!neg;d=`<div class="mtd ${good?"g":"r"}">${neg?OARD:OARU}<span>${delta}</span></div>`}
  const tp=OMT[label];return`<div class="mtr ${sec}${tp?" tp":""}"${tp?` data-mt="${esc(tp)}"`:""}><div class="mtl"><p>${label}</p></div><div class="mtv">${val}</div>${d}</div>`}
 let OMB=null;const ombClose=()=>{if(OMB){OMB.remove();OMB=null}};
@@ -1611,21 +1628,21 @@ function livCalc(a){const L=livLines(a.id),bal=livBal(a),T=TODAY(),y=T.slice(0,4
  c0=cr&&dAdd(cr.date,1)>y+"-01-01"?dAdd(cr.date,1):y+"-01-01",rel=L.filter(l=>l.type==="rel"&&l.date<=T&&l.date>=c0).pop(),
  fq=rel?qStart(rel.date):c0,acc=(rel?rel.v:0)+intQuinz(L,a,fq,dAdd(T,-1)),proj=acc+intQuinz(L,a,qStart(T),y+"-12-31"),taux=tauxAt(L,T);
  return{L,bal,acc,proj,taux,from:fq,cred:sum(L.filter(l=>l.type==="cred"&&l.date.slice(0,4)===y&&l.date<=T),"v")}}
-const noLiv=()=>card("liv-0","🐖 Livrets",'<div class="d">Aucun livret. Ajoute-en (➕ Livret) dans ⚙️ Réglages du tableau de bord général : nom et banque. Le solde se calcule tout seul d’après tes transferts (onglet Dépenses) ; tu pourras saisir ici leurs taux et leurs intérêts reçus.</div>',"margin-top:0");
+const noLiv=()=>card("liv-0","🐖 Livrets",'<div class="d">Aucun livret. Ajoute-en (➕ Livret) dans ⚙️ Réglages du tableau de bord général : nom et banque. </div>',"margin-top:0");
 function vLiv(){
  const L=livOpen(),Sh=livShut();if(!L.length&&!Sh.length)return noLiv();
  const shut=Sh.length?card("liv-c","🔒 Livrets clôturés · "+Sh.length,`<div class="d" style="margin:0 0 8px">Un livret est clôturé automatiquement quand son solde revient à 0 ; un nouveau transfert vers ce livret le rouvre.</div><div class="lst">${Sh.map(a=>{const m=livMoves(a),T=TODAY(),last=m.filter(x=>x.d<=T).pop(),it=sum(m.filter(x=>x.k==="int"&&x.d<=T),"v");return`<div class="op"><div class="m"><b>${esc(hubNm(a))}</b><small>Clôturé le ${fdy(last.d)}${a.broker?" · "+esc(a.broker):""}</small></div><span class="am">${it>0?"Intérêts reçus "+eur2(it):""}</span></div>`}).join("")}</div>`):"";
  if(!L.length)return card("liv-0","🐖 Épargne",'<div class="d">Tous tes livrets sont clôturés (solde à 0).</div>',"margin-top:0")+shut;
  const C=L.map(a=>({a,c:livCalc(a)})),tot=C.reduce((t,x)=>t+x.c.bal,0),ia=C.reduce((t,x)=>t+(x.c.taux!=null?x.c.acc:0),0),ip=C.reduce((t,x)=>t+(x.c.taux!=null?x.c.proj:0),0),any=C.some(x=>x.c.taux!=null),y=TODAY().slice(0,4),one=C.length===1;
- const boxes=`<div class="bkx"><div class="bal tot lv"><small>🐖 ${one?esc(hubNm(L[0]))+(L[0].broker?" · "+esc(L[0].broker):""):"Total des livrets"}</small><b>${eur2(tot)}</b><div class="s">${any?`Intérêts en cours <b style="display:inline;font-size:inherit">+${eur2(ia)}</b> · projetés au 31/12 <b style="display:inline;font-size:inherit">+${eur2(ip)}</b>`:"Ajoute un taux (onglet Taux &amp; intérêts) pour calculer les intérêts"} · solde calculé selon tes transferts et intérêts</div></div>${one?"":C.map(({a,c})=>`<div class="bal lv"><small>${esc(hubNm(a))}${a.broker?" · "+esc(a.broker):""}</small><b>${eur2(c.bal)}</b><div class="s">${c.taux!=null?`Taux ${fpx(c.taux)}<br>Intérêts en cours +${eur2(c.acc)}`:"Taux à saisir"}</div></div>`).join("")}</div>`;
+ const boxes=`<div class="bkx"><div class="bal tot lv"><small>🐖 ${one?esc(hubNm(L[0]))+(L[0].broker?" · "+esc(L[0].broker):""):"Total des livrets"}</small><b>${eur2(tot)}</b><div class="s">${any?`Intérêts en cours <b style="display:inline;font-size:inherit">+${eur2(ia)}</b> · projetés au 31/12 <b style="display:inline;font-size:inherit">+${eur2(ip)}</b>`:"Ajoute un taux (onglet Taux &amp; intérêts) pour calculer les intérêts"}</div></div>${one?"":C.map(({a,c})=>`<div class="bal lv"><small>${esc(hubNm(a))}${a.broker?" · "+esc(a.broker):""}</small><b>${eur2(c.bal)}</b><div class="s">${c.taux!=null?`Taux ${fpx(c.taux)}<br>Intérêts en cours +${eur2(c.acc)}`:"Taux à saisir"}</div></div>`).join("")}</div>`;
  const act=card("liv-a","💰 Intérêts reçus",`<div class="d" style="margin:0 0 8px">Quand ta banque crédite des intérêts, saisis-les ici : ils s'ajoutent au solde du livret.</div>${C.map(({a})=>`<button type="button" class="sec" data-lvadd="${esc(a.id)}" data-lvtyp="cred" style="width:100%;margin-top:6px">💰 Intérêts reçus${one?"":" · "+esc(hubNm(a))}</button>`).join("")}`,"margin-top:0");
  const tbl=`<div class="tw"><table class="rc"><thead><tr><th>Livret</th><th>Solde</th><th>Taux</th><th>Intérêts en cours</th><th>Projeté 31/12</th><th>Crédités ${y}</th></tr></thead><tbody>${C.map(({a,c})=>`<tr><th>${esc(hubNm(a))}${a.broker?`<div class="d">${esc(a.broker)}</div>`:""}</th><td><b>${eur2(c.bal)}</b></td><td>${c.taux!=null?fpx(c.taux):"—"}</td><td class="${c.taux!=null?"pos":""}">${c.taux!=null?"+"+eur2(c.acc):"—"}</td><td>${c.taux!=null?"+"+eur2(c.proj):"—"}</td><td>${c.cred>0?eur2(c.cred):"—"}</td></tr>`).join("")}<tr class="tot"><th>Total</th><td><b>${eur2(tot)}</b></td><td></td><td class="pos">${any?"+"+eur2(ia):"—"}</td><td>${any?"+"+eur2(ip):"—"}</td><td>${eur2(C.reduce((t,x)=>t+x.c.cred,0))}</td></tr></tbody></table></div>`;
  const m={};C.forEach(({a,c})=>{m[hubNm(a)]=c.bal});
- return boxes+act+card("liv-t","Détail des livrets",tbl)+(C.length>1?card("liv-r","Répartition des livrets",bars(m,null,(k,v)=>tipHtml(k,[tl("Solde",eur2(v),TC.g),tl("Part",(tot>0?v/tot*100:0).toFixed(1).replace(".",",")+" %")]))):"")+shut
-  +card("liv-n","Comment sont calculés le solde et les intérêts ?",`<div class="d"><b>Solde</b> : calculé automatiquement = transferts reçus − transferts émis (saisis dans l'onglet Dépenses, mouvement « Transfert ») + intérêts reçus. Quand le solde revient à 0, le livret est clôturé automatiquement.<br><b>Intérêts</b> : bruts, calculés par quinzaine comme les banques : on retient le plus petit solde de chaque quinzaine (un dépôt compte à partir de la quinzaine suivante, un retrait fait perdre toute la quinzaine), en euros entiers × taux ÷ 24. Seules les quinzaines terminées sont comptées, depuis le dernier crédit d'intérêts (ou le 1er janvier) ou depuis le dernier relevé saisi. Si ton résultat diffère de ta banque, ajoute un « relevé » dans l'onglet Taux &amp; intérêts pour recaler le calcul.</div>`)}
+ return boxes+card("liv-t","Détail des livrets",tbl)+shut
+}
 function vLvi(){
  const L=livAll();if(!L.length)return noLiv();
- return`<div class="d" style="margin:0 0 10px">Une ligne par événement : <b>🔎 relevé</b> des intérêts en cours lu sur ta banque, <b>📈 taux</b> (à chaque changement), <b>💰 intérêts reçus</b> (ajoutés au solde du livret ; le calcul repart de zéro). Touche une ligne pour la modifier.</div>`+(L.length>1?`<button class="sec" data-lvtaux style="width:100%;margin:0 0 10px">📈 Appliquer un taux à plusieurs livrets</button>`:"")+L.map(a=>{const c=livCalc(a),cl=livClosed(a);
+ return L.map(a=>{const c=livCalc(a),cl=livClosed(a);
   const rows=c.L.slice().reverse().map(l=>`<div class="op" data-lv="${l.i}"><div class="m"><b>${LVT[l.type][0]} ${LVT[l.type][1]}</b><small>${fdy(l.date)}</small></div><span class="am ${l.type==="cred"?"pos":""}">${l.type==="taux"?fpx(l.v):(l.type==="cred"?"+":"")+eur2(l.v)}</span><span style="color:var(--mut)">✎</span></div>`).join("")||'<div class="empty">Aucune ligne</div>';
   return card("lvi-"+a.id,`🐖 ${esc(hubNm(a))}${cl?" · 🔒 clôturé":""} · ${cl?"solde à 0":c.taux!=null?"intérêts en cours +"+eur2(c.acc):"taux à saisir"}`,`<div class="lst">${rows}</div><div class="row" style="margin-top:8px"><button class="sec" data-lvadd="${esc(a.id)}" style="flex:1">➕ Ajouter une ligne</button><button class="sec" data-lvadd="${esc(a.id)}" data-lvtyp="cred" style="flex:1">💰 Intérêts reçus</button></div>`)}).join("")}
 /* Onglet Historique : tous les mouvements d'un livret (ou de tous), avec le solde après chaque mouvement */
@@ -1649,7 +1666,7 @@ $("#lAll").onclick=()=>{const c=[...document.querySelectorAll("#lChk input")],on
 function lvMode(){const n=$("#lChk").children.length,m=lIdx<0&&$("#lType").value==="taux"&&n>1;$("#lMulti").classList.toggle("hide",!m);$("#lAcc").classList.toggle("hide",m);$("#lAccL").classList.toggle("hide",m);return m}
 function openLv(i=-1,acc,typ){lIdx=i;const Ls=hubAcc().filter(a=>a.type==="Livret");if(!Ls.length){alert("Ajoute d'abord un livret dans ⚙️ Réglages du tableau de bord général.");return}
  $("#frmL").reset();$("#lAcc").innerHTML=Ls.map(a=>`<option value="${esc(a.id)}">${esc(hubNm(a))}</option>`).join("");const l=i>=0?D.livrets_lignes[i]:null;
- $("#lTitle").textContent=l?"Modifier la ligne":"Nouvelle ligne";$("#lAcc").value=l?l.acc:(acc||(livOpen()[0]||Ls[0]).id);$("#lType").value=l?l.type:(typ||"rel");$("#lDate").value=l?l.date:TODAY();$("#lV").value=l?l.v:"";
+ $("#lTitle").textContent=l?"Modifier la ligne":"Nouvelle ligne";$("#lAcc").value=l?l.acc:(acc||(livOpen()[0]||Ls[0]).id);{const ts=$("#lType"),ro=ts.querySelector("option[value=rel]");if(l&&l.type==="rel"){if(!ro){const o=document.createElement("option");o.value="rel";o.textContent="🔎 Relevé des intérêts en cours";ts.insertBefore(o,ts.firstChild)}}else if(ro)ro.remove()}$("#lType").value=l?l.type:(typ||"taux");$("#lDate").value=l?l.date:TODAY();$("#lV").value=l?l.v:"";
  $("#lChk").innerHTML=Ls.map(a=>`<label class="pdfr"><input type="checkbox" value="${esc(a.id)}"${a.id===$("#lAcc").value?" checked":""}><div class="m"><b>${esc(hubNm(a))}</b>${a.broker?`<small>${esc(a.broker)}</small>`:""}</div></label>`).join("");lvHint();lvMode();$("#lDel").classList.toggle("hide",!l);dlgL.showModal()}
 $("#lCancel").onclick=()=>dlgL.close();
 $("#lDel").onclick=()=>{if(lIdx>=0&&confirm("Supprimer cette ligne ?")){D.livrets_lignes.splice(lIdx,1);save();dlgL.close();render()}};

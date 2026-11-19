@@ -55,10 +55,10 @@ const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 const r2=x=>Math.round(Number((x*100).toFixed(6)))/100;
 const isCry=r=>/-(EUR|USD|USDT|USDC|GBP)$/i.test(String((r&&(r.Ticker||r.tk))||''));
 function norm(o,i){
-  const n=k=>parseFloat(o[k])||0,D=s=>new Date(String(s).replace(' ','T'));
+  const n=k=>parseFloat(o[k])||0,MID0=['DIVIDENDE','APPORT','RETRAIT','INTERET'],D=s=>new Date(String(s).replace(' ','T'));
   return{i,nom:o.Nom,type:o.Type,tk:o.Ticker,q:n('Quantité'),p:n('Prix Unitaire (€)'),f:n('Frais Totaux (€)'),c:n('Commission (€)'),
     rompu:n('Rompu'),ttf:n('TTF (€)'),ret:n('Retenue_Source_Etrangere'),remb:n('Remboursement_Capital'),arr:n('Arrondi_Courtier'),
-    d:D(o.Date_Heure),dr:D(o.Date_Rompus||o.Date_Heure)};
+    d:D(MID0.includes(o.Type)?String(o.Date_Heure).slice(0,10)+' 00:00:00':o.Date_Heure),dr:D(o.Date_Rompus||o.Date_Heure)};
 }
 
 /* ---------- Calculs (même logique que app_perso.py) ---------- */
@@ -66,7 +66,7 @@ function addDays(set,a,b){const e=new Date(b.getFullYear(),b.getMonth(),b.getDat
 function compute(tx,prices){
   const now=new Date(),by={},pos=[];let divTot=0,fees=0,cost=0,real=0;
   tx.forEach(t=>{if(t.type=='ACHAT'||t.type=='VENTE')fees+=t.f;
-    if(t.type!='APPORT'&&t.type!='RETRAIT')(by[t.tk]=by[t.tk]||[]).push(t)});
+    if(t.type!='APPORT'&&t.type!='RETRAIT'&&t.type!='INTERET')(by[t.tk]=by[t.tk]||[]).push(t)});
   const key=t=>{const d=new Date(t.d);if(t.type=='SPLIT')d.setHours(0,0,0,0);return d.getTime()};
   for(const tk in by){
     const g=by[tk].sort((a,b)=>key(a)-key(b));
@@ -93,6 +93,7 @@ function compute(tx,prices){
   tx.map(t=>({t,k:t.type=='SPLIT'?t.dr:t.d})).filter(x=>x.k<=eod).sort((a,b)=>a.k-b.k).forEach(({t})=>{
     if(t.type=='APPORT')cash=r2(cash+t.q);
     else if(t.type=='RETRAIT')cash=r2(cash-t.q);
+    else if(t.type=='INTERET')cash=r2(cash+t.q);
     else if(t.type=='ACHAT')cash=r2(cash-r2(t.q*t.p+t.f));
     else if(t.type=='VENTE')cash=r2(cash+r2(t.q*t.p-t.f));
     else if(t.type=='DIVIDENDE')cash=r2(cash+t.p-t.ret-t.c+t.remb+t.arr);

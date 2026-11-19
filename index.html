@@ -45,7 +45,7 @@ iframe.on{display:block}
 h1{font-size:1.25rem;margin:0 0 2px;letter-spacing:-.02em}
 .sub{color:var(--mut);font-size:13px}
 .hero{margin:14px 0;padding:18px;border-radius:18px;background:linear-gradient(135deg,#0284c7,#7c3aed);color:#fff}
-.hero small{opacity:.85}.hero .n{font-size:2rem;font-weight:800;letter-spacing:-.02em;margin-top:2px}
+.hero small{opacity:.85}.hero .tr{display:inline-flex;align-items:center;gap:7px;margin-top:8px;padding:4px 12px 4px 9px;border-radius:999px;background:rgba(255,255,255,.16);font-size:13px;font-weight:700;backdrop-filter:blur(4px)}.hero .tr i{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent}.hero .tr.up i{border-bottom:10px solid #4ade80}.hero .tr.dn i{border-top:10px solid #f87171}.hero .tr.up b{color:#bbf7d0}.hero .tr.dn b{color:#fecaca}.hero .n{font-size:2rem;font-weight:800;letter-spacing:-.02em;margin-top:2px}
 .g{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
 .t{all:unset;cursor:pointer;display:block;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 2px 10px rgba(15,23,42,.05)}
 .t h3{margin:0 0 6px;font-size:.95rem}
@@ -77,13 +77,19 @@ dialog .hint{color:var(--mut);font-size:12px;margin:6px 0 0}
 .cd .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .cd h2{font-size:1rem;margin:0}
 .rg{display:inline-flex;gap:4px;flex:none}.rg button{all:unset;cursor:pointer;padding:3px 10px;border-radius:999px;font-size:12px;color:var(--mut);border:1px solid var(--line)}.rg button.on{background:var(--acc);border-color:var(--acc);color:#fff}
-#rep .rw{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-top:8px}
-#rep svg{width:170px;height:170px;flex:none}
-#rep .lg{flex:1;min-width:200px}
-#rep .li{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px}
-#rep .li:last-child{border-bottom:0}
-#rep .li i{width:11px;height:11px;border-radius:3px;flex:none}
-#rep .li span{flex:1}#rep .li b{font-variant-numeric:tabular-nums}#rep .li em{font-style:normal;color:var(--mut);min-width:48px;text-align:right;font-variant-numeric:tabular-nums}
+#rep .rw{display:flex;gap:22px;align-items:center;flex-wrap:wrap;margin-top:10px}
+#rep .dn-w{position:relative;width:200px;height:200px;flex:none;margin:0 auto}
+#rep .dn-w svg{width:200px;height:200px;filter:drop-shadow(0 6px 14px rgba(15,23,42,.14))}
+#rep .sl{transition:opacity .2s,stroke-width .2s;cursor:pointer}#rep .sl.dim{opacity:.28}#rep .sl:hover{stroke-width:29}
+#rep .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-align:center;padding:0 46px}
+#rep .ctr small{color:var(--mut);font-size:11px;line-height:1.2}#rep .ctr b{font-size:1.2rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}#rep .ctr em{font-style:normal;font-size:12px;color:var(--mut);min-height:14px}
+#rep .lg{flex:1;min-width:230px;display:flex;flex-direction:column;gap:6px}
+#rep .li{display:grid;grid-template-columns:34px 1fr auto;grid-template-areas:"ic nm am" "pb pb pb";align-items:center;gap:2px 10px;padding:8px 10px;border-radius:14px;border:1px solid transparent;transition:background .15s,border-color .15s;cursor:default}
+#rep .li.on,#rep .li:hover{background:color-mix(in srgb,var(--acc) 7%,transparent);border-color:var(--line)}
+#rep .li .ic{grid-area:ic;width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:17px}
+#rep .li .nm{grid-area:nm;min-width:0;display:flex;flex-direction:column;font-size:14px;font-weight:600}#rep .li .nm small{color:var(--mut);font-size:11.5px;font-weight:400}
+#rep .li .am{grid-area:am;text-align:right;display:flex;flex-direction:column;font-variant-numeric:tabular-nums}#rep .li .am b{font-size:14px}#rep .li .am em{font-style:normal;font-size:12px;color:var(--mut)}
+#rep .li .pb{grid-area:pb;height:5px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:4px}#rep .li .pb u{display:block;height:100%;border-radius:3px;text-decoration:none}
 #tbw{overflow:auto;max-height:420px;margin-top:8px;border:1px solid var(--line);border-radius:12px}
 #tbw table{border-collapse:collapse;width:100%;min-width:340px}
 #tbw th,#tbw td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--line);font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -103,7 +109,7 @@ dialog .hint{color:var(--mut);font-size:12px;margin:6px 0 0}
 <div id="stage">
   <div id="home"><div class="w">
     <div class="top"><div><h1>Mon patrimoine</h1><div class="sub" id="date"></div></div><div class="dpk"><label for="asof">📅 État au</label><input type="date" id="asof"><button id="asoft" type="button">Aujourd’hui</button></div></div>
-    <div class="hero"><div class="sw" id="sw"><button data-m="brut">Brut</button><button data-m="net">Net</button></div><div class="n" id="tot">–</div><small id="totsub"></small></div>
+    <div class="hero"><div class="sw" id="sw"><button data-m="brut">Brut</button><button data-m="net">Net</button></div><div class="n" id="tot">–</div><div class="tr" id="trend" hidden></div><small id="totsub"></small></div>
     <div class="cd" id="asb" hidden></div>
     <div class="cd" id="evo"></div>
     <div class="cd" id="rep"></div>
@@ -176,6 +182,11 @@ function acctBal(a,Dx){if(a.type==='Livret')return livBal(a,Dx);const s=+a.balan
   (Dx.depenses||[]).forEach(o=>{if(o.compte===a.id&&o.date&&o.date>=d0){const rv=o.sens?o.sens==='Revenu':['Salaire','Prime / Remboursement','Virement reçu'].includes(o.categorie);t+=rv?(+o.montant||0):-(+o.montant||0)}});
   (Dx.transferts||[]).forEach(r=>{if(r.date&&r.date>=d0){if(r.de===a.id)t-=+r.montant||0;if(r.vers===a.id)t+=+r.montant||0}});return Math.round(t*100)/100}
 const bal=a=>acctBal(a,LS.g('depenses_v1'));
+/* Solde d'un compte à une date donnée (pour reconstituer l'historique du patrimoine) */
+function acctBalAt(a,Dx,d){if(a.type==='Livret')return livBal(a,Dx,d);const s=+a.balance||0;if(a.type!=='Compte bancaire')return s;Dx=Dx||{};const d0=a.initDate||'';let t=s;
+  (Dx.depenses||[]).forEach(o=>{if(o.compte===a.id&&o.date&&o.date>=d0&&o.date<=d){const rv=o.sens?o.sens==='Revenu':['Salaire','Prime / Remboursement','Virement reçu'].includes(o.categorie);t+=rv?(+o.montant||0):-(+o.montant||0)}});
+  (Dx.transferts||[]).forEach(r=>{if(r.date&&r.date>=d0&&r.date<=d){if(r.de===a.id)t-=+r.montant||0;if(r.vers===a.id)t+=+r.montant||0}});return Math.round(t*100)/100}
+const bkAt=(A,Dx,d)=>A.filter(isBk).reduce((t,a)=>t+acctBalAt(a,Dx,d),0);
 const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function accs(){const l=((LS.g('hub_acc')||{}).list||[]).map(a=>({...a})),o=[...l];
   ACCD.forEach(d=>{if(!o.some(a=>a.id===d.id))o.push({...d})});
@@ -188,7 +199,7 @@ const cryHref=()=>'cto.html?v=crypto'+(cryAcc()?'&a='+cryAcc():'')+'&l=Crypto';
 const ctoSrc=id=>{const a=accs().find(x=>x.id===id);return!a||id==='cto'?'cto.html':'cto.html?a='+id+'&l='+encodeURIComponent(nm(a))};
 let MODS=[];
 function buildMods(){const A=accs();MODS=[];
-  MODS0.forEach(m=>{if(m==='@cto')MODS.push({id:'cto',ic:'🏦',lb:'CTO',src:A.filter(a=>a.type==='CTO').length>1?'ctos.html':'cto.html'});else MODS.push(m.id==='crypto'?{...m,src:cryHref()}:m)})}
+  MODS0.forEach(m=>{if(m==='@cto')MODS.push({id:'cto',ic:'🏦',lb:'CTO',src:'cto.html'});else MODS.push(m.id==='crypto'?{...m,src:cryHref()}:m)})}
 buildMods();
 let cur='home';
 const nav=$('#nav');
@@ -263,7 +274,7 @@ function loanAt(D,M){let paid=0,cap=0,st=0;
 /* Mensuel : valeur des comptes titres (historique publié par les pages PEA/CTO/Crypto) + épargne salariale + immobilier + comptes au solde actuel ; les instantanés réels du jour remplacent ces estimations */
 function evoPoints(net_,A,D,cf,cur){
   const HS=A.filter(a=>a.type==='PEA'||a.type==='CTO'||a.type==='Crypto').map(a=>LS.g(a.type==='PEA'?'hub_pea_hist':a.type==='Crypto'?'hub_crypto_hist':'hub_'+a.id+'_hist')).filter(x=>x&&x.length),
-    bkv=A.filter(isBk).reduce((t,a)=>t+bal(a),0),L=(D.interessement||[]).filter(s=>s.date),Pl=s=>String(s.dest||'').startsWith('Placé'),Rt=(D.retraits_epargne||[]).filter(r=>r.date),
+    L=(D.interessement||[]).filter(s=>s.date),Pl=s=>String(s.dest||'').startsWith('Placé'),Rt=(D.retraits_epargne||[]).filter(r=>r.date),
     im=D.immo||{},ia=+im.apport||0,iv=D.immo!=null?(+im.valeur||0):(cf.immo||0),noLoan=!(D.prets||[]).some(p=>p.date_debut&&p.capital),
     sn=LS.g('hub_snap')||{},now=new Date(),cm=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   const f0=[...HS.map(h=>h[0][0].slice(0,7)),...L.map(s=>s.date.slice(0,7)),...(D.prets||[]).filter(p=>p.date_debut).map(p=>p.date_debut.slice(0,7)),...Object.keys(sn).map(k=>k.slice(0,7))].sort();
@@ -272,7 +283,7 @@ function evoPoints(net_,A,D,cf,cur){
   for(let g=0;g<700;g++){const M=y+'-'+String(m).padStart(2,'0'),e=M+'-31',lo=loanAt(D,M),st=lo.st>0||noLoan;
     const sk=Object.keys(sn).filter(k=>k.slice(0,7)===M).sort().pop();
     let v;if(M===cm)v=cur;else if(sk)v=net_?sn[sk].n:sn[sk].b;
-    else v=HS.reduce((t,h)=>t+serAt(h,e),0)+Math.max(0,L.filter(s=>Pl(s)&&s.date<=e).reduce((t,s)=>t+(s.montant||0),0)-Rt.filter(r=>r.date<=e).reduce((t,r)=>t+(r.montant||0),0))+bkv+(st?(net_?ia+lo.paid:(iv||ia+lo.cap)):0);
+    else v=HS.reduce((t,h)=>t+serAt(h,e),0)+Math.max(0,L.filter(s=>Pl(s)&&s.date<=e).reduce((t,s)=>t+(s.montant||0),0)-Rt.filter(r=>r.date<=e).reduce((t,r)=>t+(r.montant||0),0))+bkAt(A,D,e)+(st?(net_?ia+lo.paid:(iv||ia+lo.cap)):0);
     out.push([M,v]);if(M===cm)break;m++;if(m>12){m=1;y++}}
   return out}
 let EVR=LS.g('hub_evr')||'all';
@@ -295,15 +306,22 @@ function drawEvo(all){
     tp.innerHTML=`${i===pts.length-1?'Aujourd’hui':mlab(pts[i][0])} · <b>${eur(pts[i][1])}</b>`;tp.style.display='block';const er=el.getBoundingClientRect();tp.style.left=Math.max(60,Math.min(er.width-60,r.left-er.left+x/W*r.width))+'px';tp.style.top=(r.top-er.top+4)+'px'};
   sv.onpointermove=mv;sv.onpointerdown=mv;sv.onpointerleave=()=>{tp.style.display='none';ln.style.display=ci.style.display='none'}}
 /* ---------- Répartition du patrimoine par actif ---------- */
-const RCOL=['#0284c7','#7c3aed','#f59e0b','#16a34a','#0d9488','#ec4899','#64748b'];
+const RCOL=['#0ea5e9','#8b5cf6','#f59e0b','#10b981','#14b8a6','#ec4899','#64748b'];
+const lite=(h,k)=>'#'+[1,3,5].map(i=>Math.round(parseInt(h.slice(i,i+2),16)+(255-parseInt(h.slice(i,i+2),16))*k).toString(16).padStart(2,'0')).join('');
 function drawRep(items,net_){
-  const el=$('#rep'),L=items.map((x,i)=>({n:x[0],ic:x[1],v:x[2],c:RCOL[i%RCOL.length]})).filter(x=>x.v>0.5),T=L.reduce((s,x)=>s+x.v,0);
+  const el=$('#rep'),L=items.map((x,i)=>({n:x[0],ic:x[1],v:x[2],s:x[3]||'',c:RCOL[i%RCOL.length]})).filter(x=>x.v>0.5),T=L.reduce((s,x)=>s+x.v,0);
   if(!T){el.innerHTML='<div class="hd"><h2>🥧 Répartition du patrimoine</h2></div><div class="sub" style="margin-top:6px">Pas encore de données.</div>';return}
-  const r=62,C=2*Math.PI*r;let off=0;
-  const arcs=L.map(x=>{const f=x.v/T,d=f*C,s=`<circle cx="85" cy="85" r="${r}" fill="none" stroke="${x.c}" stroke-width="26" stroke-dasharray="${Math.max(0,d-(L.length>1?1.5:0)).toFixed(2)} ${(C-d+(L.length>1?1.5:0)).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 85 85)"><title>${esc(x.n)} ${eur(x.v)}</title></circle>`;off+=d;return s}).join('');
-  el.innerHTML=`<div class="hd"><div><h2>🥧 Répartition du patrimoine</h2><div class="sub">Par actif · ${net_?'valeur nette':'valeur brute'}</div></div></div>
-   <div class="rw"><svg viewBox="0 0 170 170" role="img" aria-label="Répartition du patrimoine par actif">${arcs}<text x="85" y="82" text-anchor="middle" font-size="11" fill="var(--mut)">Total</text><text x="85" y="100" text-anchor="middle" font-size="14" font-weight="800" fill="var(--txt)">${cmp(T)}</text></svg>
-   <div class="lg">${L.sort((a,b)=>b.v-a.v).map(x=>`<div class="li"><i style="background:${x.c}"></i><span>${x.ic} ${esc(x.n)}</span><b>${eur(x.v)}</b><em>${(x.v/T*100).toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1})} %</em></div>`).join('')}</div></div>`}
+  L.sort((a,b)=>b.v-a.v);
+  const r=70,C=2*Math.PI*r,gap=L.length>1?3:0,pc=x=>(x.v/T*100).toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1})+' %';let off=0;
+  const defs=L.map((x,i)=>`<linearGradient id="rg${i}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${lite(x.c,.25)}"/><stop offset="1" stop-color="${x.c}"/></linearGradient>`).join('');
+  const arcs=L.map((x,i)=>{const d=x.v/T*C,a=Math.max(0.5,d-gap),sv=`<circle class="sl" data-i="${i}" cx="100" cy="100" r="${r}" fill="none" stroke="url(#rg${i})" stroke-width="24" stroke-dasharray="${a.toFixed(2)} ${(C-a).toFixed(2)}" stroke-dashoffset="${(-off-gap/2).toFixed(2)}" transform="rotate(-90 100 100)"/>`;off+=d;return sv}).join('');
+  el.innerHTML=`<div class="hd"><div><h2>🥧 Répartition du patrimoine</h2><div class="sub">${net_?'Par actif · immobilier en capital net':'Par actif · valeur brute'}</div></div></div>
+   <div class="rw"><div class="dn-w"><svg viewBox="0 0 200 200" role="img" aria-label="Répartition du patrimoine par actif"><defs>${defs}</defs><circle cx="100" cy="100" r="${r}" fill="none" stroke="var(--line)" stroke-width="24" opacity=".45"/>${arcs}</svg>
+   <div class="ctr"><small id="rpl">Total</small><b id="rpv">${cmp(T)}</b><em id="rpp"></em></div></div>
+   <div class="lg">${L.map((x,i)=>`<div class="li" data-i="${i}"><i class="ic" style="background:${x.c}22;color:${x.c}">${x.ic}</i><div class="nm"><span>${esc(x.n)}</span>${x.s?`<small>${esc(x.s)}</small>`:''}</div><div class="am"><b>${eur(x.v)}</b><em>${pc(x)}</em></div><div class="pb"><u style="width:${(x.v/T*100).toFixed(1)}%;background:linear-gradient(90deg,${lite(x.c,.25)},${x.c})"></u></div></div>`).join('')}</div></div>`;
+  const hl=i=>{const x=L[i];el.querySelectorAll('.sl').forEach(c=>c.classList.toggle('dim',i!=null&&+c.dataset.i!==i));el.querySelectorAll('.li').forEach(c=>c.classList.toggle('on',i!=null&&+c.dataset.i===i));
+    $('#rpl').textContent=x?x.n:'Total';$('#rpv').textContent=x?eur(x.v):cmp(T);$('#rpp').textContent=x?pc(x):''};
+  el.querySelectorAll('.sl,.li').forEach(n=>{n.onpointerenter=()=>hl(+n.dataset.i);n.onpointerleave=()=>hl(null);n.onclick=()=>hl(+n.dataset.i)})}
 /* ---------- Récapitulatif du patrimoine : 31 décembre de chaque année / fin de chaque mois ---------- */
 let TBM=LS.g('hub_tbm')||'an';
 const MOISL=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
@@ -316,15 +334,14 @@ function drawTab(all){
   const body=rows.map((r,i)=>{const pv=i?rows[i-1][1]:null,d=pv==null?null:r[1]-pv,p=pv>0?d/pv*100:null,c=d==null?'':d>0?'up':d<0?'dn':'';
     return`<tr><td>${esc(r[0])}</td><td><b>${eur(r[1])}</b></td><td class="${c}">${d==null?'–':(d<0?'−':'+')+eur(Math.abs(d))}</td><td class="${c}">${p==null||!isFinite(p)?'–':(p<0?'−':'+')+Math.abs(p).toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1})+' %'}</td></tr>`}).reverse().join('');
   el.innerHTML=`<div class="hd"><div><h2>🗓️ Récapitulatif du patrimoine</h2><div class="sub">${TBM==='an'?'Au 31 décembre de chaque année':'À la fin de chaque mois'} · le plus récent en haut</div></div><div class="rg"><button data-t="an"${TBM==='an'?' class="on"':''}>Années</button><button data-t="mois"${TBM==='mois'?' class="on"':''}>Mois</button></div></div>
-   <div id="tbw"><table><thead><tr><th>Date</th><th>Patrimoine</th><th>Variation</th><th>%</th></tr></thead><tbody>${body}</tbody></table></div>
-   <div class="sub" style="margin-top:6px">Les mois passés sont reconstitués (historique des cours, épargne salariale, immobilier, soldes actuels des comptes) ; les instantanés enregistrés à chaque ouverture les remplacent peu à peu.</div>`;
+   <div id="tbw"><table><thead><tr><th>Date</th><th>Patrimoine</th><th>Variation</th><th>%</th></tr></thead><tbody>${body}</tbody></table></div>`;
   el.onclick=e=>{const b=e.target.closest('[data-t]');if(b){TBM=b.dataset.t;LS.s('hub_tbm',TBM);drawTab(all)}}}
 /* ---------- État du patrimoine à une date passée (reconstitué) ---------- */
 const todayI=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
 function stateAt(ao,A,D,cf,net_){
   const pea=A.some(a=>a.type==='PEA')?serAt(LS.g('hub_pea_hist'),ao):0,cto=A.filter(a=>a.type==='CTO').reduce((t,a)=>t+serAt(LS.g('hub_'+a.id+'_hist'),ao),0),cry=A.some(a=>a.type==='Crypto')?serAt(LS.g('hub_crypto_hist'),ao):0,
     pl=(D.interessement||[]).filter(s=>s.date&&s.date<=ao&&String(s.dest||'').startsWith('Placé')).reduce((t,s)=>t+(s.montant||0),0),rt=(D.retraits_epargne||[]).filter(r=>r.date&&r.date<=ao).reduce((t,r)=>t+(r.montant||0),0),
-    sb=A.filter(a=>a.type==='Compte bancaire').reduce((t,a)=>t+bal(a),0),sl=A.filter(a=>a.type==='Livret').reduce((t,a)=>t+livBal(a,D,ao),0),
+    sb=A.filter(a=>a.type==='Compte bancaire').reduce((t,a)=>t+acctBalAt(a,D,ao),0),sl=A.filter(a=>a.type==='Livret').reduce((t,a)=>t+livBal(a,D,ao),0),
     im=D.immo||{},ia=+im.apport||0,iv=D.immo!=null?(+im.valeur||0):(cf.immo||0),noLoan=!(D.prets||[]).some(p=>p.date_debut&&p.capital),lo=loanAt(D,ao.slice(0,7)),st=lo.st>0||noLoan,imm=st?(net_?ia+lo.paid:(iv||ia+lo.cap)):0;
   const items=[['PEA','📈',pea],['CTO','🏦',cto],['Crypto','₿',cry],['Épargne salariale','🎁',Math.max(0,pl-rt)],['Comptes bancaires','🏧',sb],['Livrets','🐖',sl],['Immobilier','🏡',imm]];
   return{items,total:items.reduce((t,x)=>t+x[2],0)}}
@@ -333,14 +350,16 @@ function renderHome(){
   const A=accs(),ctos=A.filter(a=>a.type==='CTO'),AB=t=>A.find(a=>a.type===t),bk=a=>{const b=a&&brokerOf(a,A);return b?`<div class="m">🏛️ ${esc(b)}</div>`:''};
   const p=LS.g('hub_pea'),dm=depMois(),D=LS.g('depenses_v1')||{},ds=[...(D.salaires||[])].filter(s=>s.date).sort((x,y)=>x.date<y.date?1:-1)[0],
     de=epargne(D),di=crdPrets(D),cf=CF.v,cr=LS.g('hub_crypto');
-  const cd=ctos.map(a=>LS.g('hub_'+a.id)),cl_=cd.filter(Boolean),ct=cl_.length?{total:cl_.reduce((s,c)=>s+c.total,0),gain:cl_.reduce((s,c)=>s+c.gain,0),day:cl_.reduce((s,c)=>s+(c.day||0),0)}:null;
+  const cd=ctos.map(a=>LS.g('hub_'+a.id)),cl_=cd.filter(Boolean),ct=cl_.length?{total:cl_.reduce((s,c)=>s+c.total,0),gain:cl_.reduce((s,c)=>s+c.gain,0),apports:cl_.reduce((s,c)=>s+(c.apports||0),0),day:cl_.reduce((s,c)=>s+(c.day||0),0)}:null;
   const im=D.immo||{},hasIm=D.immo!=null,iv=hasIm?(+im.valeur||0):(cf.immo||0),ia=+im.apport||0,
     bkA=A.filter(a=>a.type==='Compte bancaire'),lvAll=A.filter(a=>a.type==='Livret'),lvA=lvAll.filter(a=>!livClosed(a,D)),lvC=lvAll.length-lvA.length,sb=bkA.reduce((t,a)=>t+bal(a),0),sl=lvA.reduce((t,a)=>t+bal(a),0),
     fin=(p?p.total:0)+(ct?ct.total:0)+(cr?cr.total:0)+de.cur+sb+sl,immoNet=ia+di.paid,immoBrut=iv||(di.n||ia?ia+di.cap:0),
     brut=fin+immoBrut,net=fin+immoNet,net_=cf.mode==='net';
   $('#tot').textContent=eur(net_?net:brut);
   document.querySelectorAll('#sw button').forEach(b=>b.classList.toggle('on',b.dataset.m===(net_?'net':'brut')));
-  $('#totsub').textContent=(p?'':'PEA non chargé (ouvre l’onglet PEA une fois) · ')+(ct?'':'CTO non chargé (ouvre l’onglet CTO une fois) · ')+(!cr&&cd.some(c=>c&&c.cry)?'Crypto non chargée (ouvre l’onglet Crypto une fois) · ':'')+'PEA '+eur(p?p.total:0)+(ct?' · CTO '+eur(ct.total):'')+(cr?' · Crypto '+eur(cr.total):'')+' · Épargne salariale '+eur(de.cur)+(bkA.length?' · Comptes '+eur(sb):'')+(lvA.length?' · Livrets '+eur(sl):'')+(net_?' · Immobilier : apport '+eur(ia)+' + capital remboursé '+eur(di.paid):' · Immobilier '+eur(immoBrut)+(iv?'':' (coût, estimation à saisir dans l’onglet Immobilier)'));
+  $('#totsub').textContent='';
+  {const tg=(p?p.gain:0)+(ct?ct.gain:0)+(cr?cr.gain:0),ta=(p?p.apports||0:0)+(ct?ct.apports||0:0)+(cr?cr.apports||0:0),tp=ta>0?tg/ta*100:null,tr=$('#trend');
+   if(tp==null||!isFinite(tp)){tr.hidden=true}else{const k=tg>=0?'up':'dn';tr.hidden=false;tr.className='tr '+k;tr.innerHTML='<i></i><b>'+(tg<0?'−':'+')+eur(Math.abs(tg))+' · '+(tg<0?'−':'+')+Math.abs(tp).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' %</b>'}}
   const cl=v=>v>0?'up':v<0?'dn':'';
   const pct=v=>v==null||!isFinite(v)?'':`<div class="m"><b class="${cl(v)}">${v>0?'▲':v<0?'▼':'■'} ${v<0?'−':'+'}${Math.abs(v).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} %</b></div>`,
     acct=c=>c?`<div class="v">${eur(c.total)}</div>`+pct(c.apports>0?c.gain/c.apports*100:null):'<div class="m">Pas encore de données</div>',
@@ -364,13 +383,13 @@ function renderHome(){
     if(!o||o.b!==b||o.n!==n){sn[td]={b,n};const ks=Object.keys(sn).sort();while(ks.length>900)delete sn[ks.shift()];LS.s('hub_snap',sn)}}
   const EP=evoPoints(net_,A,D,cf,net_?net:brut);drawEvo(EP);drawTab(EP);
   const tI=todayI(),ai=$('#asof');if(!ai.value||ai.value>tI)ai.value=tI;const ao=ai.value,past=ao<tI;document.body.classList.toggle('past',past);
-  let items=[['PEA','📈',p?p.total:0],['CTO','🏦',ct?ct.total:0],['Crypto','₿',cr?cr.total:0],['Épargne salariale','🎁',de.cur],['Comptes bancaires','🏧',sb],['Livrets','🐖',sl],['Immobilier','🏡',net_?immoNet:immoBrut]];
+  let items=[['PEA','📈',p?p.total:0],['CTO','🏦',ct?ct.total:0],['Crypto','₿',cr?cr.total:0],['Épargne salariale','🎁',de.cur],['Comptes bancaires','🏧',sb],['Livrets','🐖',sl],['Immobilier','🏡',immoNet,iv>0?'Bien estimé à '+eur(iv):'']];
   const asb=$('#asb');
   if(past){const ST=stateAt(ao,A,D,cf,net_),dl=new Date(ao+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});items=ST.items;
-    $('#tot').textContent=eur(ST.total);$('#totsub').textContent='Patrimoine au '+dl+' ('+(net_?'net':'brut')+') · '+ST.items.filter(x=>x[2]>0.5).map(x=>x[0]+' '+eur(x[2])).join(' · ');
-    asb.hidden=false;asb.innerHTML='📅 <b>Vue au '+dl+'</b> : valeurs reconstituées à partir de l’historique des cours, de l’épargne salariale (versements − retraits) et de l’immobilier. Les soldes des comptes bancaires et livrets sont ceux d’aujourd’hui.'}
+    $('#tot').textContent=eur(ST.total);$('#totsub').textContent='Patrimoine au '+dl+' ('+(net_?'net':'brut')+')';$('#trend').hidden=true;
+    asb.hidden=false;asb.innerHTML='📅 <b>Vue au '+dl+'</b>'}
   else asb.hidden=true;
-  drawRep(items,net_);
+  drawRep(items,past?net_:true);
   /* par courtier */
   const G={};A.forEach(a=>{const b=brokerOf(a,A).trim();(G[b]=G[b]||[]).push(a)});
   const val=a=>isBk(a)?bal(a):a.type==='PEA'?(p?p.total:null):a.type==='CTO'?(LS.g('hub_'+a.id)||{}).total:a.type==='Épargne salariale'?(de.n?de.cur:null):a.type==='Crypto'?(cr?cr.total:null):null;
@@ -470,7 +489,7 @@ function renderAccDlg(){const A=DR;
   $('#accl').innerHTML=A.map(a=>`<div class="ar" data-id="${a.id}"><b>${TYI[a.type]} ${esc(a.type)}</b>${delable(a)?' <button type="button" data-del="1" style="float:right;padding:2px 8px">✕</button>':''}
     <input data-f="label" placeholder="Nom du compte${isBk(a)?' (ex. Compte courant)':' (facultatif)'}" value="${esc(a.label)}">
     <input data-f="broker" placeholder="${a.type==='Épargne salariale'?'Gestionnaire (ex. Amundi)':isBk(a)?'Banque (ex. Crédit Agricole)':'Courtier (ex. Boursorama)'}" value="${esc(a.broker)}">
-    ${a.type==='Livret'?`<div class="d" style="margin:4px 0">✓ Solde calculé automatiquement d'après les transferts (onglet Dépenses) et les intérêts reçus (onglet Épargne) ; le livret est clôturé quand son solde revient à 0.</div>`:isBk(a)?(a.type==='Compte bancaire'&&a.initDate?`<div class="d" style="margin:4px 0">✓ Solde initialisé : il se met à jour automatiquement selon les opérations (onglet Dépenses).</div>`:`<input data-f="balance" type="number" inputmode="decimal" step="0.01" placeholder="${a.type==='Compte bancaire'?'Solde de départ (€) — saisi une seule fois':'Solde actuel (€)'}" value="${a.balance!=null&&a.balance!==''?esc(a.balance):''}">`):''}
+    ${a.type==='Livret'?'':isBk(a)?(a.type==='Compte bancaire'&&a.initDate?`<div class="d" style="margin:4px 0">✓ Solde initialisé : il se met à jour automatiquement selon les opérations (onglet Dépenses).</div>`:`<input data-f="balance" type="number" inputmode="decimal" step="0.01" placeholder="${a.type==='Compte bancaire'?'Solde de départ (€) — saisi une seule fois':'Solde actuel (€)'}" value="${a.balance!=null&&a.balance!==''?esc(a.balance):''}">`):''}
     ${a.type==='Crypto'?`<select data-f="inCto">${cryOpts(a,A)}</select>`:''}</div>`).join('')}
 $('#accl').addEventListener('change',e=>{const el=e.target,row=el.closest('.ar');if(!row||!el.dataset.f)return;
   const a=DR.find(x=>x.id===row.dataset.id);if(!a)return;a[el.dataset.f]=el.dataset.f==='balance'?(parseFloat(el.value)||0):el.value.trim();
