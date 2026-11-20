@@ -133,7 +133,7 @@ dialog .hint{color:var(--mut);font-size:12px;margin:6px 0 0}
     <div id="sbcode" hidden><label for="sbc">Code reçu par e-mail</label><input id="sbc" inputmode="numeric" autocomplete="one-time-code"><div class="bar"><button type="button" id="sbok">Valider le code</button></div></div>
     <p class="hint" id="sbst"></p>
     <h3>Comptes et courtiers</h3>
-    <p class="hint">Indique le nom, le courtier ou la banque de chaque compte ; pour les comptes bancaires et livrets, le solde actuel. Un même courtier peut avoir plusieurs CTO ; la crypto peut être rattachée à l'un d'eux (elle n'est alors pas comptée deux fois).</p>
+    <p class="hint">Indique le nom, le courtier ou la banque de chaque compte ; pour les comptes bancaires et livrets, le solde actuel ; pour l'épargne salariale, le montant réel de chaque compte (PEE, PERCO, PEG…). Un même courtier peut avoir plusieurs CTO ; la crypto peut être rattachée à l'un d'eux (elle n'est alors pas comptée deux fois).</p>
     <div id="accl"></div>
     <div class="bar"><button type="button" id="addcto">➕ CTO</button><button type="button" id="addbk">➕ Compte bancaire</button><button type="button" id="addlv">➕ Livret</button></div>
     <h3>Cours en direct</h3>
@@ -476,7 +476,7 @@ setInterval(()=>{if(!document.hidden)syncAll()},60000);
 
 /* ---------- Réglages (Supabase par code e-mail + script Google des cours) ---------- */
 const dlg=$('#dlg'),gv=id=>$(id).value,sbst=t=>$('#sbst').textContent=t;
-function openCfg(){const s=sbs();$('#sbu').value=s.url||'';$('#sbk').value=s.key||'';$('#sbe').value=s.email||'';$('#gurl').value=LS.g('url')||'';$('#sbcode').hidden=true;sbst(s.url&&s.refresh?'Connecté ('+(s.email||'')+')':'Non connecté');DR=accs();$('#cfst').textContent='';renderAccDlg();dlg.showModal()}
+function openCfg(){const s=sbs();$('#sbu').value=s.url||'';$('#sbk').value=s.key||'';$('#sbe').value=s.email||'';$('#gurl').value=LS.g('url')||'';$('#sbcode').hidden=true;sbst(s.url&&s.refresh?'Connecté ('+(s.email||'')+')':'Non connecté');DR=accs();EPD={};$('#cfst').textContent='';renderAccDlg();dlg.showModal()}
 $('#sbsend').onclick=async()=>{LS.s('sb',{...sbs(),url:gv('#sbu').trim().replace(/\/$/,''),key:gv('#sbk').trim(),email:gv('#sbe').trim()});
   try{await api('/auth/v1/otp',{method:'POST',body:JSON.stringify({email:sbs().email,create_user:false})});$('#sbcode').hidden=false;sbst('Code envoyé : vérifie ta boîte mail (et les spams).')}
   catch(e){sbst('Erreur : '+e.message)}};
@@ -488,15 +488,34 @@ function accSave(list,apply=true){LS.s('hub_acc',{list});AM={...AM,t:Date.now()}
 const cryOpts=(a,A)=>'<option value="">Compte crypto dédié (hors CTO)</option>'+A.filter(x=>x.type==='CTO').map(x=>`<option value="${x.id}"${a.inCto===x.id?' selected':''}>Dans le CTO « ${esc(nm(x))} »</option>`).join('');
 let DR=[]; /* brouillon des comptes : modifié dans la fenêtre, enregistré par Appliquer / OK */
 const delable=a=>(a.type==='CTO'&&a.id!=='cto')||isBk(a);
+/* Épargne salariale : le montant réel de chaque compte (PEE, PERCO, PEG…) se saisit uniquement ici, jamais dans le module */
+let EPD={};
+function epPlansHub(Dx){const s=new Set(['PEE','PERCO']),add=p=>{p=String(p||'').trim().toUpperCase();if(p)s.add(p)};
+  (Dx.interessement||[]).forEach(x=>{if(x.date&&String(x.dest||'').startsWith('Placé'))add(x.plan)});(Dx.retraits_epargne||[]).forEach(x=>add(x.plan));
+  (Dx.mouvements_epargne||[]).forEach(x=>add(x.plan||'PERCO'));(Dx.releves_epargne||[]).forEach(x=>add(x.plan));
+  const sv=Dx.solde_epargne||{};Object.keys(sv).forEach(k=>{if(typeof sv[k]==='number'&&k!=='valeur')add(k)});return[...s].sort()}
+function epGestHub(Dx,p,bk){let g='';[...(Dx.mouvements_epargne||[]),...(Dx.releves_epargne||[])].forEach(x=>{if(x.gest&&String(x.plan||'PERCO').trim().toUpperCase()===p)g=x.gest});return g||bk||'Amundi'}
+function epSetHtml(){const Dx=localData()||{},sv=Dx.solde_epargne||{},bk=(DR.find(x=>x.type==='Épargne salariale')||{}).broker||'Amundi';
+  return epPlansHub(Dx).map(p=>{const k=p.toLowerCase(),v=EPD[k]!==undefined?EPD[k]:(typeof sv[k]==='number'?sv[k]:null);
+    return`<label>${esc(p)} · ${esc(epGestHub(Dx,p,bk))} : montant réel sur le compte (€)</label><input data-ep="${esc(k)}" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Montant réel (€)" value="${v==null?'':v}">`}).join('')}
+function epSaveVals(){const ks=Object.keys(EPD);if(!ks.length)return;
+  const Dx=localData()||{version:1,depenses:[],recurrentes:[],salaires:[],prets:[]},o={...(Dx.solde_epargne||{})},T=tdy();let ch=false;
+  ks.forEach(k=>{const v=EPD[k];if(v==null){if(k in o){delete o[k];ch=true}}else if(o[k]!==v){o[k]=v;o.date=T;if(o.dates&&o.dates[k])o.dates={...o.dates,[k]:T};ch=true}});
+  EPD={};if(!ch)return;
+  if(Object.keys(o).some(k=>typeof o[k]==='number'&&k!=='valeur'))delete o.valeur;
+  Dx.solde_epargne=Object.keys(o).some(k=>typeof o[k]==='number')?o:null;
+  localStorage.setItem(DK,JSON.stringify(Dx));M={...M,t:Date.now()};LS.s('hub_dep',M);later(500);
+  document.querySelectorAll('iframe[data-dep]').forEach(f=>{try{f.contentWindow.location.reload()}catch(e){}});if(cur==='home')renderHome()}
 function renderAccDlg(){const A=DR;
   $('#accl').innerHTML=A.map(a=>`<div class="ar" data-id="${a.id}"><b>${TYI[a.type]} ${esc(a.type)}</b>${delable(a)?' <button type="button" data-del="1" style="float:right;padding:2px 8px">✕</button>':''}
     <input data-f="label" placeholder="Nom du compte${isBk(a)?' (ex. Compte courant)':' (facultatif)'}" value="${esc(a.label)}">
     <input data-f="broker" placeholder="${a.type==='Épargne salariale'?'Gestionnaire (ex. Amundi)':isBk(a)?'Banque (ex. Crédit Agricole)':'Courtier (ex. Boursorama)'}" value="${esc(a.broker)}">
     ${a.type==='Livret'?`<select data-f="rate"><option value="net"${livNetI(a)?' selected':''}>Taux net (Livret A, LDDS, LEP…)</option><option value="brut"${livNetI(a)?'':' selected'}>Taux brut (livret bancaire…)</option></select>`:isBk(a)?(a.type==='Compte bancaire'&&a.initDate?`<div class="d" style="margin:4px 0">✓ Solde initialisé : il se met à jour automatiquement selon les opérations (onglet Dépenses).</div>`:`<input data-f="balance" type="number" inputmode="decimal" step="0.01" placeholder="${a.type==='Compte bancaire'?'Solde de départ (€) — saisi une seule fois':'Solde actuel (€)'}" value="${a.balance!=null&&a.balance!==''?esc(a.balance):''}">`):''}
-    ${a.type==='Crypto'?`<select data-f="inCto">${cryOpts(a,A)}</select>`:''}</div>`).join('')}
-$('#accl').addEventListener('change',e=>{const el=e.target,row=el.closest('.ar');if(!row||!el.dataset.f)return;
+    ${a.type==='Crypto'?`<select data-f="inCto">${cryOpts(a,A)}</select>`:''}${a.type==='Épargne salariale'?epSetHtml():''}</div>`).join('')}
+$('#accl').addEventListener('change',e=>{const el=e.target,row=el.closest('.ar');if(row&&el.dataset.ep){const v=parseFloat(el.value);EPD[el.dataset.ep]=v>=0?Math.round(v*100)/100:null;return}if(!row||!el.dataset.f)return;
   const a=DR.find(x=>x.id===row.dataset.id);if(!a)return;a[el.dataset.f]=el.dataset.f==='balance'?(parseFloat(el.value)||0):el.value.trim();
   if(el.dataset.f==='balance'&&a.type==='Compte bancaire'&&!a.initDate)a.initDate=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+  if(el.dataset.f==='broker'&&a.type==='Épargne salariale')renderAccDlg();
   if(el.dataset.f==='label'){const sel=$('#accl select[data-f=inCto]');if(sel){const c=DR.find(x=>x.type==='Crypto');sel.innerHTML=cryOpts(c,DR)}}});
 $('#accl').addEventListener('click',e=>{const b=e.target.closest('[data-del]');if(!b)return;const id=b.closest('.ar').dataset.id,a=DR.find(x=>x.id===id);
   if(!confirm(isBk(a)?'Retirer ce compte de la liste ?':'Retirer ce CTO de la liste ? Ses données restent enregistrées.'))return;
@@ -510,7 +529,7 @@ function cfgSaveAll(apply){
   const u=gv('#gurl').trim();if(u!==(LS.g('url')||''))LS.s('url',u);
   const s=sbs(),su={url:gv('#sbu').trim().replace(/\/$/,''),key:gv('#sbk').trim(),email:gv('#sbe').trim()};
   if(su.url!==(s.url||'')||su.key!==(s.key||'')||su.email!==(s.email||''))LS.s('sb',{...s,...su});
-  accSave(DR.map(a=>({...a})),apply);
+  epSaveVals();accSave(DR.map(a=>({...a})),apply);
   $('#cfst').textContent=apply?'':'✓ Réglages enregistrés (appliqués en cliquant sur OK).'}
 $('#cfap').onclick=()=>cfgSaveAll(false);
 $('#cfok').onclick=()=>{cfgSaveAll(true);dlg.close()};

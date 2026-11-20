@@ -1022,7 +1022,7 @@ function vImmo(pc,crd,cap0,nb){
  <div class="dst">📈 Patrimoine</div><div class="mcols mc3">${mt("Capital déjà remboursé",eur(pc),"vert")}${mt("Patrimoine immo net",eur(app+pc),"bleu")}${val>0?mt("Valeur − restant dû",eur(val-crd),"orange"):""}</div>
  ${kLoc}
  <button type="button" class="sec" id="imEd" style="width:100%;margin-top:14px">✏️ Modifier le bien (valeur, apport${loc?", loyers":""}…)</button>
- `,"margin-top:0")+addP}
+ `,"margin-top:0")}
 document.addEventListener("change",e=>{if(!/^im(Val|App|Type|Nom|Loy|Chg|Tax)$/.test(e.target.id||""))return;const g=id=>$("#"+id),n=id=>g(id)?Math.max(0,parseFloat(g(id).value)||0):0,o={...(D.immo||{})};
  o.valeur=n("imVal");o.apport=n("imApp");o.type=g("imType").value;o.nom=g("imNom").value.trim();if(g("imLoy")){o.loyer=n("imLoy");o.charges=n("imChg");o.taxe=n("imTax")}
  UI.immoEdit=true;D.immo=o;save();render()});
@@ -1147,23 +1147,23 @@ function vMvt(){
  ${card("int-yr","Versements par année",chart)}
  <div class="d" style="margin:8px 4px">Pour voir ou modifier chaque opération, ouvre l'onglet Historique.</div>`}
 function planStats(){
- const all=(D.interessement||[]).filter(s=>s.date),isP=s=>String(s.dest||"").startsWith("Placé"),pl=all.filter(isP),rt=D.retraits_epargne||[],sv=D.solde_epargne||null,keys=EPF?[EPF]:["PEE","PERCO"];
+ const all=(D.interessement||[]).filter(s=>s.date),isP=s=>String(s.dest||"").startsWith("Placé"),pl=all.filter(isP),rt=D.retraits_epargne||[],sv=D.solde_epargne||null,keys=EPF.length?[...EPF]:["PEE","PERCO"];
  [...pl,...rt].forEach(x=>{const k=x.plan||"";if(!keys.includes(k))keys.push(k)});
  const P=keys.map(k=>{const placed=sum(pl.filter(s=>(s.plan||"")===k),"montant"),ret=sum(rt.filter(r=>(r.plan||"")===k),"montant"),base=Math.max(0,placed-ret),ent=k&&sv&&sv[k.toLowerCase()]!=null&&typeof sv[k.toLowerCase()]==="number"?sv[k.toLowerCase()]:null;
   return{k,lb:k||"Plan non précisé",placed,ret,base,ent,val:ent!=null?ent:base}});
  const per=!!(sv&&(sv.pee!=null||sv.perco!=null||sv.peg!=null)),legacy=sv&&!per&&sv.valeur>=0?sv.valeur:null;
  return{all,pl,P,sv,per,legacy,tot:legacy!=null?legacy:P.reduce((t,x)=>t+x.val,0),tp:sum(pl,"montant"),tr:sum(rt,"montant"),tc:sum(all.filter(s=>!isP(s)),"montant"),anyEnt:per||legacy!=null}}
-const planInput=()=>planParts().A,planTable=()=>planParts().B;
+const planInput=()=>"",planTable=()=>planParts().B;
 function planParts(){
  const S=planStats();if(!S.all.length)return{A:"",B:""};
- const pc=S.P.filter(x=>x.k||x.placed||x.ret),PK=EPF?[EPF]:["PEE","PERCO",...(S.P.some(z=>z.k==="PEG"&&(z.placed||z.ret||z.ent!=null))?["PEG"]:[])],
+ const pc=S.P.filter(x=>x.k||x.placed||x.ret),PK=EPF.length?[...EPF]:["PEE","PERCO",...(S.P.some(z=>z.k==="PEG"&&(z.placed||z.ret||z.ent!=null))?["PEG"]:[])],
   inp=PK.map(k=>{const x=S.P.find(z=>z.k===k)||{ent:null,base:0};return`<label>${k} : montant réel sur ton compte (€)</label><input id="cpt${k}" type="number" step="0.01" min="0" inputmode="decimal" value="${x.ent??""}" placeholder="${Math.round(x.base)}">`}).join("");
  const tbl=`<div class="tw"><table class="rc"><thead><tr><th>Plan</th><th>Placé</th><th>Retiré</th><th>Sur le compte</th><th>Plus-value</th></tr></thead><tbody>${pc.map(x=>{const g=x.ent!=null?x.val+x.ret-x.placed:null;return`<tr><th>${esc(x.lb)}</th><td>${eur(x.placed)}</td><td class="neg">${x.ret?"−"+eur(x.ret):"—"}</td><td><b>${eur(x.val)}</b></td><td class="${g==null?"":g>=0?"pos":"neg"}">${g==null?"—":eur(g)}</td></tr>`}).join("")}</tbody></table></div>`;
  return{A:card("cpt-in","💰 Valeur actuelle de chaque plan",inp+`<div class="d" style="margin-top:6px">${S.sv&&S.sv.date?"Saisi le "+fdy(S.sv.date)+". ":""}Sans montant saisi pour un plan : versements placés − retraits.${S.legacy!=null?` Montant global saisi auparavant : ${eur2(S.legacy)} (tous plans confondus) : saisis-le maintenant par plan, il sera remplacé.`:""}</div>`),B:card("cpt-p","Par plan ("+PK.join(" / ")+")",tbl)}}
 document.addEventListener("change",e=>{const id=e.target.id;if(id!=="cptPEE"&&id!=="cptPERCO"&&id!=="cptPEG")return;const k=id.slice(3).toLowerCase(),v=parseFloat(e.target.value),o={...(D.solde_epargne||{})};
  if(o.pee==null&&o.perco==null&&o.peg==null)delete o.valeur;if(v>=0)o[k]=Math.round(v*100)/100;else delete o[k];o.date=TODAY();if(o.dates&&o.dates[k])o.dates={...o.dates,[k]:TODAY()};D.solde_epargne=(o.pee!=null||o.perco!=null||o.peg!=null)?o:null;save();render()});
 /* ---------- Nouveaux onglets : Recherche, Santé, Impôts ---------- */
-let EPF="";const UI={epp:"all",sq:"",scat:"all",ssens:"Dépense",syr:"all",hAct:"gen",hPrix:null,hQty:1,fy:null,iy:"all",hs:"all",hPr:"o",hS:"n",hMon:null,hg:"all",gd:"",selMode:false,sel:new Set(),gt:"",gn:"",gp:"",addG:"",sg:""};
+let EPF=[];const UI={epg:"all",epp:"all",sq:"",scat:"all",ssens:"Dépense",syr:"all",hAct:"gen",hPrix:null,hQty:1,fy:null,iy:"all",hs:"all",hPr:"o",hS:"n",hMon:null,hg:"all",gd:"",selMode:false,sel:new Set(),gt:"",gn:"",gp:"",addG:"",sg:""};
 const nrm=s=>String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 const fp=v=>(+v.toFixed(1)+"").replace(".",",")+" %";
 const opt=(v,l,cur)=>`<option value="${esc(v)}" ${String(v)===String(cur)?"selected":""}>${esc(l)}</option>`;
@@ -1310,17 +1310,23 @@ function epPlans(){const s=new Set(),add=p=>{p=String(p||"").trim().toUpperCase(
  (D.interessement||[]).forEach(x=>{if(x.date&&String(x.dest||"").startsWith("Placé"))add(x.plan)});(D.retraits_epargne||[]).forEach(x=>add(x.plan));
  (D.mouvements_epargne||[]).forEach(x=>add(x.plan||"PERCO"));(D.releves_epargne||[]).forEach(x=>add(x.plan));
  const sv=D.solde_epargne||{};["pee","perco","peg"].forEach(k=>{if(typeof sv[k]==="number")add(k)});return[...s].sort()}
-function epView(p){const k=p.toLowerCase(),sv=D.solde_epargne,s2=sv&&typeof sv[k]==="number"?{[k]:sv[k],date:sv.date,dates:sv.dates}:null;
- return{...D,interessement:(D.interessement||[]).map(x=>epUp(x)===p?x:{...x,date:"",montant:0}),retraits_epargne:(D.retraits_epargne||[]).map(x=>epUp(x)===p?x:{...x,date:"",montant:0}),
-  mouvements_epargne:(D.mouvements_epargne||[]).map((x,i)=>({...x,_i:i})).filter(x=>epUp(x,"PERCO")===p),releves_epargne:(D.releves_epargne||[]).filter(x=>epUp(x,"PERCO")===p),solde_epargne:s2}}
-function epSel(pl){return`<div class="card" style="margin-top:0"><div class="sh">🎁 Quel compte afficher ?</div><select id="epSel"><option value="all">Tous les comptes (total)</option>${pl.map(p=>`<option value="${p}"${p===UI.epp?" selected":""}>${p}</option>`).join("")}</select></div>`}
-try{UI.epp=localStorage.getItem("hub_ep_sel")||"all"}catch(e){}
-document.addEventListener("change",e=>{if(e.target.id==="epSel"){UI.epp=e.target.value;try{localStorage.setItem("hub_ep_sel",UI.epp)}catch(x){}render()}});
+function epBroker(){try{return(((JSON.parse(localStorage.getItem("hub_acc"))||{}).list||[]).find(a=>a.type==="Épargne salariale")||{}).broker||"Amundi"}catch(e){return"Amundi"}}
+function epGest(p){let g="";[...(D.mouvements_epargne||[]),...(D.releves_epargne||[])].forEach(x=>{if(x.gest&&epUp(x,"PERCO")===p)g=x.gest});return g||epBroker()}
+function epView(P){const S=new Set(P),sv=D.solde_epargne;let s2=null;if(sv){const o={};P.forEach(p=>{const k=p.toLowerCase();if(typeof sv[k]==="number")o[k]=sv[k]});if(Object.keys(o).length)s2={...o,date:sv.date,dates:sv.dates}}
+ return{...D,interessement:(D.interessement||[]).map(x=>S.has(epUp(x))?x:{...x,date:"",montant:0}),retraits_epargne:(D.retraits_epargne||[]).map(x=>S.has(epUp(x))?x:{...x,date:"",montant:0}),
+  mouvements_epargne:(D.mouvements_epargne||[]).map((x,i)=>({...x,_i:i})).filter(x=>S.has(epUp(x,"PERCO"))),releves_epargne:(D.releves_epargne||[]).filter(x=>S.has(epUp(x,"PERCO"))),solde_epargne:s2}}
+function epSel(pl){const G=[...new Set(pl.map(epGest))].sort(),g=UI.epg,ps=g==="all"?[]:pl.filter(p=>epGest(p)===g);
+ return`<div class="card" style="margin-top:0"><div class="sh">🎁 Quel compte afficher ?</div><label>Gestionnaire</label><select id="epGest"><option value="all">Tous les gestionnaires</option>${G.map(x=>opt(x,x,g)).join("")}</select>${g!=="all"?`<label>Compte</label><select id="epSel"><option value="all">Tous les comptes de ${esc(g)}</option>${ps.map(p=>opt(p,p,UI.epp)).join("")}</select>`:""}</div>`}
+try{UI.epg=localStorage.getItem("hub_ep_gest")||"all";UI.epp=localStorage.getItem("hub_ep_sel")||"all"}catch(e){}
+const epSave=()=>{try{localStorage.setItem("hub_ep_gest",UI.epg);localStorage.setItem("hub_ep_sel",UI.epp)}catch(x){}};
+document.addEventListener("change",e=>{if(e.target.id==="epGest"){UI.epg=e.target.value;UI.epp="all";epSave();render()}else if(e.target.id==="epSel"){UI.epp=e.target.value;epSave();render()}});
 function render(){hideTip();const t=TABS.find(x=>x[0]===tab);
  let html;const pl=(MOD==="epargne"||!MOD)&&["ov","pos","cla","int","ehs"].includes(tab)?epPlans():[];
- if(pl.length>1){if(UI.epp!=="all"&&!pl.includes(UI.epp))UI.epp="all";
-  if(UI.epp!=="all"){const D0=D;D=epView(UI.epp);EPF=UI.epp;try{html=t[3]()}finally{D=D0;EPF=""}}else html=t[3]();
-  html=epSel(pl)+html}else html=t[3]();
+ if(pl.length>1){const G=[...new Set(pl.map(epGest))];if(UI.epg!=="all"&&!G.includes(UI.epg)){UI.epg="all";UI.epp="all"}
+   const pg=UI.epg==="all"?pl:pl.filter(p=>epGest(p)===UI.epg);if(UI.epp!=="all"&&!pg.includes(UI.epp))UI.epp="all";
+   const sel=UI.epg==="all"?null:UI.epp==="all"?pg:[UI.epp];
+   if(sel){const D0=D;D=epView(sel);EPF=sel;try{html=t[3]()}finally{D=D0;EPF=[]}}else html=t[3]();
+   html=epSel(pl)+html}else html=t[3]();
  $("#app").innerHTML=html;
  const nv=$("#nav"),sl=nv.scrollLeft;nv.style.display=TIDS.length>1?"":"none";nv.innerHTML=TABS.filter(x=>TIDS.includes(x[0])).map(x=>`<button data-t="${x[0]}" class="${x[0]===tab?"on":""}">${x[1]} ${x[2]}</button>`).join("");
  const on=nv.querySelector(".on");if(on)nv.scrollLeft=on.offsetLeft-(nv.clientWidth-on.offsetWidth)/2;else nv.scrollLeft=sl;
@@ -1793,7 +1799,7 @@ const fN=(v,d=2)=>Number(v).toLocaleString("fr-FR",{minimumFractionDigits:d,maxi
  pPx=v=>{if(v==null||isNaN(v))return"N/A";const t=v.toFixed(4);return fN(v,t.endsWith("00")?2:t.endsWith("0")?3:4)+" €"},pQ=q=>q%1===0?fN(q,0):fN(q,4).replace(/0+$/,"").replace(/,$/,""),
  perfAnn=(p,j)=>{if(p==null||isNaN(p)||j==null||j<30)return NaN;const g=1+p/100;return g<=0?-100:(Math.pow(g,365/j)-1)*100},
  perfCell=v=>{const t=String(v);return t.startsWith("▲")?"color:#16a34a;font-weight:700;":t.startsWith("▼")?"color:#dc2626;font-weight:700;":"color:var(--mut);font-weight:700;"};
-const OMT={};const OMT0={"Performance Globale":"% = gain total (valeur du compte + retraits − versements placés) ÷ versements placés. Demande la valeur réelle des comptes (en bas de la Vue d'ensemble ou relevés PDF).","Performance Annuelle Moyenne":"% = (1 + performance globale) ^ (1 ÷ années depuis le premier versement) − 1, soit un taux annuel composé (calculé après 3 mois).","Plus-Value Latente":"% = plus-value latente ÷ capital investi dans les fonds encore détenus (fonds à historique complet uniquement).","Plus-Value Actée":"% = plus-value actée lors des ventes et arbitrages ÷ valeur actuelle du compte.","Abondement Reçu":"% = abondement de l'employeur ÷ total des versements placés.","Intéressement & Participation":"% = intéressement + participation + PPV placés ÷ total des versements placés."};
+const OMT={};const OMT0={"Performance Globale":"% = gain total (valeur du compte + retraits − versements placés) ÷ versements placés. Demande la valeur réelle des comptes (⚙️ Réglages ou relevés PDF).","Performance Annuelle Moyenne":"% = (1 + performance globale) ^ (1 ÷ années depuis le premier versement) − 1, soit un taux annuel composé (calculé après 3 mois).","Plus-Value Latente":"% = plus-value latente ÷ capital investi dans les fonds encore détenus (fonds à historique complet uniquement).","Plus-Value Actée":"% = plus-value actée lors des ventes et arbitrages ÷ valeur actuelle du compte.","Abondement Reçu":"% = abondement de l'employeur ÷ total des versements placés.","Intéressement & Participation":"% = intéressement + participation + PPV placés ÷ total des versements placés."};
 function omt(label,val,delta,sec,inv){let d="";if(delta!=null){const neg=delta[0]=="-",good=inv?neg:!neg;d=`<div class="mtd ${good?"g":"r"}">${neg?OARD:OARU}<span>${delta}</span></div>`}
  const tp=OMT[label];return`<div class="mtr ${sec}${tp?" tp":""}"${tp?` data-mt="${esc(tp)}"`:""}><div class="mtl"><p>${label}</p></div><div class="mtv">${val}</div>${d}</div>`}
 let OMB=null;const ombClose=()=>{if(OMB){OMB.remove();OMB=null}};
@@ -1834,7 +1840,7 @@ function vOv(){
  <div class="mcols mc2">${omt("Plus-Value Latente",lat!=null?oGE(lat):"N/A",pl!=null?oDP(pl):null,"gain")}${omt("Plus-Value Actée",oGE(real),pa!=null?oDP(pa):null,"gain")}</div>
  <div class="mcols mc2">${omt("Abondement Reçu",oGE(ab),ap>0?oDP(ab/ap*100):null,"gain")}${omt("Intéressement & Participation",oGE(ip),ap>0?oDP(ip/ap*100):null,"gain")}</div>
  </div></div></details>
- ${!hasV?`<div class="ovnote" style="margin-top:12px">Saisis la valeur réelle de tes comptes (en bas de cette page) ou lis un relevé PDF pour obtenir les performances.</div>`:""}
+ ${!hasV?`<div class="ovnote" style="margin-top:12px">Renseigne la valeur réelle de tes comptes dans ⚙️ Réglages ou lis un relevé PDF pour obtenir les performances.</div>`:""}
  ${P.inc.length?`<div class="ovnote" style="margin-top:12px">⚠ Historique incomplet pour ${P.inc.map(r=>esc(supNm(r.nom))).join(", ")} : plus-value latente et montant investi sont calculés sans ces fonds. Importe les relevés manquants pour les compléter.</div>`:""}
  ${partNote(P)}
  ${P.sn?`<div class="d" style="margin:8px 4px">Dernière valorisation de fonds : ${fdy(P.sn.date)}.</div>`:""}
@@ -1889,7 +1895,7 @@ function openMvt(i=-1){mvIdx=i;$("#frmMv").reset();const m=i>=0?(D.mouvements_ep
  $("#mvFonds").innerHTML=[...new Set((D.mouvements_epargne||[]).map(x=>x.fond))].map(f=>`<option value="${esc(f)}">`).join("");
  $("#mvTitle").textContent=m?"Modifier le mouvement":"Nouveau mouvement de fonds";
  if(m){$("#mvDate").value=m.date||"";$("#mvSens").value=m.sens==="achat"?"achat":"rachat";$("#mvFond").value=m.fond||"";$("#mvQte").value=m.qte||"";$("#mvPrix").value=m.prix||"";$("#mvMt").value=m.montant||"";$("#mvPlan").value=m.plan||"PERCO";$("#mvDiv").checked=!!m.div}
- else{$("#mvDate").value=TODAY();$("#mvPlan").value=EPF||"PERCO"}
+ else{$("#mvDate").value=TODAY();$("#mvPlan").value=UI.epg!=="all"&&UI.epp!=="all"?UI.epp:"PERCO"}
  $("#mvDiv").parentElement.classList.toggle("hide",$("#mvSens").value!=="achat");$("#mvDel").classList.toggle("hide",!m);dlgMv.showModal()}
 $("#mvSens").onchange=()=>$("#mvDiv").parentElement.classList.toggle("hide",$("#mvSens").value!=="achat");
 ["#mvQte","#mvPrix"].forEach(s=>$(s).oninput=()=>{const q=parseFloat($("#mvQte").value),p=parseFloat($("#mvPrix").value);if(q>0&&p>0)$("#mvMt").value=(Math.round(q*p*100)/100).toFixed(2)});
