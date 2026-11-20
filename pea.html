@@ -735,7 +735,7 @@ function drawPerf(v){
       ctx.fillText(tx,p=='tc'?px:px+5,p=='tr'?py-10:p=='br'?py+10:p=='tc'?py-12:py)});ctx.restore()}};
   const tip={enabled:false,external:({chart,tooltip:t})=>{const e=tipEl();if(t.opacity===0||!t.dataPoints||!t.dataPoints.length){e.style.opacity=0;return}
     const i=t.dataPoints[0].dataIndex,x=ds[0].data[i].x;
-    e.innerHTML=`<div style="margin-bottom:2px">${fdd(x)}</div>`+ds.map(d=>{const y=d.data[i].y,c=y>=0?'#4ade80':'#f87171';return`<span style="color:${c}"><b>${esc(d.label)}</b><br>Performance : ${pPct(y)}</span>`}).join('<br>');
+    e.innerHTML=`<div style="margin-bottom:2px">${fdd(x)}</div>`+ds.map(d=>{const y=d.data[i].y,c=y>=0?'#4ade80':'#f87171';return`<span style="color:${c}"><b>${esc(d.label)}</b><br>${d.label=='Mon Portefeuille'?'Valorisation : '+pEur(i<keep.length?V[sub[keep[i]]]:V[lastS])+'<br>':''}Performance : ${pPct(y)}</span>`}).join('<br>');
     const r=chart.canvas.getBoundingClientRect(),w=e.offsetWidth,h=e.offsetHeight;let px=r.left+scrollX+t.caretX+14,py=r.top+scrollY+t.caretY-h/2;
     if(px+w>scrollX+innerWidth-4)px=r.left+scrollX+t.caretX-w-14;px=Math.max(scrollX+4,px);py=Math.max(scrollY+4,py);e.style.transform=`translate(${px}px,${py}px)`;e.style.opacity=1}};
   chart('c5',{type:'line',data:{datasets:ds},plugins:[plug],options:{maintainAspectRatio:false,animation:false,interaction:{intersect:false,mode:'index',axis:'x'},layout:{padding:{right:72,top:10,bottom:8,left:8}},

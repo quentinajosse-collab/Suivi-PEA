@@ -159,16 +159,16 @@ const MODS0=[
  {id:'salaire',ic:'💼',lb:'Salaire',src:'depenses.html?m=salaire'},
  {id:'pea',ic:'📈',lb:'PEA',src:'pea.html'},
  '@cto',
- {id:'epargne',ic:'🎁',lb:'Épargne salariale',src:'depenses.html?m=epargne'},
- {id:'livrets',ic:'🐖',lb:'Épargne',src:'depenses.html?m=livrets'},
- {id:'immo',ic:'🏡',lb:'Immobilier',src:'depenses.html?m=immo'},
  {id:'crypto',ic:'₿',lb:'Crypto'},
+ {id:'livrets',ic:'🐖',lb:'Épargne',src:'depenses.html?m=livrets'},
+ {id:'epargne',ic:'🎁',lb:'Épargne salariale',src:'depenses.html?m=epargne'},
+ {id:'immo',ic:'🏡',lb:'Immobilier',src:'depenses.html?m=immo'},
  {id:'sante',ic:'🩺',lb:'Santé',src:'depenses.html?m=sante'}
 ];
 /* ---------- Comptes & courtiers (liste modifiable dans ⚙️ Réglages, synchronisée via Supabase, clé « hub_accounts ») ---------- */
 const ACCD=[{id:'pea',type:'PEA',broker:'',label:''},{id:'cto',type:'CTO',broker:'',label:''},{id:'epargne',type:'Épargne salariale',broker:'',label:''},{id:'crypto',type:'Crypto',broker:'',label:'',inCto:''}];
 const EXTRA=['Compte bancaire','Livret'];
-const TYI={'PEA':'📈','CTO':'🏦','Épargne salariale':'🎁','Crypto':'₿','Compte bancaire':'🏧','Livret':'🐖'},TYR=['PEA','CTO','Épargne salariale','Crypto','Compte bancaire','Livret'];
+const TYI={'PEA':'📈','CTO':'🏦','Épargne salariale':'🎁','Crypto':'₿','Compte bancaire':'🏧','Livret':'🐖'},TYR=['PEA','CTO','Crypto','Épargne salariale','Compte bancaire','Livret'];
 const isBk=a=>EXTRA.includes(a.type);
 /* Livret : solde = transferts reçus - transferts émis + intérêts crédités (calculé automatiquement) ; sans aucun mouvement, on garde le solde saisi dans les réglages */
 const tdy=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
@@ -253,14 +253,16 @@ function epargne(D){const L=(D.interessement||[]).filter(s=>s.date),P=s=>String(
   const per=!!(sv&&(sv.pee!=null||sv.perco!=null||sv.peg!=null)),leg=!!(sv&&!per&&sv.valeur>=0);
   return{n:L.length,tp,tc,tr,has:per||leg,plans,cur:leg?sv.valeur:per?Object.values(plans).reduce((a,v)=>a+v,0):Math.max(0,tp-tr)}}
 /* Livrets : intérêts en cours (même calcul que le module Épargne : relevé / taux / intérêts crédités) */
+const livNetI=a=>a.rate?a.rate==='net':/livret\s*a\b|\bldds?\b|d[ée]veloppement durable|\blep\b|[ée]pargne populaire|livret jeune|livret bleu/i.test(a.label||'');
 function livAcc(D,a){const T=tdy(),y=T.slice(0,4),
   L=(D.livrets_lignes||[]).filter(l=>l.acc===a.id&&l.date).sort((x,z)=>x.date<z.date?-1:x.date>z.date?1:0),MV=[...new Set(livMv(a,D).map(x=>x[0]))],
   tx=d=>{let t=null;L.forEach(l=>{if(l.type==='taux'&&l.date<=d)t=l.v});if(t==null){const f=L.find(l=>l.type==='taux');t=f?f.v:null}return t},
   dAdd=(d,n)=>{const x=new Date(d+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10)},
   qStart=d=>d.slice(0,8)+(+d.slice(8)<=15?'01':'16'),
+  txq=(qs,qe)=>{if(!L.some(l=>l.type==='taux'&&l.date>qs&&l.date<=qe))return tx(qs);let s=0,n=0;for(let x=qs;x<=qe;x=dAdd(x,1)){const t=tx(x);if(t!=null){s+=t;n++}}return n?s/n:null},
   quinz=Y=>{const o=[];for(let m=1;m<=12;m++){const mm=String(m).padStart(2,'0'),last=new Date(Date.UTC(Y,m,0)).getUTCDate();o.push([Y+'-'+mm+'-01',Y+'-'+mm+'-15'],[Y+'-'+mm+'-16',Y+'-'+mm+'-'+String(last).padStart(2,'0')])}return o},
   qb=(qs,qe)=>{let m=livBal(a,D,dAdd(qs,-1));MV.forEach(d=>{if(d>=qs&&d<=qe)m=Math.min(m,livBal(a,D,d))});return Math.max(0,Math.floor(m+1e-9))},
-  sumQ=(fq,td)=>{let s=0;for(let Y=+fq.slice(0,4);Y<=+td.slice(0,4);Y++)quinz(Y).forEach(([qs,qe])=>{if(qs<fq||qe>td)return;const t=tx(qs);if(t!=null)s+=qb(qs,qe)*t/100/24});return s},
+  sumQ=(fq,td)=>{let s=0;for(let Y=+fq.slice(0,4);Y<=+td.slice(0,4);Y++)quinz(Y).forEach(([qs,qe])=>{if(qs<fq||qe>td)return;const t=txq(qs,qe);if(t!=null)s+=qb(qs,qe)*t/100/24});return s},
   cr=L.filter(l=>l.type==='cred'&&l.date<=T).pop(),c0=cr&&dAdd(cr.date,1)>y+'-01-01'?dAdd(cr.date,1):y+'-01-01',
   rel=L.filter(l=>l.type==='rel'&&l.date<=T&&l.date>=c0).pop(),taux=tx(T);
   return{taux,acc:taux==null?0:(rel?rel.v:0)+sumQ(rel?qStart(rel.date):c0,dAdd(T,-1))}}
@@ -371,11 +373,11 @@ function renderHome(){
 
    ['pea','📈','PEA',acct(p)],
    ...ctos.map((a,i)=>ctoTile(a,cd[i])),
-   ['epargne','🎁','Épargne salariale',de.n?`<div class="v">${eur(de.cur)}</div>`+((de.plans.PEE||de.plans.PERCO||de.plans.PEG)?`<div class="m">${['PEE','PERCO','PEG'].filter(k=>k!=='PEG'||de.plans.PEG!=null).map(k=>k+' '+eur(de.plans[k]||0)).join(' · ')}</div>`:'')+pct(de.has&&de.tp>0?(de.cur+de.tr-de.tp)/de.tp*100:null):'<div class="m">Aucun versement saisi</div>'],
+   ['crypto','₿','Crypto',acct(cr)],
    ...(bkA.length?[['depenses','🏧','Comptes bancaires',`<div class="v">${eur(sb)}</div>`+bkA.map(a=>`<div class="m">${esc(nm(a))}${brokerOf(a,A)?' · '+esc(brokerOf(a,A)):''} : <b>${eur(bal(a))}</b></div>`).join('')]]:[]),
    ...(lvAll.length?[['livrets','🐖','Livrets',`<div class="v">${eur(sl)}</div>`+(()=>{const li=lvA.map(a=>livAcc(D,a)),ok=li.some(x=>x.taux!=null),ti=li.reduce((t,x)=>t+x.acc,0);return ok?`<div class="m">Intérêts en cours : <b class="up">+${ti.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €</b></div>`:''})()+lvA.map(a=>`<div class="m">${esc(nm(a))}${brokerOf(a,A)?' · '+esc(brokerOf(a,A)):''} : <b>${eur(bal(a))}</b></div>`).join('')+(lvC?`<div class="m">${lvC} livret${lvC>1?'s':''} clôturé${lvC>1?'s':''} (solde à 0)</div>`:'')]]:[]),
+   ['epargne','🎁','Épargne salariale',de.n?`<div class="v">${eur(de.cur)}</div>`+((de.plans.PEE||de.plans.PERCO||de.plans.PEG)?`<div class="m">${['PEE','PERCO','PEG'].filter(k=>k!=='PEG'||de.plans.PEG!=null).map(k=>k+' '+eur(de.plans[k]||0)).join(' · ')}</div>`:'')+pct(de.has&&de.tp>0?(de.cur+de.tr-de.tp)/de.tp*100:null):'<div class="m">Aucun versement saisi</div>'],
    ['immo','🏡',im.nom?esc(im.nom):'Immobilier',(di.n||iv||ia)?`<div class="v">${eur(iv||immoBrut)}</div>`+(im.type?`<div class="m">${esc(im.type)}${+im.loyer>0?' · loyers '+eur(+im.loyer)+'/mois':''}</div>`:'')+(imR==null?(iv?'':'<div class="m">Valeur estimée à saisir</div>'):pct(imR)):'<div class="m">Aucun bien ni prêt saisi</div>'],
-   ['crypto','₿','Crypto',acct(cr)],
    ];
   $('#tiles').innerHTML=T.map(([id,ic,t,b])=>`<button class="t${b.includes('À venir')?' soon':''}" data-go="${id}"><h3>${ic} ${t}</h3>${b}</button>`).join('');
   /* instantané du jour (points réels du graphique) */
@@ -489,7 +491,7 @@ function renderAccDlg(){const A=DR;
   $('#accl').innerHTML=A.map(a=>`<div class="ar" data-id="${a.id}"><b>${TYI[a.type]} ${esc(a.type)}</b>${delable(a)?' <button type="button" data-del="1" style="float:right;padding:2px 8px">✕</button>':''}
     <input data-f="label" placeholder="Nom du compte${isBk(a)?' (ex. Compte courant)':' (facultatif)'}" value="${esc(a.label)}">
     <input data-f="broker" placeholder="${a.type==='Épargne salariale'?'Gestionnaire (ex. Amundi)':isBk(a)?'Banque (ex. Crédit Agricole)':'Courtier (ex. Boursorama)'}" value="${esc(a.broker)}">
-    ${a.type==='Livret'?'':isBk(a)?(a.type==='Compte bancaire'&&a.initDate?`<div class="d" style="margin:4px 0">✓ Solde initialisé : il se met à jour automatiquement selon les opérations (onglet Dépenses).</div>`:`<input data-f="balance" type="number" inputmode="decimal" step="0.01" placeholder="${a.type==='Compte bancaire'?'Solde de départ (€) — saisi une seule fois':'Solde actuel (€)'}" value="${a.balance!=null&&a.balance!==''?esc(a.balance):''}">`):''}
+    ${a.type==='Livret'?`<select data-f="rate"><option value="net"${livNetI(a)?' selected':''}>Taux net (Livret A, LDDS, LEP…)</option><option value="brut"${livNetI(a)?'':' selected'}>Taux brut (livret bancaire…)</option></select>`:isBk(a)?(a.type==='Compte bancaire'&&a.initDate?`<div class="d" style="margin:4px 0">✓ Solde initialisé : il se met à jour automatiquement selon les opérations (onglet Dépenses).</div>`:`<input data-f="balance" type="number" inputmode="decimal" step="0.01" placeholder="${a.type==='Compte bancaire'?'Solde de départ (€) — saisi une seule fois':'Solde actuel (€)'}" value="${a.balance!=null&&a.balance!==''?esc(a.balance):''}">`):''}
     ${a.type==='Crypto'?`<select data-f="inCto">${cryOpts(a,A)}</select>`:''}</div>`).join('')}
 $('#accl').addEventListener('change',e=>{const el=e.target,row=el.closest('.ar');if(!row||!el.dataset.f)return;
   const a=DR.find(x=>x.id===row.dataset.id);if(!a)return;a[el.dataset.f]=el.dataset.f==='balance'?(parseFloat(el.value)||0):el.value.trim();
