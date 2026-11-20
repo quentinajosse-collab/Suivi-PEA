@@ -243,10 +243,10 @@ button.dg{color:var(--dn)}
 .msg{background:rgba(255,227,18,.14);color:#7a5b00;border-radius:10px;padding:10px 14px;font-size:14px;margin:8px 0}
 @media(prefers-color-scheme:dark){.msg{color:#fde68a}}
 .tw{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:14px}
-table{border-collapse:collapse;width:100%;min-width:520px}
-th,td{padding:11px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap;font-size:14px}
+table{border-collapse:collapse;width:100%}
+th,td{padding:6px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap;font-size:14px;line-height:1.3}
 th{color:var(--mute);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em;cursor:pointer;user-select:none;background:var(--alt);position:sticky;top:0}
-th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:inherit}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:inherit;max-width:52vw;overflow:hidden;text-overflow:ellipsis}
 td:first-child{background:var(--card)}
 tbody tr{cursor:pointer}
 tbody tr:hover td{background:color-mix(in srgb,var(--acc) 8%,var(--card))}
@@ -271,7 +271,7 @@ label{display:block;font-size:12px;color:var(--mute);margin:10px 0 4px}
 .cust label{margin:0 0 3px}
 input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
 .cust input{width:auto}
-#cc{position:relative;height:300px;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+#cc{position:relative;height:300px;touch-action:none;user-select:none;-webkit-user-select:none}
 #cc svg{width:100%;height:100%;display:block}
 #tip{position:absolute;pointer-events:none;display:none;background:#0f172a;color:#fff;border-radius:8px;padding:7px 10px;font-size:12.5px;line-height:1.45;white-space:nowrap;z-index:5;box-shadow:0 6px 18px rgba(15,23,42,.3)}
 #tip b{font-size:14px}
@@ -301,7 +301,6 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
   <h2 id="et" style="margin:0 0 4px;font-size:1.1rem">Ajouter une valeur</h2>
   <label>Nom</label><input id="en" autocomplete="off" placeholder="Ex : LVMH">
   <label>Ticker (Yahoo Finance)</label><input id="etk" autocomplete="off" autocapitalize="characters" placeholder="Ex : MC.PA, AAPL, BTC-EUR">
-  <label>Zone d'achat (€) — facultatif</label><input id="ez" type="number" step="0.01" min="0" inputmode="decimal">
   <div class="msg" id="eerr" hidden></div>
   <div class="bar" style="justify-content:space-between"><button class="dg" id="edel" hidden>🗑 Supprimer</button><span style="flex:1"></span><button id="ecn">Annuler</button><button class="pri" id="eok">Enregistrer</button></div>
 </dialog>
@@ -322,7 +321,7 @@ const URL_=()=>LS.g('url')||'';
 const qs=a=>{const u=URL_();return u+(u.includes('?')?'&':'?')+a};
 
 /* ---------- Données ---------- */
-let W=LS.g('wl_list'),PX=LS.g('wl_px')||{},SORT={k:'nom',d:1},synced=false,busy=false;
+let W=LS.g('wl_list'),PX=LS.g('wl_px')||{},SORT={k:'pct',d:1},synced=false,busy=false;
 const norm=a=>(a||[]).filter(x=>x&&x.ticker).map(x=>({ticker:String(x.ticker).toUpperCase().trim(),nom:x.nom||x.ticker,zone_achat:x.zone_achat>0?+x.zone_achat:null}));
 const merge=(a,b)=>{const m=new Map(a.map(x=>[x.ticker,x]));norm(b).forEach(x=>{if(!m.has(x.ticker))m.set(x.ticker,x)});return[...m.values()]};
 /* Reprise des anciennes watchlists (PEA, CTO, Crypto), stockées dans leurs réglages locaux */
@@ -357,21 +356,18 @@ async function refresh(){if(busy||!W.length)return;
     for(const k in j)if(j[k]&&j[k].p!=null)PX[k]=j[k];LS.s('wl_px',PX);LS.s('wl_pxAt',Date.now());msg('')}
   catch(e){msg('Cours indisponibles (script Google injoignable) : derniers cours connus affichés.')}
   busy=false;render()}
-const rowsOf=()=>W.map(it=>{const q=PX[it.ticker]||{},p=q.p!=null?q.p:null,pc=q.pc!=null?q.pc:null,d=p!=null&&pc?p-pc:null,pct=d!=null?d/pc*100:null,z=it.zone_achat,ec=p!=null&&z?(p-z)/z*100:null;
-  return{...it,p,d,pct,ec}});
+const rowsOf=()=>W.map(it=>{const q=PX[it.ticker]||{},p=q.p!=null?q.p:null,pc=q.pc!=null?q.pc:null,d=p!=null&&pc?p-pc:null,pct=d!=null?d/pc*100:null;
+  return{...it,p,d,pct}});
 function render(){
-  const R=rowsOf(),hasZ=R.some(r=>r.zone_achat),at=LS.g('wl_pxAt');
+  const R=rowsOf(),at=LS.g('wl_pxAt');
   $('#sub').textContent=W.length+' valeur'+(W.length>1?'s':'')+(at?' · cours de '+new Date(at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'');
-  const cols=[['nom','Valeur'],['p','Prix'],['d','Var. jour'],['pct','Var. jour %'],...(hasZ?[['zone_achat',"Zone d'achat"],['ec','Écart']]:[])];
+  const cols=[['nom','Valeur'],['pct','Prix (var. jour)']];
   $('#th').innerHTML='<tr>'+cols.map(([k,l])=>`<th data-s="${k}" class="${SORT.k===k?(SORT.d>0?'s-asc':'s-desc'):''}">${l}</th>`).join('')+'</tr>';
   const key=r=>{const v=r[SORT.k];return v==null?null:typeof v==='string'?v.toLowerCase():v};
   R.sort((a,b)=>{const x=key(a),y=key(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return-1;return(x<y?-1:x>y?1:0)*SORT.d});
-  if(!R.length){$('#tb').innerHTML=`<tr><td colspan="6" class="empty">Ta watchlist est vide. Ajoute une première valeur.</td></tr>`;return}
-  $('#tb').innerHTML=R.map(r=>`<tr data-tk="${esc(r.ticker)}"><td><b>${esc(r.nom)}</b><small>${esc(r.ticker)}</small></td><td><b>${r.p!=null?fPx(r.p)+' €':'–'}</b></td>
-   <td class="${cls(r.d)}">${r.d!=null?`${arrow(r.d)} ${SG(r.d)}${fPx(Math.abs(r.d))} €`:'–'}</td>
-   <td>${r.pct!=null?`<span class="pill ${cls(r.pct)}">${arrow(r.pct)} ${SG(r.pct)}${nf(2).format(Math.abs(r.pct))} %</span>`:'–'}</td>
-   ${hasZ?`<td>${r.zone_achat?fPx(r.zone_achat)+' €':'–'}</td><td class="${r.ec!=null&&r.ec<=0?'up':''}">${r.ec!=null?SG(r.ec)+nf(1).format(Math.abs(r.ec))+' %':'–'}</td>`:''}</tr>`).join('')}
-$('#th').onclick=e=>{const th=e.target.closest('th');if(!th)return;const k=th.dataset.s;SORT=SORT.k===k?{k,d:-SORT.d}:{k,d:k==='nom'?1:-1};render()};
+  if(!R.length){$('#tb').innerHTML=`<tr><td colspan="2" class="empty">Ta watchlist est vide. Ajoute une première valeur.</td></tr>`;return}
+  $('#tb').innerHTML=R.map(r=>`<tr data-tk="${esc(r.ticker)}"><td><b>${esc(r.nom)}</b></td><td><b>${r.p!=null?fPx(r.p)+' €':'–'}</b>${r.pct!=null?` <span class="${cls(r.pct)}" style="font-weight:700">(${arrow(r.pct)} ${SG(r.pct)}${nf(2).format(Math.abs(r.pct))} %)</span>`:''}</td></tr>`).join('')}
+$('#th').onclick=e=>{const th=e.target.closest('th');if(!th)return;const k=th.dataset.s;SORT=SORT.k===k?{k,d:-SORT.d}:{k,d:1};render()};
 $('#tb').onclick=e=>{const tr=e.target.closest('tr[data-tk]');if(tr)openChart(tr.dataset.tk)};
 $('#ref').onclick=refresh;
 
@@ -386,7 +382,7 @@ async function series(tk,rg,d1,d2){
   const enc=encodeURIComponent,today=dstr(new Date());
   try{
     if(INTRA[rg]){const[r,i]=INTRA[rg],j=await cached(tk+'|'+r+'|'+i,6e4,async()=>(await fetch(qs('c='+enc(tk)+'&range='+r+'&interval='+i))).json());
-      if(!j||!Array.isArray(j.t)||!j.t.length)return{err:'Données intraday indisponibles : ajoute la fonction du fichier script_google_watchlist.gs à ton script Google, puis redéploie-le.'};
+      if(!j||!Array.isArray(j.t)||!j.t.length){delete MEM[tk+'|'+r+'|'+i];return{err:j&&j.error?'Yahoo ne renvoie pas de données intraday pour ce titre ('+j.error+').':'Le script Google ne renvoie pas l’intraday : colle la version « script_google_complet.gs » puis redéploie-le (Déployer > Gérer les déploiements > crayon > Nouvelle version).'}}
       let pts=j.t.map((t,k)=>[t*1000,j.c[k]]);const last=pts[pts.length-1][0];
       if(rg==='1h')pts=pts.filter(p=>p[0]>=last-36e5);else if(rg==='7j')pts=pts.filter(p=>p[0]>=last-7*864e5);
       return pts.length<2?{err:'Pas assez de points sur cette période.'}:{pts,ref:rg==='1j'&&j.pc?j.pc:null,intra:rg!=='7j'}}
@@ -433,11 +429,11 @@ function draw(){const c=CUR;if(!c||!c.R)return;const R=c.R,P=R.pts,n=P.length,bo
    <path d="${path}L${X(n-1).toFixed(1)} ${Ht-pb}L${pl} ${Ht-pb}Z" fill="url(#g)"/><path d="${path}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round"/>
    <line id="xl" y1="${pt}" y2="${Ht-pb}" stroke="var(--mute)" stroke-dasharray="3 3" style="display:none"/><circle id="xc" r="4.5" fill="${col}" stroke="var(--card)" stroke-width="2" style="display:none"/></svg><div id="tip"></div>`;
   const sv=box.querySelector('svg'),tip=$('#tip'),xl_=$('#xl'),xc=$('#xc');
-  const mv=e=>{const r=sv.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*Wd,i=Math.max(0,Math.min(n-1,Math.round((px-pl)/((Wd-pl-pr)/(n-1))))),x=X(i),y=Y(P[i][1]),d=P[i][1]-ref,p=ref?d/ref*100:0;
+  const mv=e=>{const r=sv.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*Wd,i=Math.max(0,Math.min(n-1,Math.round((px-pl)/((Wd-pl-pr)/(n-1))))),x=X(i),y=Y(P[i][1]),pv=i>0?P[i-1][1]:null,d=pv==null?null:P[i][1]-pv,p=pv?d/pv*100:0;
     xl_.setAttribute('x1',x);xl_.setAttribute('x2',x);xc.setAttribute('cx',x);xc.setAttribute('cy',y);xl_.style.display=xc.style.display='';
-    tip.innerHTML=`<div>${fTime(P[i][0],R,c.rg,true)}</div><b>${fPx(P[i][1])} €</b><div style="color:${d>=0?'#4ade80':'#f87171'}">${arrow(d)} ${fVar(d,p)}</div>`;tip.style.display='block';
+    tip.innerHTML=`<div>${fTime(P[i][0],R,c.rg,true)}</div><b>${fPx(P[i][1])} €</b>${d==null?'<div style="opacity:.7">Début de la période</div>':`<div style="color:${d>=0?'#4ade80':'#f87171'}">${arrow(d)} ${fVar(d,p)}</div><div style="opacity:.65;font-size:11px">vs point précédent</div>`}`;tip.style.display='block';
     const bw=box.clientWidth,tw=tip.offsetWidth,lx=x/Wd*bw;tip.style.left=Math.max(4,Math.min(bw-tw-4,lx-tw/2))+'px';tip.style.top=Math.max(0,y/Ht*box.clientHeight-tip.offsetHeight-14)+'px'};
-  sv.onpointermove=mv;sv.onpointerdown=mv;sv.onpointerleave=()=>{tip.style.display='none';xl_.style.display=xc.style.display='none'}}
+  sv.onpointermove=mv;sv.onpointerdown=mv;sv.onpointerleave=e=>{if(e.pointerType==='touch')return;tip.style.display='none';xl_.style.display=xc.style.display='none'}}
 $('#chips').onclick=e=>{const b=e.target.closest('[data-r]');if(!b||!CUR)return;CUR.rg=b.dataset.r;loadChart()};
 $('#dok').onclick=()=>{if($('#d1').value&&$('#d2').value&&$('#d1').value<=$('#d2').value)loadChart()};
 $('#ccl').onclick=()=>$('#cdlg').close();
@@ -446,14 +442,14 @@ addEventListener('resize',()=>{if($('#cdlg').open)draw()});
 /* ---------- Ajout / modification ---------- */
 let EDIT=null;
 function openEdit(tk){EDIT=tk||null;const it=tk&&W.find(x=>x.ticker===tk);
-  $('#et').textContent=it?'Modifier la valeur':'Ajouter une valeur';$('#en').value=it?it.nom:'';$('#etk').value=it?it.ticker:'';$('#etk').disabled=!!it;$('#ez').value=it&&it.zone_achat?it.zone_achat:'';
+  $('#et').textContent=it?'Modifier la valeur':'Ajouter une valeur';$('#en').value=it?it.nom:'';$('#etk').value=it?it.ticker:'';$('#etk').disabled=!!it;
   $('#eerr').hidden=true;$('#edel').hidden=!it;$('#edlg').showModal()}
 $('#add').onclick=()=>openEdit();$('#ced').onclick=()=>{const t=CUR&&CUR.tk;$('#cdlg').close();openEdit(t)};
 $('#ecn').onclick=()=>$('#edlg').close();
-$('#eok').onclick=async()=>{const nom=$('#en').value.trim(),tk=$('#etk').value.trim().toUpperCase(),z=parseFloat(String($('#ez').value).replace(',','.'))||null,er=t=>{$('#eerr').textContent=t;$('#eerr').hidden=false};
+$('#eok').onclick=async()=>{const nom=$('#en').value.trim(),tk=$('#etk').value.trim().toUpperCase(),er=t=>{$('#eerr').textContent=t;$('#eerr').hidden=false};
   if(!tk)return er('Le ticker est obligatoire.');if(!nom)return er('Le nom est obligatoire.');
-  if(EDIT){const it=W.find(x=>x.ticker===EDIT);it.nom=nom;it.zone_achat=z>0?z:null}
-  else{if(W.some(x=>x.ticker===tk))return er(tk+' est déjà dans la watchlist.');W.push({ticker:tk,nom,zone_achat:z>0?z:null})}
+  if(EDIT){const it=W.find(x=>x.ticker===EDIT);it.nom=nom}
+  else{if(W.some(x=>x.ticker===tk))return er(tk+' est déjà dans la watchlist.');W.push({ticker:tk,nom,zone_achat:null})}
   $('#edlg').close();render();await save();refresh()};
 $('#edel').onclick=async()=>{if(!EDIT||!confirm('Retirer cette valeur de la watchlist ?'))return;W=W.filter(x=>x.ticker!==EDIT);$('#edlg').close();render();await save()};
 
@@ -1022,7 +1018,7 @@ function vImmo(pc,crd,cap0,nb){
  <div class="dst">📈 Patrimoine</div><div class="mcols mc3">${mt("Capital déjà remboursé",eur(pc),"vert")}${mt("Patrimoine immo net",eur(app+pc),"bleu")}${val>0?mt("Valeur − restant dû",eur(val-crd),"orange"):""}</div>
  ${kLoc}
  <button type="button" class="sec" id="imEd" style="width:100%;margin-top:14px">✏️ Modifier le bien (valeur, apport${loc?", loyers":""}…)</button>
- `,"margin-top:0")}
+ `,"margin-top:0")+addP}
 document.addEventListener("change",e=>{if(!/^im(Val|App|Type|Nom|Loy|Chg|Tax)$/.test(e.target.id||""))return;const g=id=>$("#"+id),n=id=>g(id)?Math.max(0,parseFloat(g(id).value)||0):0,o={...(D.immo||{})};
  o.valeur=n("imVal");o.apport=n("imApp");o.type=g("imType").value;o.nom=g("imNom").value.trim();if(g("imLoy")){o.loyer=n("imLoy");o.charges=n("imChg");o.taxe=n("imTax")}
  UI.immoEdit=true;D.immo=o;save();render()});
@@ -1147,23 +1143,23 @@ function vMvt(){
  ${card("int-yr","Versements par année",chart)}
  <div class="d" style="margin:8px 4px">Pour voir ou modifier chaque opération, ouvre l'onglet Historique.</div>`}
 function planStats(){
- const all=(D.interessement||[]).filter(s=>s.date),isP=s=>String(s.dest||"").startsWith("Placé"),pl=all.filter(isP),rt=D.retraits_epargne||[],sv=D.solde_epargne||null,keys=EPF.length?[...EPF]:["PEE","PERCO"];
+ const all=(D.interessement||[]).filter(s=>s.date),isP=s=>String(s.dest||"").startsWith("Placé"),pl=all.filter(isP),rt=D.retraits_epargne||[],sv=D.solde_epargne||null,keys=EPF?[EPF]:["PEE","PERCO"];
  [...pl,...rt].forEach(x=>{const k=x.plan||"";if(!keys.includes(k))keys.push(k)});
  const P=keys.map(k=>{const placed=sum(pl.filter(s=>(s.plan||"")===k),"montant"),ret=sum(rt.filter(r=>(r.plan||"")===k),"montant"),base=Math.max(0,placed-ret),ent=k&&sv&&sv[k.toLowerCase()]!=null&&typeof sv[k.toLowerCase()]==="number"?sv[k.toLowerCase()]:null;
   return{k,lb:k||"Plan non précisé",placed,ret,base,ent,val:ent!=null?ent:base}});
  const per=!!(sv&&(sv.pee!=null||sv.perco!=null||sv.peg!=null)),legacy=sv&&!per&&sv.valeur>=0?sv.valeur:null;
  return{all,pl,P,sv,per,legacy,tot:legacy!=null?legacy:P.reduce((t,x)=>t+x.val,0),tp:sum(pl,"montant"),tr:sum(rt,"montant"),tc:sum(all.filter(s=>!isP(s)),"montant"),anyEnt:per||legacy!=null}}
-const planInput=()=>"",planTable=()=>planParts().B;
+const planInput=()=>planParts().A,planTable=()=>planParts().B;
 function planParts(){
  const S=planStats();if(!S.all.length)return{A:"",B:""};
- const pc=S.P.filter(x=>x.k||x.placed||x.ret),PK=EPF.length?[...EPF]:["PEE","PERCO",...(S.P.some(z=>z.k==="PEG"&&(z.placed||z.ret||z.ent!=null))?["PEG"]:[])],
+ const pc=S.P.filter(x=>x.k||x.placed||x.ret),PK=EPF?[EPF]:["PEE","PERCO",...(S.P.some(z=>z.k==="PEG"&&(z.placed||z.ret||z.ent!=null))?["PEG"]:[])],
   inp=PK.map(k=>{const x=S.P.find(z=>z.k===k)||{ent:null,base:0};return`<label>${k} : montant réel sur ton compte (€)</label><input id="cpt${k}" type="number" step="0.01" min="0" inputmode="decimal" value="${x.ent??""}" placeholder="${Math.round(x.base)}">`}).join("");
  const tbl=`<div class="tw"><table class="rc"><thead><tr><th>Plan</th><th>Placé</th><th>Retiré</th><th>Sur le compte</th><th>Plus-value</th></tr></thead><tbody>${pc.map(x=>{const g=x.ent!=null?x.val+x.ret-x.placed:null;return`<tr><th>${esc(x.lb)}</th><td>${eur(x.placed)}</td><td class="neg">${x.ret?"−"+eur(x.ret):"—"}</td><td><b>${eur(x.val)}</b></td><td class="${g==null?"":g>=0?"pos":"neg"}">${g==null?"—":eur(g)}</td></tr>`}).join("")}</tbody></table></div>`;
  return{A:card("cpt-in","💰 Valeur actuelle de chaque plan",inp+`<div class="d" style="margin-top:6px">${S.sv&&S.sv.date?"Saisi le "+fdy(S.sv.date)+". ":""}Sans montant saisi pour un plan : versements placés − retraits.${S.legacy!=null?` Montant global saisi auparavant : ${eur2(S.legacy)} (tous plans confondus) : saisis-le maintenant par plan, il sera remplacé.`:""}</div>`),B:card("cpt-p","Par plan ("+PK.join(" / ")+")",tbl)}}
 document.addEventListener("change",e=>{const id=e.target.id;if(id!=="cptPEE"&&id!=="cptPERCO"&&id!=="cptPEG")return;const k=id.slice(3).toLowerCase(),v=parseFloat(e.target.value),o={...(D.solde_epargne||{})};
  if(o.pee==null&&o.perco==null&&o.peg==null)delete o.valeur;if(v>=0)o[k]=Math.round(v*100)/100;else delete o[k];o.date=TODAY();if(o.dates&&o.dates[k])o.dates={...o.dates,[k]:TODAY()};D.solde_epargne=(o.pee!=null||o.perco!=null||o.peg!=null)?o:null;save();render()});
 /* ---------- Nouveaux onglets : Recherche, Santé, Impôts ---------- */
-let EPF=[];const UI={epg:"all",epp:"all",sq:"",scat:"all",ssens:"Dépense",syr:"all",hAct:"gen",hPrix:null,hQty:1,fy:null,iy:"all",hs:"all",hPr:"o",hS:"n",hMon:null,hg:"all",gd:"",selMode:false,sel:new Set(),gt:"",gn:"",gp:"",addG:"",sg:""};
+let EPF="";const UI={epp:"all",sq:"",scat:"all",ssens:"Dépense",syr:"all",hAct:"gen",hPrix:null,hQty:1,fy:null,iy:"all",hs:"all",hPr:"o",hS:"n",hMon:null,hg:"all",gd:"",selMode:false,sel:new Set(),gt:"",gn:"",gp:"",addG:"",sg:""};
 const nrm=s=>String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 const fp=v=>(+v.toFixed(1)+"").replace(".",",")+" %";
 const opt=(v,l,cur)=>`<option value="${esc(v)}" ${String(v)===String(cur)?"selected":""}>${esc(l)}</option>`;
@@ -1310,23 +1306,17 @@ function epPlans(){const s=new Set(),add=p=>{p=String(p||"").trim().toUpperCase(
  (D.interessement||[]).forEach(x=>{if(x.date&&String(x.dest||"").startsWith("Placé"))add(x.plan)});(D.retraits_epargne||[]).forEach(x=>add(x.plan));
  (D.mouvements_epargne||[]).forEach(x=>add(x.plan||"PERCO"));(D.releves_epargne||[]).forEach(x=>add(x.plan));
  const sv=D.solde_epargne||{};["pee","perco","peg"].forEach(k=>{if(typeof sv[k]==="number")add(k)});return[...s].sort()}
-function epBroker(){try{return(((JSON.parse(localStorage.getItem("hub_acc"))||{}).list||[]).find(a=>a.type==="Épargne salariale")||{}).broker||"Amundi"}catch(e){return"Amundi"}}
-function epGest(p){let g="";[...(D.mouvements_epargne||[]),...(D.releves_epargne||[])].forEach(x=>{if(x.gest&&epUp(x,"PERCO")===p)g=x.gest});return g||epBroker()}
-function epView(P){const S=new Set(P),sv=D.solde_epargne;let s2=null;if(sv){const o={};P.forEach(p=>{const k=p.toLowerCase();if(typeof sv[k]==="number")o[k]=sv[k]});if(Object.keys(o).length)s2={...o,date:sv.date,dates:sv.dates}}
- return{...D,interessement:(D.interessement||[]).map(x=>S.has(epUp(x))?x:{...x,date:"",montant:0}),retraits_epargne:(D.retraits_epargne||[]).map(x=>S.has(epUp(x))?x:{...x,date:"",montant:0}),
-  mouvements_epargne:(D.mouvements_epargne||[]).map((x,i)=>({...x,_i:i})).filter(x=>S.has(epUp(x,"PERCO"))),releves_epargne:(D.releves_epargne||[]).filter(x=>S.has(epUp(x,"PERCO"))),solde_epargne:s2}}
-function epSel(pl){const G=[...new Set(pl.map(epGest))].sort(),g=UI.epg,ps=g==="all"?[]:pl.filter(p=>epGest(p)===g);
- return`<div class="card" style="margin-top:0"><div class="sh">🎁 Quel compte afficher ?</div><label>Gestionnaire</label><select id="epGest"><option value="all">Tous les gestionnaires</option>${G.map(x=>opt(x,x,g)).join("")}</select>${g!=="all"?`<label>Compte</label><select id="epSel"><option value="all">Tous les comptes de ${esc(g)}</option>${ps.map(p=>opt(p,p,UI.epp)).join("")}</select>`:""}</div>`}
-try{UI.epg=localStorage.getItem("hub_ep_gest")||"all";UI.epp=localStorage.getItem("hub_ep_sel")||"all"}catch(e){}
-const epSave=()=>{try{localStorage.setItem("hub_ep_gest",UI.epg);localStorage.setItem("hub_ep_sel",UI.epp)}catch(x){}};
-document.addEventListener("change",e=>{if(e.target.id==="epGest"){UI.epg=e.target.value;UI.epp="all";epSave();render()}else if(e.target.id==="epSel"){UI.epp=e.target.value;epSave();render()}});
+function epView(p){const k=p.toLowerCase(),sv=D.solde_epargne,s2=sv&&typeof sv[k]==="number"?{[k]:sv[k],date:sv.date,dates:sv.dates}:null;
+ return{...D,interessement:(D.interessement||[]).map(x=>epUp(x)===p?x:{...x,date:"",montant:0}),retraits_epargne:(D.retraits_epargne||[]).map(x=>epUp(x)===p?x:{...x,date:"",montant:0}),
+  mouvements_epargne:(D.mouvements_epargne||[]).map((x,i)=>({...x,_i:i})).filter(x=>epUp(x,"PERCO")===p),releves_epargne:(D.releves_epargne||[]).filter(x=>epUp(x,"PERCO")===p),solde_epargne:s2}}
+function epSel(pl){return`<div class="card" style="margin-top:0"><div class="sh">🎁 Quel compte afficher ?</div><select id="epSel"><option value="all">Tous les comptes (total)</option>${pl.map(p=>`<option value="${p}"${p===UI.epp?" selected":""}>${p}</option>`).join("")}</select></div>`}
+try{UI.epp=localStorage.getItem("hub_ep_sel")||"all"}catch(e){}
+document.addEventListener("change",e=>{if(e.target.id==="epSel"){UI.epp=e.target.value;try{localStorage.setItem("hub_ep_sel",UI.epp)}catch(x){}render()}});
 function render(){hideTip();const t=TABS.find(x=>x[0]===tab);
  let html;const pl=(MOD==="epargne"||!MOD)&&["ov","pos","cla","int","ehs"].includes(tab)?epPlans():[];
- if(pl.length>1){const G=[...new Set(pl.map(epGest))];if(UI.epg!=="all"&&!G.includes(UI.epg)){UI.epg="all";UI.epp="all"}
-   const pg=UI.epg==="all"?pl:pl.filter(p=>epGest(p)===UI.epg);if(UI.epp!=="all"&&!pg.includes(UI.epp))UI.epp="all";
-   const sel=UI.epg==="all"?null:UI.epp==="all"?pg:[UI.epp];
-   if(sel){const D0=D;D=epView(sel);EPF=sel;try{html=t[3]()}finally{D=D0;EPF=[]}}else html=t[3]();
-   html=epSel(pl)+html}else html=t[3]();
+ if(pl.length>1){if(UI.epp!=="all"&&!pl.includes(UI.epp))UI.epp="all";
+  if(UI.epp!=="all"){const D0=D;D=epView(UI.epp);EPF=UI.epp;try{html=t[3]()}finally{D=D0;EPF=""}}else html=t[3]();
+  html=epSel(pl)+html}else html=t[3]();
  $("#app").innerHTML=html;
  const nv=$("#nav"),sl=nv.scrollLeft;nv.style.display=TIDS.length>1?"":"none";nv.innerHTML=TABS.filter(x=>TIDS.includes(x[0])).map(x=>`<button data-t="${x[0]}" class="${x[0]===tab?"on":""}">${x[1]} ${x[2]}</button>`).join("");
  const on=nv.querySelector(".on");if(on)nv.scrollLeft=on.offsetLeft-(nv.clientWidth-on.offsetWidth)/2;else nv.scrollLeft=sl;
@@ -1799,7 +1789,7 @@ const fN=(v,d=2)=>Number(v).toLocaleString("fr-FR",{minimumFractionDigits:d,maxi
  pPx=v=>{if(v==null||isNaN(v))return"N/A";const t=v.toFixed(4);return fN(v,t.endsWith("00")?2:t.endsWith("0")?3:4)+" €"},pQ=q=>q%1===0?fN(q,0):fN(q,4).replace(/0+$/,"").replace(/,$/,""),
  perfAnn=(p,j)=>{if(p==null||isNaN(p)||j==null||j<30)return NaN;const g=1+p/100;return g<=0?-100:(Math.pow(g,365/j)-1)*100},
  perfCell=v=>{const t=String(v);return t.startsWith("▲")?"color:#16a34a;font-weight:700;":t.startsWith("▼")?"color:#dc2626;font-weight:700;":"color:var(--mut);font-weight:700;"};
-const OMT={};const OMT0={"Performance Globale":"% = gain total (valeur du compte + retraits − versements placés) ÷ versements placés. Demande la valeur réelle des comptes (⚙️ Réglages ou relevés PDF).","Performance Annuelle Moyenne":"% = (1 + performance globale) ^ (1 ÷ années depuis le premier versement) − 1, soit un taux annuel composé (calculé après 3 mois).","Plus-Value Latente":"% = plus-value latente ÷ capital investi dans les fonds encore détenus (fonds à historique complet uniquement).","Plus-Value Actée":"% = plus-value actée lors des ventes et arbitrages ÷ valeur actuelle du compte.","Abondement Reçu":"% = abondement de l'employeur ÷ total des versements placés.","Intéressement & Participation":"% = intéressement + participation + PPV placés ÷ total des versements placés."};
+const OMT={};const OMT0={"Performance Globale":"% = gain total (valeur du compte + retraits − versements placés) ÷ versements placés. Demande la valeur réelle des comptes (en bas de la Vue d'ensemble ou relevés PDF).","Performance Annuelle Moyenne":"% = (1 + performance globale) ^ (1 ÷ années depuis le premier versement) − 1, soit un taux annuel composé (calculé après 3 mois).","Plus-Value Latente":"% = plus-value latente ÷ capital investi dans les fonds encore détenus (fonds à historique complet uniquement).","Plus-Value Actée":"% = plus-value actée lors des ventes et arbitrages ÷ valeur actuelle du compte.","Abondement Reçu":"% = abondement de l'employeur ÷ total des versements placés.","Intéressement & Participation":"% = intéressement + participation + PPV placés ÷ total des versements placés."};
 function omt(label,val,delta,sec,inv){let d="";if(delta!=null){const neg=delta[0]=="-",good=inv?neg:!neg;d=`<div class="mtd ${good?"g":"r"}">${neg?OARD:OARU}<span>${delta}</span></div>`}
  const tp=OMT[label];return`<div class="mtr ${sec}${tp?" tp":""}"${tp?` data-mt="${esc(tp)}"`:""}><div class="mtl"><p>${label}</p></div><div class="mtv">${val}</div>${d}</div>`}
 let OMB=null;const ombClose=()=>{if(OMB){OMB.remove();OMB=null}};
@@ -1840,7 +1830,7 @@ function vOv(){
  <div class="mcols mc2">${omt("Plus-Value Latente",lat!=null?oGE(lat):"N/A",pl!=null?oDP(pl):null,"gain")}${omt("Plus-Value Actée",oGE(real),pa!=null?oDP(pa):null,"gain")}</div>
  <div class="mcols mc2">${omt("Abondement Reçu",oGE(ab),ap>0?oDP(ab/ap*100):null,"gain")}${omt("Intéressement & Participation",oGE(ip),ap>0?oDP(ip/ap*100):null,"gain")}</div>
  </div></div></details>
- ${!hasV?`<div class="ovnote" style="margin-top:12px">Renseigne la valeur réelle de tes comptes dans ⚙️ Réglages ou lis un relevé PDF pour obtenir les performances.</div>`:""}
+ ${!hasV?`<div class="ovnote" style="margin-top:12px">Saisis la valeur réelle de tes comptes (en bas de cette page) ou lis un relevé PDF pour obtenir les performances.</div>`:""}
  ${P.inc.length?`<div class="ovnote" style="margin-top:12px">⚠ Historique incomplet pour ${P.inc.map(r=>esc(supNm(r.nom))).join(", ")} : plus-value latente et montant investi sont calculés sans ces fonds. Importe les relevés manquants pour les compléter.</div>`:""}
  ${partNote(P)}
  ${P.sn?`<div class="d" style="margin:8px 4px">Dernière valorisation de fonds : ${fdy(P.sn.date)}.</div>`:""}
@@ -1895,7 +1885,7 @@ function openMvt(i=-1){mvIdx=i;$("#frmMv").reset();const m=i>=0?(D.mouvements_ep
  $("#mvFonds").innerHTML=[...new Set((D.mouvements_epargne||[]).map(x=>x.fond))].map(f=>`<option value="${esc(f)}">`).join("");
  $("#mvTitle").textContent=m?"Modifier le mouvement":"Nouveau mouvement de fonds";
  if(m){$("#mvDate").value=m.date||"";$("#mvSens").value=m.sens==="achat"?"achat":"rachat";$("#mvFond").value=m.fond||"";$("#mvQte").value=m.qte||"";$("#mvPrix").value=m.prix||"";$("#mvMt").value=m.montant||"";$("#mvPlan").value=m.plan||"PERCO";$("#mvDiv").checked=!!m.div}
- else{$("#mvDate").value=TODAY();$("#mvPlan").value=UI.epg!=="all"&&UI.epp!=="all"?UI.epp:"PERCO"}
+ else{$("#mvDate").value=TODAY();$("#mvPlan").value=EPF||"PERCO"}
  $("#mvDiv").parentElement.classList.toggle("hide",$("#mvSens").value!=="achat");$("#mvDel").classList.toggle("hide",!m);dlgMv.showModal()}
 $("#mvSens").onchange=()=>$("#mvDiv").parentElement.classList.toggle("hide",$("#mvSens").value!=="achat");
 ["#mvQte","#mvPrix"].forEach(s=>$(s).oninput=()=>{const q=parseFloat($("#mvQte").value),p=parseFloat($("#mvPrix").value);if(q>0&&p>0)$("#mvMt").value=(Math.round(q*p*100)/100).toFixed(2)});
