@@ -253,9 +253,6 @@ button{border-radius:10px;font-weight:600;transition:all .15s ease-in-out}
 .pea-wl th{color:#31333f;font-weight:700;background:transparent;cursor:default;font-size:inherit;position:static}
 .pea-wl th:first-child,.pea-wl td:first-child{position:static}
 .pea-wl td{font-size:inherit}
-#wldlg{max-width:640px;width:calc(100% - 16px);max-height:92vh;overflow:auto;padding:16px}
-#wldlg .ft{font-size:.72rem;font-weight:700;color:var(--mute);text-transform:uppercase;margin:10px 0 4px}
-#wldlg input:disabled{opacity:.5;cursor:not-allowed}
 .pea-duo-item .k{background:none;border:0;border-radius:0;padding:0}
 .nl{font-size:14px;margin:0 0 4px;color:var(--ink);display:flex;align-items:center;gap:6px}
 .sm2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
@@ -318,7 +315,6 @@ canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 
 <dialog id="op"><form id="opf" method="dialog"></form></dialog>
 
-<dialog id="wldlg"></dialog>
 <dialog id="sim"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px"><h2 style="margin:0;font-size:1.2rem">🧪 Simulation nouvelle opération</h2><button type="button" id="sim_x">✕</button></div><div id="sTop"></div><div id="sB"></div><div id="sC"></div><div id="sD"></div></dialog>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
@@ -832,8 +828,6 @@ function ovAlerts(){let h='';
     const ph=a.du<=.005?'cette TTF ne sera donc finalement pas due.':`le montant réellement dû est donc de <b>${oGE(a.du)}</b> (au lieu de <b>${oGE(a.av)}</b>).`,
       li=a.lg.map(l=>`<div style="font-size:.82rem;color:#78350f;margin-top:6px">👉 Pensez à modifier la ligne d'achat du ${a.dd} à ${l.h} dans le détail des transactions : passez son champ TTF de <b>${oGE(l.av)}</b> à <b>${oGE(l.ap)}</b>.</div>`).join('');
     h+=`<div style="margin-top:10px;padding:14px 18px;background:#fefce8;border:1px solid #fde68a;border-left:4px solid #d97706;border-radius:10px"><div style="font-size:.85rem;font-weight:800;color:#92400e">⚠️ TTF à corriger pour l'achat de ${esc(a.nom)} du ${a.dd} à ${a.hs} :</div><div style="font-size:.82rem;color:#78350f;margin-top:6px">Vous avez acheté puis (en partie ou en totalité) revendu <b>${esc(a.nom)}</b> le même jour (${a.ds}). La TTF n'est en réalité prélevée qu'une fois par jour, uniquement sur les titres éligibles encore détenus <b>en fin de journée</b> — ${ph}</div>${li}</div><button data-ttfdis="${esc(a.cle)}" style="margin:8px 0 0">Compris, masquer cet avertissement</button>`});
-  (S.cfg.watchlist||[]).forEach(it=>{const pr=S.wl.px[it.ticker]&&S.wl.px[it.ticker].p;if(!it.zone_achat||pr==null||S.wlDis.has(it.ticker))return;const ec=(pr-it.zone_achat)/it.zone_achat*100;if(ec>3)return;
-    h+=`<div style="margin-top:10px;padding:14px 18px;background:#fefce8;border:1px solid #fde68a;border-left:4px solid #d97706;border-radius:10px"><div style="font-size:.85rem;font-weight:800;color:#92400e">${ec<=0?'🟢':'🟡'} Watchlist — ${esc(it.nom)} proche de sa zone d'achat</div><div style="font-size:.82rem;color:#78350f;margin-top:6px">${esc(it.nom)} : ${oGE(pr)} (${ec<=0?'déjà dans la zone':'à '+(ec>=0?'+':'')+nf(1).format(ec).replace(/\u202f/g,' ')+' % de la zone'}) — zone d'achat ${oGE(it.zone_achat)}</div></div><button data-wldis="${esc(it.ticker)}" style="margin:8px 0 0">Compris, masquer cet avertissement</button>`});
   $('#alerts').innerHTML=h}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-ttfdis]');if(b){S.ttfDis.add(b.dataset.ttfdis);draw()}});
 /* Performances YTD / mois / jour et drawdown depuis l'historique quotidien (même règle que le Streamlit) */
@@ -1337,41 +1331,6 @@ async function fundFetch(tks){if(!S.url||S.fbusy)return;S.fbusy=true;S.fmsg='';S
   S.fbusy=false;draw()}
 function fondEnsure(tks){const stale=tks.filter(t=>!S.wl.f[t]||Date.now()-(S.wl.f[t]._at||0)>FUND_TTL);
   if(!stale.length||S.fbusy||!S.url)return;const k=stale.join(',');if(S.fTry&&S.fTry.split('|')[0]==k&&Date.now()-+S.fTry.split('|')[1]<3e5)return;setTimeout(()=>fundFetch(stale),0)}
-function fondX(){
-  const W=S.cfg.watchlist||[],univ=FOND_SRC=='Portefeuille'?R.pos.filter(p=>p.open).map(p=>({nom:p.nom,tk:p.tk,val:p.val})):W.filter(i=>i.ticker).map(i=>({nom:i.nom||i.ticker,tk:i.ticker,val:null}));
-  let h='<hr style="margin:18px 0 12px 0;border:0;border-top:1px solid var(--line)"><h3 style="font-size:1.4rem;font-weight:600;padding:.5rem 0 .25rem;margin:0">📚 Fondamentaux & analystes</h3>';
-  if(!univ.length)return h+'<div class="info">Aucune valeur à analyser pour le moment.</div>';
-  const tks=[...new Set(univ.map(u=>u.tk))].sort();fondEnsure(tks);
-  if(S.fbusy&&!tks.some(t=>S.wl.f[t]))return h+'<div class="spin">Chargement des données fondamentales...</div>';
-  const ok=univ.filter(u=>S.wl.f[u.tk]).map(u=>({...u,d:S.wl.f[u.tk]}));
-  if(!ok.length)return h+'<div class="warn">Données indisponibles pour le moment (Yahoo Finance ne répond pas). Réessayez dans quelques minutes.</div>'+(S.fmsg=='old'?'<div class="cap">Si le message persiste : colle la dernière version de script_google.gs dans Apps Script puis redéploie-la.</div>':'');
-  const fr=(x,d=1)=>nf(d).format(x),exp=(t,b)=>`<details class="exp" open><summary>${t}</summary><div class="in">${b}</div></details>`;
-  let o='';
-  if(FOND_SRC=='Portefeuille'){
-    const tot=ok.reduce((s,u)=>s+(u.val||0),0),pond=k=>{let n=0,d=0;ok.forEach(u=>{const x=u.d[k];if(u.val&&x&&x>0){n+=u.val;d+=u.val/x}});return[d>0?n/d:null,n]};let cov=0;
-    const c3=[['PER pondéré','per'],['P/B pondéré','pb'],['PEG pondéré','peg']].map(([l,k])=>{const[v,c]=pond(k);cov=Math.max(cov,c);return`<div class="mtr tp" data-mt="${esc(OMT_V[l])}"><div class="ml">${l}</div><div class="mv">${v!=null?fr(v,1):'N/A'}</div></div>`}).join('');
-    o+=exp('📐 Valorisation pondérée du portefeuille',`<div class="c3m">${c3}</div>`)}
-  /* 26. Qualité financière par ligne */
-  const NIV=['background-color:rgba(239,68,68,.14);color:#b91c1c;font-weight:700;','background-color:rgba(245,158,11,.16);color:#92400e;font-weight:700;','background-color:rgba(34,197,94,.16);color:#15803d;font-weight:700;'];
-  const rq=ok.filter(u=>!(u.d.marge==null&&u.d.roe==null&&u.d.dn==null)).map(u=>[u.nom,u.d.marge!=null?(u.d.marge*100).toFixed(1).replace('.',',')+' %':'—',u.d.roe!=null?(u.d.roe*100).toFixed(1).replace('.',',')+' %':'—',u.d.dn!=null?fr(u.d.dn,1)+'x':'—']);
-  const qCols=['Nom','Marge nette','ROE','Dette nette / EBITDA'];
-  const qStyle=(c,v)=>{const t=String(v);if(t=='—'||t=='')return'color:#94a3b8;';const x=parseFloat(t.replace(/[x% \u00a0\u202f]/g,'').replace(',','.'));if(isNaN(x))return'';
-    if(c=='Marge nette')return NIV[x>=15?2:x>=5?1:0];if(c=='ROE')return NIV[x>=15?2:x>=8?1:0];if(c.startsWith('Dette'))return NIV[x<=1.5?2:x<=3?1:0];return''};
-  o+=exp('🏦 Qualité financière par ligne',rq.length?peaTable(qCols,rq,{cell:qStyle,sticky:'Nom'}):'<div class="info">Aucune donnée de qualité financière disponible (ETF, ou Yahoo sans information).</div>');
-  /* 25 + 28. Objectifs et recommandations des analystes */
-  const RECO={strong_buy:'Achat fort',buy:'Achat',hold:'Neutre',underperform:'Vente',sell:'Vente',strong_sell:'Vente forte'};
-  const ra=ok.filter(u=>u.d.cible).map(u=>{const px=(S.wl.px[u.tk]&&S.wl.px[u.tk].p)||(S.prices[u.tk]&&S.prices[u.tk].p)||u.d.prix,ec=px?(u.d.cible/px-1)*100:null,nb=u.d.nb?Math.trunc(u.d.nb):null;
-    return{ec:ec==null?-1e9:ec,r:[u.nom,px?fE(px):'—',fE(u.d.cible),ec!=null?fmtPerfS(ec):'—',RECO[u.d.rk]||'—',nb?String(nb):'—']}}).sort((a,b)=>b.ec-a.ec);
-  const AV={'Achat fort':'background-color:rgba(34,197,94,.22);color:#15803d;font-weight:700;','Achat':'background-color:rgba(34,197,94,.14);color:#15803d;font-weight:700;','Neutre':'background-color:rgba(148,163,184,.20);color:#475569;font-weight:700;','Vente':'background-color:rgba(239,68,68,.14);color:#b91c1c;font-weight:700;','Vente forte':'background-color:rgba(239,68,68,.22);color:#b91c1c;font-weight:700;'};
-  o+=exp('🎯 Objectifs et recommandations des analystes',ra.length?peaTable(['Nom','Cours','Objectif moyen',"Écart à l'objectif",'Avis','Analystes'],ra.map(x=>x.r),{cell:(c,v)=>c=="Écart à l'objectif"?perfCell(v):c=='Avis'?(AV[String(v)]||''):'',sticky:'Nom'}):'<div class="info">Pas d\'objectif d\'analystes disponible pour ces valeurs.</div>');
-  /* 27. Prochaines publications de résultats */
-  const auj=new Date(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()),re=ok.filter(u=>u.d.earn).map(u=>[u.d.earn,u.nom]).sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:a[1]<b[1]?-1:1);
-  const dans=ds=>{const j=Math.round((new Date(ds+'T00:00:00')-auj)/864e5);return j==0?"Aujourd'hui":j==1?'Demain':'Dans '+j+' j'};
-  const eSt=(c,v)=>{if(c!='Échéance')return'';const t=String(v),j=t=="Aujourd'hui"?0:t=='Demain'?1:parseInt(t.split(' ')[1]);
-    return j<=7?'background-color:rgba(245,158,11,.20);color:#92400e;font-weight:700;':j<=30?'background-color:rgba(59,130,246,.14);color:#1d4ed8;font-weight:700;':''};
-  o+=exp('📅 Prochaines publications de résultats',re.length?peaTable(['Nom','Date','Échéance'],re.map(([d,n])=>[n,fD(d),dans(d)]),{cell:eSt,sticky:'Nom'}):'<div class="info">Aucune date de publication annoncée pour ces valeurs.</div>');
-  return h+o}
-
 /* ===== Composants communs repris du Streamlit : cartes, infobulles, cartographie mensuelle ===== */
 const TIPS=[];
 function showTip(el,html){const e=tipEl();e.innerHTML=html;const r=el.getBoundingClientRect(),w=e.offsetWidth,h=e.offsetHeight;
@@ -1471,101 +1430,6 @@ function divX(v){
   h+=drawDivCal()+'</div></details>';
   v.innerHTML=h}
 
-
-/* ===== Onglet Watchlist — port de tab_watchlist (app_perso.py) ===== */
-const WL_NEW='➕ Ajouter un nouveau nom...',SEUIL_ZONE=3,wlItems=()=>[...(S.cfg.watchlist||[])];
-function wlInterp(a,b,t){t=Math.max(0,Math.min(1,t));const A=hexRGB(a),B=hexRGB(b);return'#'+A.map((x,i)=>Math.round(x+(B[i]-x)*t).toString(16).padStart(2,'0')).join('')}
-function wlColors(e){if(e==null)return['#f8fafc','#94a3b8'];
-  if(e<=0)return[wlInterp('#f0fdf4','#c7f3d6',Math.min(Math.abs(e)/15,1)),'#15803d'];
-  if(e<=SEUIL_ZONE)return[wlInterp('#fffbeb','#fef3c7',e/SEUIL_ZONE),'#92400e'];
-  return[wlInterp('#fcfdfe','#eef2f6',1-Math.min((e-SEUIL_ZONE)/22,1)),'#64748b']}
-const wlArrow=x=>x>5e-4?'▲':x<-5e-4?'▼':'▬';
-function wlVar(d,p){if(p==null||d==null)return'<span style="color:#94a3b8;">—</span>';
-  const c=p>=0?'#15803d':'#b91c1c',g=p>=0?'+':'';
-  return`<span style="color:${c};font-weight:700;">${wlArrow(p)} ${g}${pyN(d,2)} € (${g}${pyN(p,1)} %)</span>`}
-function wlJour(p){if(p==null)return'';const c=p>=0?'#15803d':'#b91c1c',g=p>=0?'+':'';
-  return` <span style="color:${c};font-weight:700;font-size:0.88em;">(${wlArrow(p)} ${g}${pyN(p,1)} %)</span>`}
-const WLB={dans:['🟢','#15803d','#ffffff'],proche:['🟡','#f59e0b','#3b2300'],dessus:['⚪','#cbd5e1','#1e293b'],na:['➖','#e2e8f0','#475569']};
-const wlBadge=(k,t)=>{const[i,b,f]=WLB[k]||WLB.na;return`<span style='display:inline-block;background:${b};color:${f};font-weight:800;padding:3px 10px;border-radius:999px;font-size:0.78rem;white-space:nowrap;'>${i} ${t}</span>`};
-/* get_watchlist_variations : jour (cours actuel vs clôture précédente), 7 j, 30 j, 6 mois (182 j), 12 mois (365 j) */
-function wlVars(tk){const R0=[null,null],r={jour:R0,semaine:R0,'30j':R0,'6m':R0,'12m':R0},q=S.wl.px[tk],h=S.wl.h[tk];
-  const live=q&&q.p!=null?q.p:null,D=h&&h.d||[],C=h&&h.c||[],today=dstr(new Date());
-  let last=null;for(let i=0;i<D.length;i++)if(D[i]<today&&C[i]!=null)last=C[i];
-  if(last==null&&q&&q.pc!=null)last=q.pc;
-  if(last==null&&C.length)last=C[C.length-1];
-  if(live!=null&&last)r.jour=[live-last,(live-last)/last*100];
-  const ref=live!=null?live:(C.length?C[C.length-1]:null);
-  [['semaine',7],['30j',30],['6m',182],['12m',365]].forEach(([k,j])=>{if(ref==null)return;const lim=addD(today,-j);let b=null;
-    for(let i=0;i<D.length;i++)if(D[i]<=lim&&C[i]!=null)b=C[i];
-    if(b)r[k]=[ref-b,(ref-b)/b*100]});
-  return r}
-async function wlFetch(force){const W=wlItems().filter(i=>i.ticker);if(!S.url||!W.length||S.wlBusy)return;
-  const tks=[...new Set(W.map(i=>i.ticker))].sort(),now=Date.now(),key=tks.join(',');
-  const needPx=force||now-S.wlAt>12e4,needH=force||tks.some(t=>!S.wl.h[t])||now-S.wlHAt>36e5;
-  if(!needPx&&!needH)return;
-  if(!force&&S.wlTry&&S.wlTry.k==key&&now-S.wlTry.t<6e4)return;
-  S.wlTry={k:key,t:now};S.wlBusy=true;const u=q=>S.url+(S.url.includes('?')?'&':'?')+q;
-  try{
-    if(needPx){const j=await(await fetch(u('t='+encodeURIComponent(key)))).json();for(const k in j)if(j[k]&&j[k].p!=null)S.wl.px[k]=j[k];S.wlAt=Date.now();LS.s(AX+'_wlpx',S.wl.px)}
-    if(needH){const j=await(await fetch(u('h='+encodeURIComponent(key)+'&from='+addD(dstr(new Date()),-400)))).json();
-      for(const k in j)if(j[k]&&Array.isArray(j[k].d)&&j[k].d.length)S.wl.h[k]=j[k];S.wlHAt=Date.now();LS.s(AX+'_wlh',S.wl.h);LS.s(AX+'_wlhAt',S.wlHAt)}
-  }catch(e){}
-  S.wlBusy=false;if(S.tab=='wl'||S.tab=='ov')draw()}
-function drawWl(v){wlFetch();
-  const W=wlItems();let h='<div class="stv"><div><button type="button" class="sbtn primary" id="wladdopen" style="width:auto;margin:0">➕ Ajouter une valeur à la watchlist</button></div>';
-  if(!W.length)h+='<div class="info">Votre watchlist est vide pour le moment. Ajoutez une première valeur ci-dessus.</div>';
-  else{
-    if(!S.url)h+='<div class="warn">Renseigne l’URL du script Google dans les réglages pour afficher les cours.</div>';
-    const rows=W.map(it=>{const q=S.wl.px[it.ticker],px=q&&q.p!=null?q.p:null,zone=it.zone_achat;let ec=null,txt,key,ects;
-      if(px!=null&&zone){ec=(px-zone)/zone*100;
-        if(ec<=0){txt="Dans la zone d'achat";key='dans'}else if(ec<=SEUIL_ZONE){txt='Proche de la zone';key='proche'}else{txt='Au-dessus de la zone';key='dessus'}
-        ects=(ec>=0?'+':'')+pyN(ec,1)+' %'}
-      else{ects='—';txt=!zone?'Zone non définie':'Prix indisponible';key='na'}
-      return{nom:it.nom,tk:it.ticker,ec,px,zt:zone?pEur(zone):'Non définie',ects,txt,key}});
-    rows.sort((a,b)=>(a.ec==null)-(b.ec==null)||(a.ec??0)-(b.ec??0)||(a.nom<b.nom?-1:a.nom>b.nom?1:0));
-    const cr="padding:7px 10px;text-align:right;white-space:nowrap;";
-    const head=`<tr style='border-bottom:2px solid #e2e8f0;'><th style='padding:7px 10px;text-align:left;'>Nom</th><th style='${cr}'>Prix Actuel</th><th class='hm' style='${cr}'>Var. 7 jours</th><th class='hm' style='${cr}'>Var. 30 jours</th><th style='${cr}'>Var. 6 mois</th><th style='${cr}'>Var. 12 mois</th><th class='hm' style='${cr}'>Zone d'achat</th><th style='${cr}'>Écart à la zone</th><th style='padding:7px 10px;text-align:left;'>Statut</th></tr>`;
-    let tr='',cards='';
-    rows.forEach(c=>{const[bg,tx]=wlColors(c.ec),vr=wlVars(c.tk),pt=(c.px!=null?pEur(c.px):'Indisponible')+wlJour(vr.jour[1]),badge=wlBadge(c.key,c.txt),nm=esc(c.nom);
-      tr+=`<tr style='background-color:${bg};color:${tx};font-weight:600;border-bottom:1px solid rgba(0,0,0,0.04);'><td style='padding:7px 10px;'>${nm}</td><td style='${cr}'>${pt}</td><td class='hm' style='${cr}'>${wlVar(...vr.semaine)}</td><td class='hm' style='${cr}'>${wlVar(...vr['30j'])}</td><td style='${cr}'>${wlVar(...vr['6m'])}</td><td style='${cr}'>${wlVar(...vr['12m'])}</td><td class='hm' style='${cr}'>${c.zt}</td><td style='${cr}'>${c.ects}</td><td style='padding:7px 10px;'>${badge}</td></tr>`;
-      const acc=(WLB[c.key]||WLB.na)[1],mini=(l,x)=>`<div><div style='font-size:0.66rem;color:#64748b;font-weight:600;'>${l}</div><div style='font-size:0.82rem;'>${x}</div></div>`;
-      cards+=`<div style='background:${bg};border-left:5px solid ${acc};border-radius:10px;padding:10px 12px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,0.06);'><div style='display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;'><span style='font-weight:800;font-size:0.98rem;color:#0f172a;'>${nm}</span>${badge}</div><div style='display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;gap:8px;flex-wrap:wrap;'><span style='font-size:1.15rem;font-weight:800;color:${tx};'>${pt}</span><span style='font-size:0.78rem;color:#475569;'>Zone : <b>${c.zt}</b> · Écart : <b style='color:${tx};'>${c.ects}</b></span></div><div style='display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.08);'>${mini('7 jours',wlVar(...vr.semaine))}${mini('30 jours',wlVar(...vr['30j']))}${mini('6 mois',wlVar(...vr['6m']))}${mini('12 mois',wlVar(...vr['12m']))}</div></div>`});
-    h+=`<div><div class='wl-table-wrap' style='overflow-x:auto;'><table class='pea-wl' style='width:100%;border-collapse:collapse;font-size:0.9rem;'><thead>${head}</thead><tbody>${tr}</tbody></table></div><div class='wl-cards'>${cards}</div></div>`}
-  v.innerHTML=h+'</div>'+fondX()}
-
-/* Fenêtre « ➕ Ajouter une valeur à la watchlist » (dialog_ajout_watchlist) */
-let WLD={choix:'',nom:'',tk:'',zone:'',err:'',ok:''};
-const wlNames=()=>[...new Set(S.tx.map(t=>t.nom).filter(n=>n&&n!='Compte Courant'))].sort();
-const wlTkOf=n=>{const p=R&&R.pos.find(x=>x.nom==n);if(p&&p.tk)return p.tk;const t=[...S.tx].reverse().find(x=>x.nom==n&&x.tk&&x.tk!='APPORT');return t?t.tk:''};
-const wlRq=(k,empty,html)=>`<div class="rq${empty?' req':''}" data-rqf="${k}">${html}</div>`;
-function wldRender(){const d=$('#wldlg'),nw=WLD.choix==WL_NEW,sel=WLD.choix!=='';
-  const opts=[[WL_NEW,WL_NEW],...wlNames().map(n=>[n,n])];
-  let h=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px"><h2 style="margin:0;font-size:1.2rem">➕ Ajouter une valeur à la watchlist</h2><button type="button" id="wld_x">✕</button></div>`;
-  h+=`<div class="c2"><div><div class="ft">Nom de l'action / ETF</div>${wlRq('choix',!WLD.choix,selBox('id="wld_choix"',opts,WLD.choix,'Choisissez une action existante ou ajoutez-en une nouvelle...'))}</div>`;
-  h+=nw?`<div><div class="ft">Nom (nouveau)</div>${wlRq('nom',!WLD.nom.trim(),`<input type="text" id="wld_nom" placeholder="Ex : LVMH" value="${esc(WLD.nom)}" autocomplete="off">`)}</div>`:'<div></div>';
-  h+=`</div><div class="c2"><div><div class="ft">Ticker</div>`;
-  h+=!sel?`<input type="text" disabled placeholder="Choisissez d'abord un nom">`:wlRq('tk',!WLD.tk.trim(),`<input type="text" id="wld_tk" ${nw?'placeholder="Ex : MC.PA" ':''}value="${esc(WLD.tk)}" autocomplete="off" autocapitalize="characters">`);
-  h+=`</div><div><div class="ft">Zone d'achat (€)</div>${numIn('id="wld_zone"',esc(WLD.zone),'',0.5,2,0)}</div></div>`;
-  h+=`<div style="margin-top:4px"></div><button type="button" class="sbtn primary" id="wld_add">Ajouter à la watchlist</button>`;
-  if(WLD.err)h+=`<div class="err">${esc(WLD.err)}</div>`;
-  if(WLD.ok)h+=`<div class="info" style="background:rgba(33,195,84,.14);color:#177233">✅ ${esc(WLD.ok)} ajouté à la watchlist.</div><button type="button" class="sbtn" id="wld_close">Fermer et actualiser le tableau</button>`;
-  d.innerHTML=h}
-function wldOpen(){WLD={choix:'',nom:'',tk:'',zone:'',err:'',ok:''};wldRender();$('#wldlg').showModal()}
-document.addEventListener('click',e=>{
-  if(e.target.closest('#wladdopen')){wldOpen();return}
-  if(e.target.closest('#wld_x')){$('#wldlg').close();return}
-  if(e.target.closest('#wld_close')){$('#wldlg').close();return}
-  if(e.target.closest('#wld_add')){
-    const nw=WLD.choix==WL_NEW,nom=(nw?WLD.nom:WLD.choix).trim(),tk=WLD.tk.toUpperCase().trim(),z=n2(WLD.zone);WLD.ok='';
-    if(!WLD.choix||!nom||!tk){WLD.err='⚠️ Le nom et le ticker sont obligatoires (encadrés en rouge).';wldRender();return}
-    const W=wlItems();if(W.some(i=>String(i.ticker).toUpperCase()==tk)){WLD.err=tk+' est déjà dans la watchlist.';wldRender();return}
-    W.push({ticker:tk,nom,zone_achat:z>0?z:null});cfgSave({watchlist:W});
-    WLD={choix:'',nom:'',tk:'',zone:'',err:'',ok:nom};S.wlAt=0;wldRender()}
-});
-document.addEventListener('change',e=>{if(e.target.id=='wld_choix'){WLD.choix=e.target.value;WLD.err='';WLD.ok='';WLD.tk=WLD.choix&&WLD.choix!=WL_NEW?wlTkOf(WLD.choix):'';WLD.nom='';wldRender()}});
-document.addEventListener('input',e=>{const i=e.target.id,m={wld_nom:'nom',wld_tk:'tk',wld_zone:'zone'}[i];if(!m)return;WLD[m]=e.target.value;
-  const w=e.target.closest('.rq');if(w)w.classList.toggle('req',!String(e.target.value).trim())});
-$('#wldlg').addEventListener('close',()=>{if(S.tab=='wl')draw()});
 
 /* ===== Simulation nouvelle opération — port de dialog_simulation_operation (app_perso.py) ===== */
 const fg=v=>isFinite(v)?String(parseFloat(Number(v).toPrecision(6))):'0';
@@ -2106,7 +1970,7 @@ function drawSim(v){
   setTimeout(()=>chartSim(n,verses,interR),0)}
 
 /* ---------- Affichage ---------- */
-const TABS=[['ov',"📊 Vue d'ensemble & Objectif"],['pos','📌 Positions & Transactions'],['app','💰 Apports'],['cla','🏆 Classements'],['sai','🗓️ Saisonnalité'],['perf','📈 Performances & Indices'],['his','📅 Historique'],['div','💶 Dividendes & Cartographie'],['fra','🔍 Frais'],['wl','👁️ Watchlist'],['sim','🧮 Simulateurs']];
+const TABS=[['ov',"📊 Vue d'ensemble & Objectif"],['pos','📌 Positions & Transactions'],['app','💰 Apports'],['cla','🏆 Classements'],['sai','🗓️ Saisonnalité'],['perf','📈 Performances & Indices'],['his','📅 Historique'],['div','💶 Dividendes & Cartographie'],['fra','🔍 Frais'],['sim','🧮 Simulateurs']];
 function chart(id,cfg){if(CH[id])CH[id].destroy();const el=document.getElementById(id);if(!el||!window.Chart)return;
   Chart.defaults.color='#334155';Chart.defaults.font.family='Manrope, Inter, sans-serif';
   /* comme Streamlit (spikemode « across ») : trait pointillé vertical sous le curseur sur tous les graphiques à axe des x (lignes et barres verticales) */
@@ -2135,7 +1999,6 @@ function draw(){TIPS.length=0;
   else if(S.tab=='fra')drawFra(v);
   else if(S.tab=='perf')drawPerf(v);
   else if(S.tab=='sim')drawSim(v);
-  else if(S.tab=='wl')drawWl(v);
 }
 
 /* ---------- Événements ---------- */
@@ -2143,7 +2006,6 @@ document.addEventListener('click',e=>{
   const tr=e.target.closest('tr[data-i]');if(tr){openOp(+tr.dataset.i);return}
   const t=e.target.closest('[data-t]');if(t){S.tab=t.dataset.t;draw();return}
   if(e.target.closest('#pfretry')){S.htry=null;S.hmsg='';ensureHist();return}
-  const wx=e.target.closest('[data-wldis]');if(wx){S.wlDis.add(wx.dataset.wldis);draw();return}
 });
 $('#cfg').onclick=()=>$('#dlg').showModal();
 /* ---------- Import CSV / Excel : même parcours que Streamlit (colonnes exigées, Ajouter / Remplacer, confirmation) ---------- */
@@ -2669,7 +2531,7 @@ if(!CRY&&CTOS.length>1){const b=document.createElement('div');b.id='ctosw';
   b.querySelector('select').onchange=e=>{const v=e.target.value,c=CTOS.find(x=>x.id===v);LS.s('hub_cto_sel',v);try{sessionStorage.setItem('cto_tab',S.tab)}catch(_){}
     location.href='cto.html?a='+v+(c?'&l='+encodeURIComponent(c.l):'')}}
 try{const t=sessionStorage.getItem('cto_tab');sessionStorage.removeItem('cto_tab');if(t&&TABS.some(x=>x[0]===t))S.tab=t}catch(_){}
-load();draw();refreshPrices();pull();wlFetch();cfgLoad();
+load();draw();refreshPrices();pull();cfgLoad();
 addEventListener('message',e=>{if(e.source===parent&&e.data&&e.data.hubHome){document.querySelectorAll('dialog[open]').forEach(d=>{try{d.close()}catch(_){}});if(S.tab!=='ov'){S.tab='ov';draw()}scrollTo(0,0)}}); /* retour à la page générale quand le hub le demande */
 </script>
 </body>

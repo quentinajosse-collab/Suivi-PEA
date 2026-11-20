@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0284c7">
+<title>Watchlist</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--ink:#0f172a;--mute:#64748b;--line:#e2e8f0;--up:#15803d;--dn:#b91c1c;--acc:#0284c7;--alt:#f8fafc}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1220;--card:#131c2e;--ink:#e5edf8;--mute:#94a3b8;--line:#243049;--alt:#0f1829;--acc:#4f8fd0;--up:#34d399;--dn:#f87171}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums;padding:calc(14px + env(safe-area-inset-top)) 0 calc(30px + env(safe-area-inset-bottom))}
+@media(prefers-color-scheme:light),(prefers-color-scheme:no-preference){body{background:radial-gradient(circle at 8% 8%,rgba(2,132,199,.10) 0%,transparent 45%),radial-gradient(circle at 92% 18%,rgba(124,58,237,.08) 0%,transparent 45%),radial-gradient(circle at 15% 92%,rgba(13,148,136,.08) 0%,transparent 45%),linear-gradient(180deg,#f8fafc 0%,#eef2f7 100%);background-attachment:fixed}}
+main{max-width:1100px;margin:0 auto;padding:0 clamp(12px,3vw,28px)}
+h1{font-size:1.4rem;margin:0 0 4px;letter-spacing:-.02em}
+.sub{color:var(--mute);font-size:13px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
+button{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:8px 14px;cursor:pointer}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+button.dg{color:var(--dn)}
+.up{color:var(--up)}.dn{color:var(--dn)}
+.msg{background:rgba(255,227,18,.14);color:#7a5b00;border-radius:10px;padding:10px 14px;font-size:14px;margin:8px 0}
+@media(prefers-color-scheme:dark){.msg{color:#fde68a}}
+.tw{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;min-width:520px}
+th,td{padding:11px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap;font-size:14px}
+th{color:var(--mute);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em;cursor:pointer;user-select:none;background:var(--alt);position:sticky;top:0}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:inherit}
+td:first-child{background:var(--card)}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:color-mix(in srgb,var(--acc) 8%,var(--card))}
+tr:last-child td{border-bottom:0}
+td small{display:block;color:var(--mute);font-size:11px}
+th.s-asc::after{content:" ▲";font-size:9px}th.s-desc::after{content:" ▼";font-size:9px}
+.pill{display:inline-block;min-width:78px;text-align:center;padding:3px 9px;border-radius:999px;font-weight:700;font-size:13px}
+.pill.up{background:color-mix(in srgb,var(--up) 14%,transparent)}.pill.dn{background:color-mix(in srgb,var(--dn) 14%,transparent)}.pill.fl{background:var(--alt);color:var(--mute)}
+.empty{padding:28px;text-align:center;color:var(--mute)}
+dialog{border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);padding:16px;width:calc(100% - 20px)}
+dialog::backdrop{background:#0008}
+#cdlg{max-width:860px}#edlg{max-width:420px}
+.hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.hd h2{margin:0;font-size:1.15rem}
+.big{font-size:1.9rem;font-weight:800;letter-spacing:-.02em;margin-top:6px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 8px}
+.chips button{padding:5px 11px;border-radius:999px;font-size:13px;color:var(--mute)}
+.chips button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.cust{display:none;gap:8px;align-items:flex-end;flex-wrap:wrap;margin:6px 0 10px}
+.cust.on{display:flex}
+label{display:block;font-size:12px;color:var(--mute);margin:10px 0 4px}
+.cust label{margin:0 0 3px}
+input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
+.cust input{width:auto}
+#cc{position:relative;height:300px;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+#cc svg{width:100%;height:100%;display:block}
+#tip{position:absolute;pointer-events:none;display:none;background:#0f172a;color:#fff;border-radius:8px;padding:7px 10px;font-size:12.5px;line-height:1.45;white-space:nowrap;z-index:5;box-shadow:0 6px 18px rgba(15,23,42,.3)}
+#tip b{font-size:14px}
+.cmsg{display:flex;align-items:center;justify-content:center;height:100%;color:var(--mute);text-align:center;padding:0 18px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+</style>
+</head>
+<body>
+<main>
+  <h1>👁️ Watchlist</h1>
+  <div class="sub" id="sub"></div>
+  <div class="bar"><button class="pri" id="add">➕ Ajouter une valeur</button><button id="ref">🔄 Actualiser</button></div>
+  <div id="msg"></div>
+  <div class="tw"><table><thead id="th"></thead><tbody id="tb"></tbody></table></div>
+</main>
+
+<dialog id="cdlg">
+  <div class="hd"><div><h2 id="ct"></h2><div class="sub" id="cs"></div></div>
+    <div style="display:flex;gap:6px"><button id="ced" title="Modifier">✎</button><button id="ccl">✕</button></div></div>
+  <div class="big" id="cp"></div><div id="cv" style="font-weight:700"></div>
+  <div class="chips" id="chips"></div>
+  <div class="cust" id="cust"><div><label>Du</label><input type="date" id="d1"></div><div><label>Au</label><input type="date" id="d2"></div><button class="pri" id="dok">OK</button></div>
+  <div id="cc"><div id="tip"></div></div>
+</dialog>
+
+<dialog id="edlg">
+  <h2 id="et" style="margin:0 0 4px;font-size:1.1rem">Ajouter une valeur</h2>
+  <label>Nom</label><input id="en" autocomplete="off" placeholder="Ex : LVMH">
+  <label>Ticker (Yahoo Finance)</label><input id="etk" autocomplete="off" autocapitalize="characters" placeholder="Ex : MC.PA, AAPL, BTC-EUR">
+  <label>Zone d'achat (€) — facultatif</label><input id="ez" type="number" step="0.01" min="0" inputmode="decimal">
+  <div class="msg" id="eerr" hidden></div>
+  <div class="bar" style="justify-content:space-between"><button class="dg" id="edel" hidden>🗑 Supprimer</button><span style="flex:1"></span><button id="ecn">Annuler</button><button class="pri" id="eok">Enregistrer</button></div>
+</dialog>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const LS={g(k){try{return JSON.parse(localStorage.getItem(k))}catch{return null}},s(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+const nf=d=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pad=n=>String(n).padStart(2,'0'),dstr=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const fPx=v=>v==null||!isFinite(v)?'–':nf(Math.abs(v)<1?4:2).format(v);
+const SG=v=>v>0?'+':v<0?'−':'';
+const fVar=(d,p)=>d==null?'–':`${SG(d)}${fPx(Math.abs(d))} (${SG(p)}${nf(2).format(Math.abs(p))} %)`;
+const cls=v=>v>0.00001?'up':v<-0.00001?'dn':'fl';
+const arrow=v=>v>0.00001?'▲':v<-0.00001?'▼':'▬';
+const URL_=()=>LS.g('url')||'';
+const qs=a=>{const u=URL_();return u+(u.includes('?')?'&':'?')+a};
+
+/* ---------- Données ---------- */
+let W=LS.g('wl_list'),PX=LS.g('wl_px')||{},SORT={k:'nom',d:1},synced=false,busy=false;
+const norm=a=>(a||[]).filter(x=>x&&x.ticker).map(x=>({ticker:String(x.ticker).toUpperCase().trim(),nom:x.nom||x.ticker,zone_achat:x.zone_achat>0?+x.zone_achat:null}));
+const merge=(a,b)=>{const m=new Map(a.map(x=>[x.ticker,x]));norm(b).forEach(x=>{if(!m.has(x.ticker))m.set(x.ticker,x)});return[...m.values()]};
+/* Reprise des anciennes watchlists (PEA, CTO, Crypto), stockées dans leurs réglages locaux */
+function migrateLocal(){let L=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k==='cfg'||/_cfg$/.test(k)){const v=LS.g(k);if(v&&Array.isArray(v.watchlist))L=merge(L,v.watchlist)}}return L}
+if(!Array.isArray(W)){W=migrateLocal();LS.s('wl_list',W)}else W=norm(W);
+
+/* ---------- Supabase ---------- */
+const SB={get s(){return LS.g('sb')||{}},set s(v){LS.s('sb',v)}};
+async function raw(path,o={},tok){const s=SB.s,hd={apikey:s.key,'Content-Type':'application/json',...(tok?{Authorization:'Bearer '+tok}:{}),...(o.headers||{})};
+  const r=await fetch(s.url+path,{...o,headers:hd}),t=await r.text();if(!r.ok)throw new Error(t.slice(0,160)||r.status);return t?JSON.parse(t):null}
+async function ensure(){let s=SB.s;if(s.access&&s.exp>Date.now()/1000+60)return s.access;
+  const j=await raw('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:s.refresh})});
+  SB.s={...s,access:j.access_token,refresh:j.refresh_token,uid:j.user.id,exp:Math.floor(Date.now()/1000)+(j.expires_in||3600)};return j.access_token}
+const connected=()=>!!(SB.s.url&&SB.s.refresh);
+async function pull(){if(!connected())return;
+  try{const tk=await ensure(),uid=SB.s.uid,j=await raw(`/rest/v1/app_storage?select=value&key=eq.watchlist&user_id=eq.${uid}`,{},tk);synced=true;
+    if(j.length&&Array.isArray(j[0].value)){W=norm(j[0].value);LS.s('wl_list',W)}
+    else{ /* première fois : reprise des watchlists enregistrées dans les réglages PEA / CTO / Crypto */
+      const c=await raw(`/rest/v1/app_storage?select=value&key=like.config*&user_id=eq.${uid}`,{},tk);let M=W;
+      (c||[]).forEach(r=>{if(r.value&&Array.isArray(r.value.watchlist))M=merge(M,r.value.watchlist)});
+      if(M.length){W=M;LS.s('wl_list',W);await save()}}
+    render();refresh()}catch(e){synced=false}}
+async function save(){LS.s('wl_list',W);if(!connected()||!synced)return;
+  try{await raw('/rest/v1/app_storage?on_conflict=user_id,key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({user_id:SB.s.uid,key:'watchlist',value:W})},await ensure())}catch(e){}}
+
+/* ---------- Cours et tableau ---------- */
+function msg(t){$('#msg').innerHTML=t?`<div class="msg">${t}</div>`:''}
+async function refresh(){if(busy||!W.length)return;
+  if(!URL_()){msg('Renseigne l’adresse du script Google dans le hub (⚙️ Réglages) pour afficher les cours.');return}
+  busy=true;
+  try{const j=await(await fetch(qs('t='+encodeURIComponent(W.map(x=>x.ticker).join(','))))).json();
+    for(const k in j)if(j[k]&&j[k].p!=null)PX[k]=j[k];LS.s('wl_px',PX);LS.s('wl_pxAt',Date.now());msg('')}
+  catch(e){msg('Cours indisponibles (script Google injoignable) : derniers cours connus affichés.')}
+  busy=false;render()}
+const rowsOf=()=>W.map(it=>{const q=PX[it.ticker]||{},p=q.p!=null?q.p:null,pc=q.pc!=null?q.pc:null,d=p!=null&&pc?p-pc:null,pct=d!=null?d/pc*100:null,z=it.zone_achat,ec=p!=null&&z?(p-z)/z*100:null;
+  return{...it,p,d,pct,ec}});
+function render(){
+  const R=rowsOf(),hasZ=R.some(r=>r.zone_achat),at=LS.g('wl_pxAt');
+  $('#sub').textContent=W.length+' valeur'+(W.length>1?'s':'')+(at?' · cours de '+new Date(at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'');
+  const cols=[['nom','Valeur'],['p','Prix'],['d','Var. jour'],['pct','Var. jour %'],...(hasZ?[['zone_achat',"Zone d'achat"],['ec','Écart']]:[])];
+  $('#th').innerHTML='<tr>'+cols.map(([k,l])=>`<th data-s="${k}" class="${SORT.k===k?(SORT.d>0?'s-asc':'s-desc'):''}">${l}</th>`).join('')+'</tr>';
+  const key=r=>{const v=r[SORT.k];return v==null?null:typeof v==='string'?v.toLowerCase():v};
+  R.sort((a,b)=>{const x=key(a),y=key(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return-1;return(x<y?-1:x>y?1:0)*SORT.d});
+  if(!R.length){$('#tb').innerHTML=`<tr><td colspan="6" class="empty">Ta watchlist est vide. Ajoute une première valeur.</td></tr>`;return}
+  $('#tb').innerHTML=R.map(r=>`<tr data-tk="${esc(r.ticker)}"><td><b>${esc(r.nom)}</b><small>${esc(r.ticker)}</small></td><td><b>${r.p!=null?fPx(r.p)+' €':'–'}</b></td>
+   <td class="${cls(r.d)}">${r.d!=null?`${arrow(r.d)} ${SG(r.d)}${fPx(Math.abs(r.d))} €`:'–'}</td>
+   <td>${r.pct!=null?`<span class="pill ${cls(r.pct)}">${arrow(r.pct)} ${SG(r.pct)}${nf(2).format(Math.abs(r.pct))} %</span>`:'–'}</td>
+   ${hasZ?`<td>${r.zone_achat?fPx(r.zone_achat)+' €':'–'}</td><td class="${r.ec!=null&&r.ec<=0?'up':''}">${r.ec!=null?SG(r.ec)+nf(1).format(Math.abs(r.ec))+' %':'–'}</td>`:''}</tr>`).join('')}
+$('#th').onclick=e=>{const th=e.target.closest('th');if(!th)return;const k=th.dataset.s;SORT=SORT.k===k?{k,d:-SORT.d}:{k,d:k==='nom'?1:-1};render()};
+$('#tb').onclick=e=>{const tr=e.target.closest('tr[data-tk]');if(tr)openChart(tr.dataset.tk)};
+$('#ref').onclick=refresh;
+
+/* ---------- Séries de prix ---------- */
+const RG=[['1h','1 h'],['1j','1 j'],['7j','7 j'],['1m','1 mois'],['3m','3 mois'],['6m','6 mois'],['1a','1 an'],['5a','5 ans'],['10a','10 ans'],['max','Depuis le début'],['custom','Période…']];
+const DAYS={'1m':31,'3m':92,'6m':183,'1a':366,'5a':1827,'10a':3653};
+const INTRA={'1h':['1d','1m'],'1j':['1d','5m'],'7j':['1mo','30m']};
+const MEM={};
+async function cached(key,ttl,fn){const c=MEM[key];if(c&&Date.now()-c.t<ttl)return c.v;const v=await fn();MEM[key]={t:Date.now(),v};return v}
+async function series(tk,rg,d1,d2){
+  if(!URL_())return{err:'Renseigne l’adresse du script Google dans le hub (⚙️ Réglages).'};
+  const enc=encodeURIComponent,today=dstr(new Date());
+  try{
+    if(INTRA[rg]){const[r,i]=INTRA[rg],j=await cached(tk+'|'+r+'|'+i,6e4,async()=>(await fetch(qs('c='+enc(tk)+'&range='+r+'&interval='+i))).json());
+      if(!j||!Array.isArray(j.t)||!j.t.length)return{err:'Données intraday indisponibles : ajoute la fonction du fichier script_google_watchlist.gs à ton script Google, puis redéploie-le.'};
+      let pts=j.t.map((t,k)=>[t*1000,j.c[k]]);const last=pts[pts.length-1][0];
+      if(rg==='1h')pts=pts.filter(p=>p[0]>=last-36e5);else if(rg==='7j')pts=pts.filter(p=>p[0]>=last-7*864e5);
+      return pts.length<2?{err:'Pas assez de points sur cette période.'}:{pts,ref:rg==='1j'&&j.pc?j.pc:null,intra:rg!=='7j'}}
+    const from=rg==='custom'?d1:rg==='max'?'1990-01-01':dstr(new Date(Date.now()-DAYS[rg]*864e5));
+    const j=await cached(tk+'|h|'+from,18e5,async()=>(await fetch(qs('h='+enc(tk)+'&from='+from))).json()),h=j&&(j[tk]||Object.values(j)[0]);
+    if(!h||!Array.isArray(h.d)||!h.d.length)return{err:'Historique indisponible pour ce titre.'};
+    const pts=[];h.d.forEach((d,i)=>{if(h.c[i]!=null&&d>=from&&(rg!=='custom'||!d2||d<=d2))pts.push([Date.parse(d+'T12:00:00'),h.c[i]])});
+    const q=PX[tk];if(q&&q.p!=null&&(rg!=='custom'||!d2||d2>=today)&&(!pts.length||dstr(new Date(pts[pts.length-1][0]))<today))pts.push([Date.now(),q.p]);
+    return pts.length<2?{err:'Pas assez de points sur cette période.'}:{pts,ref:null,intra:false}}
+  catch(e){return{err:'Données indisponibles (script Google injoignable).'}}}
+
+/* ---------- Graphique ---------- */
+let CUR=null,TOK=0;
+const JS=['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'],MS=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+function fTime(ts,R,rg,long){const d=new Date(ts);
+  if(R.intra)return pad(d.getHours())+':'+pad(d.getMinutes());
+  if(rg==='7j')return long?`${JS[d.getDay()]} ${pad(d.getDate())}/${pad(d.getMonth()+1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`:`${pad(d.getDate())}/${pad(d.getMonth()+1)}`;
+  const span=(R.pts[R.pts.length-1][0]-R.pts[0][0])/864e5;
+  if(long)return `${JS[d.getDay()]} ${d.getDate()} ${MS[d.getMonth()]} ${d.getFullYear()}`;
+  return span>500?`${MS[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`:`${pad(d.getDate())}/${pad(d.getMonth()+1)}`}
+function openChart(tk){const it=W.find(x=>x.ticker===tk);if(!it)return;CUR={tk,it,rg:'1j'};
+  const t=new Date(),m=new Date(t.getTime()-30*864e5);$('#d1').value=dstr(m);$('#d2').value=dstr(t);
+  $('#ct').textContent=it.nom;$('#cs').textContent=tk;
+  $('#chips').innerHTML=RG.map(([k,l])=>`<button data-r="${k}">${l}</button>`).join('');
+  if(!$('#cdlg').open)$('#cdlg').showModal();loadChart()}
+async function loadChart(){const c=CUR;if(!c)return;const my=++TOK;
+  document.querySelectorAll('#chips button').forEach(b=>b.classList.toggle('on',b.dataset.r===c.rg));$('#cust').classList.toggle('on',c.rg==='custom');
+  const q=PX[c.tk]||{};$('#cp').textContent=q.p!=null?fPx(q.p)+' €':'';
+  $('#cc').innerHTML='<div class="cmsg">Chargement…</div><div id="tip"></div>';
+  const R=await series(c.tk,c.rg,$('#d1').value,$('#d2').value);if(my!==TOK)return;
+  if(R.err){$('#cc').innerHTML=`<div class="cmsg">${esc(R.err)}</div><div id="tip"></div>`;$('#cv').textContent='';return}
+  c.R=R;draw()}
+function draw(){const c=CUR;if(!c||!c.R)return;const R=c.R,P=R.pts,n=P.length,box=$('#cc'),Wd=box.clientWidth||320,Ht=300,pl=56,pr=10,pt=12,pb=26;
+  const ref=R.ref!=null?R.ref:P[0][1],last=P[n-1][1],dd=last-ref,dp=ref?dd/ref*100:0,col=dd>=0?'var(--up)':'var(--dn)';
+  $('#cp').textContent=fPx(last)+' €';$('#cv').innerHTML=`<span class="${cls(dd)}">${arrow(dd)} ${fVar(dd,dp)}</span> <span class="sub" style="font-weight:400">sur la période</span>`;
+  let lo=Math.min(...P.map(p=>p[1])),hi=Math.max(...P.map(p=>p[1]));if(R.ref!=null){lo=Math.min(lo,R.ref);hi=Math.max(hi,R.ref)}
+  const sp=(hi-lo)||Math.abs(hi)*.02||1;lo-=sp*.08;hi+=sp*.08;
+  const X=i=>pl+i*(Wd-pl-pr)/(n-1),Y=v=>pt+(hi-v)/(hi-lo)*(Ht-pt-pb);
+  const path=P.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p[1]).toFixed(1)).join('');
+  const gl=[0,1,2,3].map(k=>{const v=lo+(hi-lo)*k/3,y=Y(v).toFixed(1);return`<line x1="${pl}" x2="${Wd-pr}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-dasharray="3 3"/><text x="${pl-6}" y="${(+y+4)}" text-anchor="end" font-size="11" fill="var(--mute)">${fPx(v)}</text>`}).join('');
+  const ti=[...new Set([0,.25,.5,.75,1].map(f=>Math.round(f*(n-1))))],xl=ti.map(i=>`<text x="${X(i).toFixed(1)}" y="${Ht-7}" font-size="11" fill="var(--mute)" text-anchor="${i===0?'start':i===n-1?'end':'middle'}">${fTime(P[i][0],R,c.rg,false)}</text>`).join('');
+  const rl=R.ref!=null?`<line x1="${pl}" x2="${Wd-pr}" y1="${Y(R.ref).toFixed(1)}" y2="${Y(R.ref).toFixed(1)}" stroke="var(--mute)" stroke-dasharray="5 4"/>`:'';
+  box.innerHTML=`<svg viewBox="0 0 ${Wd} ${Ht}" preserveAspectRatio="none"><defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" style="stop-color:${col};stop-opacity:.28"/><stop offset="1" style="stop-color:${col};stop-opacity:0"/></linearGradient></defs>${gl}${xl}${rl}
+   <path d="${path}L${X(n-1).toFixed(1)} ${Ht-pb}L${pl} ${Ht-pb}Z" fill="url(#g)"/><path d="${path}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round"/>
+   <line id="xl" y1="${pt}" y2="${Ht-pb}" stroke="var(--mute)" stroke-dasharray="3 3" style="display:none"/><circle id="xc" r="4.5" fill="${col}" stroke="var(--card)" stroke-width="2" style="display:none"/></svg><div id="tip"></div>`;
+  const sv=box.querySelector('svg'),tip=$('#tip'),xl_=$('#xl'),xc=$('#xc');
+  const mv=e=>{const r=sv.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*Wd,i=Math.max(0,Math.min(n-1,Math.round((px-pl)/((Wd-pl-pr)/(n-1))))),x=X(i),y=Y(P[i][1]),d=P[i][1]-ref,p=ref?d/ref*100:0;
+    xl_.setAttribute('x1',x);xl_.setAttribute('x2',x);xc.setAttribute('cx',x);xc.setAttribute('cy',y);xl_.style.display=xc.style.display='';
+    tip.innerHTML=`<div>${fTime(P[i][0],R,c.rg,true)}</div><b>${fPx(P[i][1])} €</b><div style="color:${d>=0?'#4ade80':'#f87171'}">${arrow(d)} ${fVar(d,p)}</div>`;tip.style.display='block';
+    const bw=box.clientWidth,tw=tip.offsetWidth,lx=x/Wd*bw;tip.style.left=Math.max(4,Math.min(bw-tw-4,lx-tw/2))+'px';tip.style.top=Math.max(0,y/Ht*box.clientHeight-tip.offsetHeight-14)+'px'};
+  sv.onpointermove=mv;sv.onpointerdown=mv;sv.onpointerleave=()=>{tip.style.display='none';xl_.style.display=xc.style.display='none'}}
+$('#chips').onclick=e=>{const b=e.target.closest('[data-r]');if(!b||!CUR)return;CUR.rg=b.dataset.r;loadChart()};
+$('#dok').onclick=()=>{if($('#d1').value&&$('#d2').value&&$('#d1').value<=$('#d2').value)loadChart()};
+$('#ccl').onclick=()=>$('#cdlg').close();
+addEventListener('resize',()=>{if($('#cdlg').open)draw()});
+
+/* ---------- Ajout / modification ---------- */
+let EDIT=null;
+function openEdit(tk){EDIT=tk||null;const it=tk&&W.find(x=>x.ticker===tk);
+  $('#et').textContent=it?'Modifier la valeur':'Ajouter une valeur';$('#en').value=it?it.nom:'';$('#etk').value=it?it.ticker:'';$('#etk').disabled=!!it;$('#ez').value=it&&it.zone_achat?it.zone_achat:'';
+  $('#eerr').hidden=true;$('#edel').hidden=!it;$('#edlg').showModal()}
+$('#add').onclick=()=>openEdit();$('#ced').onclick=()=>{const t=CUR&&CUR.tk;$('#cdlg').close();openEdit(t)};
+$('#ecn').onclick=()=>$('#edlg').close();
+$('#eok').onclick=async()=>{const nom=$('#en').value.trim(),tk=$('#etk').value.trim().toUpperCase(),z=parseFloat(String($('#ez').value).replace(',','.'))||null,er=t=>{$('#eerr').textContent=t;$('#eerr').hidden=false};
+  if(!tk)return er('Le ticker est obligatoire.');if(!nom)return er('Le nom est obligatoire.');
+  if(EDIT){const it=W.find(x=>x.ticker===EDIT);it.nom=nom;it.zone_achat=z>0?z:null}
+  else{if(W.some(x=>x.ticker===tk))return er(tk+' est déjà dans la watchlist.');W.push({ticker:tk,nom,zone_achat:z>0?z:null})}
+  $('#edlg').close();render();await save();refresh()};
+$('#edel').onclick=async()=>{if(!EDIT||!confirm('Retirer cette valeur de la watchlist ?'))return;W=W.filter(x=>x.ticker!==EDIT);$('#edlg').close();render();await save()};
+
+/* ---------- Démarrage ---------- */
+addEventListener('storage',e=>{if(e.key==='url')refresh();if(e.key==='sb')pull();if(e.key==='wl_list'){W=norm(LS.g('wl_list'));render()}});
+addEventListener('message',e=>{if(e.source===parent&&e.data&&e.data.hubHome){document.querySelectorAll('dialog[open]').forEach(d=>{try{d.close()}catch(_){}});scrollTo(0,0)}});
+setInterval(()=>{if(!document.hidden)refresh()},6e4);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
+render();refresh();pull();
+</script>
+</body>
+</html>

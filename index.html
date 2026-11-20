@@ -160,6 +160,7 @@ const MODS0=[
  {id:'pea',ic:'📈',lb:'PEA',src:'pea.html'},
  '@cto',
  {id:'crypto',ic:'₿',lb:'Crypto'},
+ {id:'watchlist',ic:'👁️',lb:'Watchlist',src:'depenses.html?m=watchlist'},
  {id:'livrets',ic:'🐖',lb:'Épargne',src:'depenses.html?m=livrets'},
  {id:'epargne',ic:'🎁',lb:'Épargne salariale',src:'depenses.html?m=epargne'},
  {id:'immo',ic:'🏡',lb:'Immobilier',src:'depenses.html?m=immo'},
@@ -515,7 +516,7 @@ $('#cfap').onclick=()=>cfgSaveAll(false);
 $('#cfok').onclick=()=>{cfgSaveAll(true);dlg.close()};
 
 /* ---------- Sauvegarde complète (export / import JSON de toutes les données) ---------- */
-const OKEY=k=>/^(raw|csv|cfg|url|depenses_.*|hub_cfg|hub_acc|cto\d*_(raw|csv|cfg))$/.test(k),bkst=t=>$('#bkst').textContent=t;
+const OKEY=k=>/^(raw|csv|cfg|url|depenses_.*|hub_cfg|hub_acc|wl_list|cto\d*_(raw|csv|cfg))$/.test(k),bkst=t=>$('#bkst').textContent=t;
 $('#bkx').onclick=()=>{const d={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(OKEY(k))d[k]=localStorage.getItem(k)}
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({app:'patrimoine',version:1,date:new Date().toISOString(),data:d})],{type:'application/json'}));
   a.download='patrimoine_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
@@ -531,7 +532,7 @@ $('#bkf').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)r
     if(s.url&&s.refresh&&navigator.onLine){
       try{const tk=await token(),uid=sbs().uid,up=(key,value)=>api('/rest/v1/app_storage?on_conflict=user_id,key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({user_id:uid,key,value})},tk);
         for(const k of ks){let m,v;try{v=JSON.parse(o.data[k])}catch{continue}if(v==null)continue;
-          if(k==='raw')await up('transactions',v);else if(k==='cfg')await up('config',v);
+          if(k==='raw')await up('transactions',v);else if(k==='cfg')await up('config',v);else if(k==='wl_list')await up('watchlist',v);
           else if(m=k.match(/^(cto\d*)_(raw|cfg)$/))await up((m[2]==='raw'?'transactions_':'config_')+m[1],v)}
         msg+=' Envoyés au cloud.'}catch(err){msg+=' Envoi au cloud impossible : '+err.message}}
     bkst(msg);setTimeout(()=>location.reload(),1200)}
