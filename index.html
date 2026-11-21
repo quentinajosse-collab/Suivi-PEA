@@ -405,20 +405,20 @@ function renderHome(){
    if(tp==null||!isFinite(tp)){tr.hidden=true}else{const k=tg>=0?'up':'dn';tr.hidden=false;tr.className='tr '+k;tr.innerHTML='<i></i><b>'+(tg<0?'−':'+')+eur(Math.abs(tg))+' · '+(tg<0?'−':'+')+Math.abs(tp).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' %</b>'}}
   const cl=v=>v>0?'up':v<0?'dn':'';
   const pct=v=>v==null||!isFinite(v)?'':`<div class="m"><b class="${cl(v)}">${v>0?'▲':v<0?'▼':'■'} ${v<0?'−':'+'}${Math.abs(v).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} %</b></div>`,
-    acct=c=>c?`<div class="v">${eur(c.total)}</div>`+pct(c.apports>0?c.gain/c.apports*100:null):'<div class="m">Pas encore de données</div>',
+    acct=c=>c?`<div class="v">${eur2(c.total)}</div>`+pct(c.apports>0?c.gain/c.apports*100:null):'<div class="m">Pas encore de données</div>',
     cashOut=ia+di.paid+di.ip+di.ass,imR=iv>0&&cashOut>0?(iv-di.crd-cashOut)/cashOut*100:null;
   const ctoTile=(a,c)=>['cto@'+a.id,'🏦',esc(nm(a)),acct(c)];
   const cry=AB('Crypto'),cryCto=cry&&cry.inCto&&ctos.find(a=>a.id===cry.inCto);
   const T=[
-   ['depenses','💸','Dépenses (ce mois)',`<div class="v dn">−${eur(dm.d)}</div><div class="m">Revenus ${eur(dm.r)} · solde <span class="${cl(dm.r-dm.d)}">${eur(dm.r-dm.d)}</span></div>`],
+   ['depenses','💸','Dépenses (ce mois)',`<div class="v dn">−${eur2(dm.d)}</div><div class="m">Revenus ${eur2(dm.r)} · solde <span class="${cl(dm.r-dm.d)}">${eur2(dm.r-dm.d)}</span></div>`],
 
    ['pea','📈','PEA',acct(p)],
    ...ctos.map((a,i)=>ctoTile(a,cd[i])),
    ['crypto','₿','Crypto',acct(cr)],
-   ...(bkA.length?[['depenses','🏧','Comptes bancaires',`<div class="v">${eur(sb)}</div>`+bkA.map(a=>`<div class="m">${esc(nm(a))}${brokerOf(a,A)?' · '+esc(brokerOf(a,A)):''} : <b>${eur(bal(a))}</b></div>`).join('')]]:[]),
-   ...(lvAll.length?[['livrets','🐖','Livrets',`<div class="v">${eur(sl)}</div>`+(()=>{const li=lvA.map(a=>livAcc(D,a)),ok=li.some(x=>x.taux!=null),ti=li.reduce((t,x)=>t+x.acc,0);return ok?`<div class="m">Intérêts en cours : <b class="up">+${ti.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €</b></div>`:''})()+lvA.map(a=>`<div class="m">${esc(nm(a))}${brokerOf(a,A)?' · '+esc(brokerOf(a,A)):''} : <b>${eur(bal(a))}</b></div>`).join('')+(lvC?`<div class="m">${lvC} livret${lvC>1?'s':''} clôturé${lvC>1?'s':''} (solde à 0)</div>`:'')]]:[]),
-   ['epargne','🎁','Épargne salariale',de.n?`<div class="v">${eur(de.cur)}</div>`+((de.plans.PEE||de.plans.PERCO||de.plans.PEG)?`<div class="m">${['PEE','PERCO','PEG'].filter(k=>k!=='PEG'||de.plans.PEG!=null).map(k=>k+' '+eur(de.plans[k]||0)).join(' · ')}</div>`:'')+pct(de.has&&de.tp>0?(de.cur+de.tr-de.tp)/de.tp*100:null):'<div class="m">Aucun versement saisi</div>'],
-   ['immo','🏡',im.nom?esc(im.nom):'Immobilier',(di.n||iv||ia)?`<div class="v">${eur(iv||immoBrut)}</div>`+(im.type?`<div class="m">${esc(im.type)}${+im.loyer>0?' · loyers '+eur(+im.loyer)+'/mois':''}</div>`:'')+(imR==null?(iv?'':'<div class="m">Valeur estimée à saisir</div>'):pct(imR)):'<div class="m">Aucun bien ni prêt saisi</div>'],
+   ...(bkA.length?[['depenses','🏧','Comptes bancaires',`<div class="v">${eur2(sb)}</div>`+bkA.map(a=>`<div class="m">${esc(nm(a))}${brokerOf(a,A)?' · '+esc(brokerOf(a,A)):''} : <b>${eur2(bal(a))}</b></div>`).join('')]]:[]),
+   ...(lvAll.length?[['livrets','🐖','Livrets',`<div class="v">${eur2(sl)}</div>`+(()=>{const li=lvA.map(a=>livAcc(D,a)),ok=li.some(x=>x.taux!=null),ti=li.reduce((t,x)=>t+x.acc,0);return ok?`<div class="m">Intérêts en cours : <b class="up">+${ti.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €</b></div>`:''})()+lvA.map(a=>`<div class="m">${esc(nm(a))}${brokerOf(a,A)?' · '+esc(brokerOf(a,A)):''} : <b>${eur2(bal(a))}</b></div>`).join('')+(lvC?`<div class="m">${lvC} livret${lvC>1?'s':''} clôturé${lvC>1?'s':''} (solde à 0)</div>`:'')]]:[]),
+   ['epargne','🎁','Épargne salariale',de.n?`<div class="v">${eur2(de.cur)}</div>`+((de.plans.PEE||de.plans.PERCO||de.plans.PEG)?`<div class="m">${['PEE','PERCO','PEG'].filter(k=>k!=='PEG'||de.plans.PEG!=null).map(k=>k+' '+eur2(de.plans[k]||0)).join(' · ')}</div>`:'')+pct(de.has&&de.tp>0?(de.cur+de.tr-de.tp)/de.tp*100:null):'<div class="m">Aucun versement saisi</div>'],
+   ['immo','🏡',im.nom?esc(im.nom):'Immobilier',(di.n||iv||ia)?`<div class="v">${eur2(iv||immoBrut)}</div>`+(im.type?`<div class="m">${esc(im.type)}${+im.loyer>0?' · loyers '+eur2(+im.loyer)+'/mois':''}</div>`:'')+(imR==null?(iv?'':'<div class="m">Valeur estimée à saisir</div>'):pct(imR)):'<div class="m">Aucun bien ni prêt saisi</div>'],
    ];
   $('#tiles').innerHTML=T.map(([id,ic,t,b])=>`<button class="t${b.includes('À venir')?' soon':''}" data-go="${id}"><h3>${ic} ${t}</h3>${b}</button>`).join('');
   /* instantané du jour (points réels du graphique) */
