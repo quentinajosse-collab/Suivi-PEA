@@ -386,13 +386,13 @@ function renderHome(){
     if(!o||o.b!==b||o.n!==n){sn[td]={b,n};const ks=Object.keys(sn).sort();while(ks.length>900)delete sn[ks.shift()];LS.s('hub_snap',sn)}}
   const EP=evoPoints(net_,A,D,cf,net_?net:brut);drawEvo(EP);drawTab(EP);
   const tI=todayI(),ai=$('#asof');if(!ai.value||ai.value>tI)ai.value=tI;const ao=ai.value,past=ao<tI;document.body.classList.toggle('past',past);
-  let items=[['PEA','📈',p?p.total:0],['CTO','🏦',ct?ct.total:0],['Crypto','₿',cr?cr.total:0],['Épargne salariale','🎁',de.cur],['Comptes bancaires','🏧',sb],['Livrets','🐖',sl],['Immobilier','🏡',immoNet,iv>0?'Bien estimé à '+eur(iv):'']];
+  let items=[['PEA','📈',p?p.total:0],['CTO','🏦',ct?ct.total:0],['Crypto','₿',cr?cr.total:0],['Épargne salariale','🎁',de.cur],['Comptes bancaires','🏧',sb],['Livrets','🐖',sl],['Immobilier','🏡',net_?immoNet:immoBrut,net_&&iv>0?'Bien estimé à '+eur(iv):'']];
   const asb=$('#asb');
   if(past){const ST=stateAt(ao,A,D,cf,net_),dl=new Date(ao+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});items=ST.items;
     $('#tot').textContent=eur(ST.total);$('#totsub').textContent='Patrimoine au '+dl+' ('+(net_?'net':'brut')+')';$('#trend').hidden=true;
     asb.hidden=false;asb.innerHTML='📅 <b>Vue au '+dl+'</b>'}
   else asb.hidden=true;
-  drawRep(items,past?net_:true);
+  drawRep(items,net_);
   /* par courtier */
   const G={};A.forEach(a=>{const b=brokerOf(a,A).trim();(G[b]=G[b]||[]).push(a)});
   const val=a=>isBk(a)?bal(a):a.type==='PEA'?(p?p.total:null):a.type==='CTO'?(LS.g('hub_'+a.id)||{}).total:a.type==='Épargne salariale'?(de.n?de.cur:null):a.type==='Crypto'?(cr?cr.total:null):null;
