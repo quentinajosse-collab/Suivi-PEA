@@ -741,7 +741,7 @@ function drawPerf(v){
 
 let _pubS='';
 /* Historique mensuel de la valeur du compte, pour le graphique d'évolution du patrimoine de la page Général */
-const pubHist=(C,key)=>{try{if(!C||!C.D||!C.V||!C.D.length)return;const m=new Map();C.D.forEach((d,i)=>m.set(String(d).slice(0,7),[String(d),Math.round(C.V[i]*100)/100]));const a=[...m.values()].sort((x,y)=>x[0]<y[0]?-1:1),str=JSON.stringify(a);if(str!==_pubS){_pubS=str;localStorage.setItem(key,str)}}catch(e){}};
+const pubHist=(C,key)=>{try{if(!C||!C.D||!C.V||!C.D.length)return;const m=new Map();C.D.forEach((d,i)=>m.set(String(d).slice(0,7),[String(d),Math.round(C.V[i]*100)/100]));const a=[...m.values()].sort((x,y)=>x[0]<y[0]?-1:1),str=JSON.stringify(a);if(str!==_pubS){_pubS=str;localStorage.setItem(key,str)}const cut=new Date(Date.now()-430*864e5).toISOString().slice(0,10),dl=JSON.stringify(C.D.map((d,i)=>[String(d),Math.round(C.V[i]*100)/100]).filter(x=>x[0]>=cut));if(dl!==localStorage.getItem(key+'d'))localStorage.setItem(key+'d',dl)}catch(e){}};
 const getC=()=>{if(!Object.keys(S.hist).length)return null;try{const C=perfCalc();pubHist(C,'hub_pea_hist');return C}catch(e){return null}};
 const needHist=()=>`<p class="hint">${S.hbusy?'Chargement de l’historique des cours…':'Historique des cours indisponible : vérifie l’adresse du script Google dans Réglages.'}</p>`;
 function sales(){const by={},out=[];S.tx.forEach(t=>{if(t.type!='APPORT'&&t.type!='RETRAIT')(by[t.tk]=by[t.tk]||[]).push(t)});

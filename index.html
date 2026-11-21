@@ -81,12 +81,12 @@ dialog .hint{color:var(--mut);font-size:12px;margin:6px 0 0}
 #rep .rw{display:flex;gap:22px;align-items:center;flex-wrap:wrap;margin-top:10px}
 #rep .dn-w{position:relative;width:200px;height:200px;flex:none;margin:0 auto}
 #rep .dn-w svg{width:200px;height:200px;filter:drop-shadow(0 6px 14px rgba(15,23,42,.14))}
-#rep .sl{transition:opacity .2s,stroke-width .2s;cursor:pointer}#rep .sl.dim{opacity:.28}#rep .sl:hover{stroke-width:29}
+#rep .sl{transition:opacity .2s,stroke-width .2s;cursor:pointer}#rep .sl.dim{opacity:.28}@media(hover:hover){#rep .sl:hover{stroke-width:29}}
 #rep .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-align:center;padding:0 46px}
 #rep .ctr small{color:var(--mut);font-size:11px;line-height:1.2}#rep .ctr b{font-size:1.2rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}#rep .ctr em{font-style:normal;font-size:12px;color:var(--mut);min-height:14px}
 #rep .lg{flex:1;min-width:230px;display:flex;flex-direction:column;gap:6px}
 #rep .li{display:grid;grid-template-columns:34px 1fr auto;grid-template-areas:"ic nm am" "pb pb pb";align-items:center;gap:2px 10px;padding:8px 10px;border-radius:14px;border:1px solid transparent;transition:background .15s,border-color .15s;cursor:default}
-#rep .li.on,#rep .li:hover{background:color-mix(in srgb,var(--acc) 7%,transparent);border-color:var(--line)}
+#rep .li.on{background:color-mix(in srgb,var(--acc) 7%,transparent);border-color:var(--line)}@media(hover:hover){#rep .li:hover{background:color-mix(in srgb,var(--acc) 7%,transparent);border-color:var(--line)}}
 #rep .li .ic{grid-area:ic;width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:17px}
 #rep .li .nm{grid-area:nm;min-width:0;display:flex;flex-direction:column;font-size:14px;font-weight:600}#rep .li .nm small{color:var(--mut);font-size:11.5px;font-weight:400}
 #rep .li .am{grid-area:am;text-align:right;display:flex;flex-direction:column;font-variant-numeric:tabular-nums}#rep .li .am b{font-size:14px}#rep .li .am em{font-style:normal;font-size:12px;color:var(--mut)}
@@ -307,15 +307,14 @@ function evoPoints(net_,A,D,cf,cur){
   const out=[];let y=+f0[0].slice(0,4),m=+f0[0].slice(5,7);
   for(let g=0;g<700;g++){const M=y+'-'+String(m).padStart(2,'0'),e=M+'-31',lo=loanAt(D,M),st=im.date_achat?e>=im.date_achat:(lo.st>0||noLoan);
     const sk=Object.keys(sn).filter(k=>k.slice(0,7)===M).sort().pop();
-    let v;if(M===cm)v=cur;else if(sk)v=net_?sn[sk].n:sn[sk].b;
-    else v=HS.reduce((t,h)=>t+serAt(h,e),0)+EPV(D,e,()=>Math.max(0,L.filter(s=>Pl(s)&&s.date<=e).reduce((t,s)=>t+(s.montant||0),0)-Rt.filter(r=>r.date<=e).reduce((t,r)=>t+(r.montant||0),0)))+bkAt(A,D,e)+(st?(net_?ia+lo.paid:(iv||ia+lo.cap)):0);
+    let v;if(M===cm)v=cur;else v=HS.reduce((t,h)=>t+serAt(h,e),0)+EPV(D,e,()=>Math.max(0,L.filter(s=>Pl(s)&&s.date<=e).reduce((t,s)=>t+(s.montant||0),0)-Rt.filter(r=>r.date<=e).reduce((t,r)=>t+(r.montant||0),0)))+bkAt(A,D,e)+(st?(net_?ia+lo.paid:(iv||ia+lo.cap)):0);
     out.push([M,v]);if(M===cm)break;m++;if(m>12){m=1;y++}}
   return out}
 let EVR=LS.g('hub_evr')||'all';
 const cmp=v=>Math.abs(v)>=1e6?(v/1e6).toLocaleString('fr-FR',{maximumFractionDigits:2})+' M€':Math.round(v/1000).toLocaleString('fr-FR')+' k€';
 /* Performance des actifs sur la période (méthode de Dietz modifiée) : placements (PEA, CTO, crypto, épargne salariale) + immobilier, hors versements, liquidités exclues */
 function perfActifs(A,D,cf,m0){
-  const [y,m]=m0.slice(0,7).split('-').map(Number),T0=new Date(y,m,0),s0=m0.slice(0,7)+'-'+String(T0.getDate()).padStart(2,'0'),e0=todayI(),T1=new Date(e0+'T12:00:00').getTime(),sp=Math.max(T1-T0.getTime(),864e5),
+  const full=m0.length>=10,[y,m]=m0.slice(0,7).split('-').map(Number),T0=full?new Date(m0.slice(0,10)+'T12:00:00'):new Date(y,m,0),s0=full?m0.slice(0,10):m0.slice(0,7)+'-'+String(T0.getDate()).padStart(2,'0'),e0=todayI(),T1=new Date(e0+'T12:00:00').getTime(),sp=Math.max(T1-T0.getTime(),864e5),
     K=['PEA','CTO','Crypto','Épargne salariale','Immobilier'],pick=r=>r.items.filter(x=>K.includes(x[0])).reduce((t,x)=>t+x[2],0),
     v0=pick(stateAt(s0,A,D,cf,false)),v1=pick(stateAt(e0,A,D,cf,false)),F=[],add=(dt,v)=>{dt=String(dt||'').slice(0,10);if(dt>s0&&dt<=e0&&v)F.push([dt,v])};
   A.filter(a=>a.type==='PEA'||a.type==='CTO'||(a.type==='Crypto'&&!a.inCto)).forEach(a=>(LS.g(a.id==='pea'?'raw':a.id+'_raw')||[]).forEach(o=>{if(o.Type==='APPORT')add(o.Date_Heure,parseFloat(o.Quantité)||0);else if(o.Type==='RETRAIT')add(o.Date_Heure,-(parseFloat(o.Quantité)||0))}));
@@ -325,22 +324,24 @@ function perfActifs(A,D,cf,m0){
   if(acq)add(acq,+im.prix>0?+im.prix:(+im.apport||0)+(D.prets||[]).reduce((t,p)=>t+(+p.capital||0),0));
   let c=0,w=0;F.forEach(([dt,v])=>{c+=v;w+=v*Math.max(0,Math.min(1,(T1-new Date(dt+'T12:00:00').getTime())/sp))});
   const den=v0+w;return den>1?(v1-v0-c)/den*100:null}
-function drawEvo(all,pf){
-  const el=$('#evo'),N={'1m':1,'6m':6,'1a':12,'3a':36,'5a':60,all:0}[EVR],cy=String(new Date().getFullYear()),pts=EVR==='ytd'?all.slice(Math.max(0,all.findIndex(q=>q[0].slice(0,4)===cy)-1)):N?all.slice(-(N+1)):all,rg=`<div class="evr">${[['1m','1 m'],['6m','6 m'],['ytd','YTD'],['1a','1 an'],['3a','3 ans'],['5a','5 ans'],['all','Tout']].map(([k,l])=>`<button data-r="${k}"${EVR===k?' class="on"':''}>${l}</button>`).join('')}</div>`;
+function drawEvo(all,pf,ff){
+  const el=$('#evo'),N={'1m':1,'6m':6,'1a':12,'3a':36,'5a':60,all:0}[EVR],cy=String(new Date().getFullYear()),pts0=EVR==='ytd'?all.slice(Math.max(0,all.findIndex(q=>q[0].slice(0,4)===cy)-1)):N?all.slice(-(N+1)):all,rg=`<div class="evr">${[['1m','1 m'],['6m','6 m'],['ytd','YTD'],['1a','1 an'],['3a','3 ans'],['5a','5 ans'],['all','Tout']].map(([k,l])=>`<button data-r="${k}"${EVR===k?' class="on"':''}>${l}</button>`).join('')}</div>`;
+  let pts=pts0;{const iso=x=>new Date(x.getTime()-x.getTimezoneOffset()*6e4).toISOString().slice(0,10),ago=n=>{const x=new Date();x.setDate(x.getDate()-n);return iso(x)},FS={'1m':[ago(30),1],'6m':[ago(182),3],ytd:[(+cy-1)+'-12-31',3],'1a':[ago(365),5]}[EVR],fp=FS&&ff?ff(FS[0],FS[1]):null;if(fp&&fp.length>1)pts=fp}
+  const plab=d=>d.length>=10?(+d.slice(8,10))+' '+MOIS[+d.slice(5,7)-1]+(EVR==='1m'?'':' '+d.slice(2,4)):mlab(d);
   if(pts.length<2){el.innerHTML=`<div class="hd"><h2>📈 Évolution du patrimoine</h2></div><div class="sub" style="margin-top:6px">Pas encore assez de données : ouvre le PEA et les CTO une fois (cours en ligne), l’historique se construit ensuite tout seul.</div>`;return}
   const W=600,H=230,pl=50,pr=10,pt=12,pb=24,vs=pts.map(x=>x[1]);const mn=Math.min(...vs),mx=Math.max(...vs);let lo=mn,hi=mx;const sp0=(hi-lo)||Math.abs(hi)*.1||1,rs=sp0/4,mg=Math.pow(10,Math.floor(Math.log10(rs))),nr=rs/mg,stp=(nr<=1?1:nr<=2?2:nr<=2.5?2.5:nr<=5?5:10)*mg;lo=Math.floor(lo/stp)*stp;hi=Math.ceil(hi/stp)*stp;if(mn>=0&&lo<0)lo=0;if(hi===lo)hi=lo+stp;const TK=[];for(let v=lo;v<=hi+stp/1e3;v+=stp)TK.push(v);
   const X=i=>pl+i*(W-pl-pr)/(pts.length-1),Y=v=>pt+(hi-v)/(hi-lo)*(H-pt-pb),d=smooth(pts.map((q,i)=>[X(i),Y(q[1])])),
     d0=vs[0],dl=vs[vs.length-1]-d0,dp=pf?pf(pts[0][0]):(d0>0?dl/d0*100:null),col=dl>=0?'var(--up)':'var(--dn)',
     gl=TK.map(v=>{const yy=Y(v);return`<line x1="${pl}" x2="${W-pr}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="var(--line)" stroke-dasharray="3 3"/><text x="${pl-6}" y="${(yy+4).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--mut)">${cmp(v)}</text>`}).join(''),
-    xl=[0,Math.floor((pts.length-1)/2),pts.length-1].filter((v,i,a)=>a.indexOf(v)===i).map((i,k,a)=>`<text x="${X(i).toFixed(1)}" y="${H-6}" text-anchor="${i===0?'start':i===pts.length-1?'end':'middle'}" font-size="11" fill="var(--mut)">${mlab(pts[i][0])}</text>`).join('');
-  el.innerHTML=`<div class="hd"><div><h2>📈 Évolution du patrimoine</h2><div class="sub"><b class="${dl>=0?'up':'dn'}">${dl<0?'−':'+'}${eur(Math.abs(dl))}${dp==null?'':' ('+(dp<0?'−':'+')+Math.abs(dp).toLocaleString('fr-FR',{maximumFractionDigits:1})+' %)'}</b> sur la période${dp==null?'':'<br><small style="color:var(--mut)">% = performance des actifs (placements et immobilier, hors versements)</small>'}</div></div></div>
+    xl=[0,Math.floor((pts.length-1)/2),pts.length-1].filter((v,i,a)=>a.indexOf(v)===i).map((i,k,a)=>`<text x="${X(i).toFixed(1)}" y="${H-6}" text-anchor="${i===0?'start':i===pts.length-1?'end':'middle'}" font-size="11" fill="var(--mut)">${plab(pts[i][0])}</text>`).join('');
+  el.innerHTML=`<div class="hd"><div><h2>📈 Évolution du patrimoine</h2><div class="sub"><b class="${dl>=0?'up':'dn'}">${dl<0?'−':'+'}${eur(Math.abs(dl))}${dp==null?'':' ('+(dp<0?'−':'+')+Math.abs(dp).toLocaleString('fr-FR',{maximumFractionDigits:1})+' %)'}</b> sur la période</div></div></div>
     <svg id="evs" viewBox="0 0 ${W} ${H}" role="img" aria-label="Évolution du patrimoine"><defs><linearGradient id="evg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" style="stop-color:${col};stop-opacity:.34"/><stop offset="1" style="stop-color:${col};stop-opacity:0"/></linearGradient></defs>${gl}${xl}
     <path d="${d}L${X(pts.length-1).toFixed(1)} ${H-pb}L${pl} ${H-pb}Z" fill="url(#evg)"/><path d="${d}" fill="none" stroke="${col}" stroke-width="7" opacity=".14" stroke-linejoin="round" stroke-linecap="round"/><path d="${d}" fill="none" stroke="${col}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${X(pts.length-1).toFixed(1)}" cy="${Y(vs[vs.length-1]).toFixed(1)}" r="9" fill="${col}" opacity=".18"/><circle cx="${X(pts.length-1).toFixed(1)}" cy="${Y(vs[vs.length-1]).toFixed(1)}" r="4.2" fill="${col}" stroke="var(--card)" stroke-width="2"/>
     <line id="evl" y1="${pt}" y2="${H-pb}" stroke="var(--mut)" stroke-dasharray="3 3" style="display:none"/><circle id="evc" r="4.5" fill="${col}" stroke="var(--card)" stroke-width="2" style="display:none"/></svg><div id="evt"></div>${rg}`;
-  el.onclick=e=>{const b=e.target.closest('[data-r]');if(b){EVR=b.dataset.r;LS.s('hub_evr',EVR);drawEvo(all,pf)}};
+  el.onclick=e=>{const b=e.target.closest('[data-r]');if(b){EVR=b.dataset.r;LS.s('hub_evr',EVR);drawEvo(all,pf,ff)}};
   const sv=$('#evs'),tp=$('#evt'),ln=$('#evl'),ci=$('#evc'),mv=e=>{const r=sv.getBoundingClientRect(),i=Math.max(0,Math.min(pts.length-1,Math.round(((e.clientX-r.left)/r.width*W-pl)/((W-pl-pr)/(pts.length-1)))));
     const x=X(i),y=Y(pts[i][1]);ln.setAttribute('x1',x);ln.setAttribute('x2',x);ci.setAttribute('cx',x);ci.setAttribute('cy',y);ln.style.display=ci.style.display='';
-    tp.innerHTML=`${i===pts.length-1?'Aujourd’hui':mlab(pts[i][0])} · <b>${eur(pts[i][1])}</b>`;tp.style.display='block';const er=el.getBoundingClientRect();tp.style.left=Math.max(60,Math.min(er.width-60,r.left-er.left+x/W*r.width))+'px';tp.style.top=(r.top-er.top+4)+'px'};
+    tp.innerHTML=`${i===pts.length-1?'Aujourd’hui':plab(pts[i][0])} · <b>${eur(pts[i][1])}</b>`;tp.style.display='block';const er=el.getBoundingClientRect();tp.style.left=Math.max(60,Math.min(er.width-60,r.left-er.left+x/W*r.width))+'px';tp.style.top=(r.top-er.top+4)+'px'};
   sv.onpointermove=mv;sv.onpointerdown=mv;sv.onpointerleave=()=>{tp.style.display='none';ln.style.display=ci.style.display='none'}}
 /* ---------- Répartition du patrimoine par actif ---------- */
 const RCOL=['#0ea5e9','#8b5cf6','#f59e0b','#10b981','#14b8a6','#ec4899','#64748b'];
@@ -355,9 +356,9 @@ function drawRep(items,net_){
   el.innerHTML=`<div class="hd"><div><h2>🥧 Répartition du patrimoine</h2><div class="sub">${net_?'Par actif · immobilier en capital net':'Par actif · valeur brute'}</div></div></div>
    <div class="rw"><div class="dn-w"><svg viewBox="0 0 200 200" role="img" aria-label="Répartition du patrimoine par actif"><defs>${defs}</defs><circle cx="100" cy="100" r="${r}" fill="none" stroke="var(--line)" stroke-width="24" opacity=".45"/>${arcs}</svg>
    <div class="ctr"><small id="rpl">Total</small><b id="rpv">${cmp(T)}</b><em id="rpp"></em></div></div>
-   <div class="lg">${L.map((x,i)=>`<div class="li" data-i="${i}"><i class="ic" style="background:${x.c}22;color:${x.c}">${x.ic}</i><div class="nm"><span>${esc(x.n)}</span>${x.s?`<small>${esc(x.s)}</small>`:''}</div><div class="am"><b>${eur(x.v)}</b><em>${pc(x)}</em></div><div class="pb"><u style="width:${(x.v/T*100).toFixed(1)}%;background:linear-gradient(90deg,${lite(x.c,.25)},${x.c})"></u></div></div>`).join('')}</div></div>`;
+   <div class="lg">${L.map((x,i)=>`<div class="li" data-i="${i}"><i class="ic" style="background:${x.c}22;color:${x.c}">${x.ic}</i><div class="nm"><span>${esc(x.n)}</span>${x.s?`<small>${esc(x.s)}</small>`:''}</div><div class="am"><b>${eur2(x.v)}</b><em>${pc(x)}</em></div><div class="pb"><u style="width:${(x.v/T*100).toFixed(1)}%;background:linear-gradient(90deg,${lite(x.c,.25)},${x.c})"></u></div></div>`).join('')}</div></div>`;
   const hl=i=>{const x=L[i];el.querySelectorAll('.sl').forEach(c=>c.classList.toggle('dim',i!=null&&+c.dataset.i!==i));el.querySelectorAll('.li').forEach(c=>c.classList.toggle('on',i!=null&&+c.dataset.i===i));
-    $('#rpl').textContent=x?x.n:'Total';$('#rpv').textContent=x?eur(x.v):cmp(T);$('#rpp').textContent=x?pc(x):''};
+    $('#rpl').textContent=x?x.n:'Total';$('#rpv').textContent=x?eur2(x.v):cmp(T);$('#rpp').textContent=x?pc(x):''};
   let sel=null;el.querySelectorAll('.sl,.li').forEach(n=>{const i=+n.dataset.i;n.onpointerenter=e=>{if(e.pointerType==='mouse')hl(i)};n.onpointerleave=e=>{if(e.pointerType==='mouse')hl(sel)};n.onclick=()=>{sel=sel===i?null:i;hl(sel)}})}
 /* ---------- Récapitulatif du patrimoine : 31 décembre de chaque année / fin de chaque mois ---------- */
 let TBM=LS.g('hub_tbm')||'an';
@@ -375,8 +376,13 @@ function drawTab(all){
   el.onclick=e=>{const b=e.target.closest('[data-t]');if(b){TBM=b.dataset.t;LS.s('hub_tbm',TBM);drawTab(all)}}}
 /* ---------- État du patrimoine à une date passée (reconstitué) ---------- */
 const todayI=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+const serH=(k,d)=>{const q=LS.g(k+'d');return q&&q.length&&d>=q[0][0]?serAt(q,d):serAt(LS.g(k),d)};
+/* Série plus fine (journalière / hebdomadaire) pour les périodes courtes */
+function evoFine(net_,A,D,cf,cur,from,step){const out=[],t=todayI(),d=new Date(from+'T12:00:00');
+  for(let g=0;g<900;g++){const e=d.toISOString().slice(0,10);if(e>=t)break;out.push([e,stateAt(e,A,D,cf,net_).total]);d.setDate(d.getDate()+step)}
+  out.push([t,cur]);return out}
 function stateAt(ao,A,D,cf,net_){
-  const pea=A.some(a=>a.type==='PEA')?serAt(LS.g('hub_pea_hist'),ao):0,cto=A.filter(a=>a.type==='CTO').reduce((t,a)=>t+serAt(LS.g('hub_'+a.id+'_hist'),ao),0),cry=A.some(a=>a.type==='Crypto')?serAt(LS.g('hub_crypto_hist'),ao):0,
+  const pea=A.some(a=>a.type==='PEA')?serH('hub_pea_hist',ao):0,cto=A.filter(a=>a.type==='CTO').reduce((t,a)=>t+serH('hub_'+a.id+'_hist',ao),0),cry=A.some(a=>a.type==='Crypto')?serH('hub_crypto_hist',ao):0,
     pl=(D.interessement||[]).filter(s=>s.date&&s.date<=ao&&String(s.dest||'').startsWith('Placé')).reduce((t,s)=>t+(s.montant||0),0),rt=(D.retraits_epargne||[]).filter(r=>r.date&&r.date<=ao).reduce((t,r)=>t+(r.montant||0),0),
     sb=A.filter(a=>a.type==='Compte bancaire').reduce((t,a)=>t+acctBalAt(a,D,ao),0),sl=A.filter(a=>a.type==='Livret').reduce((t,a)=>t+livBal(a,D,ao),0),
     im=D.immo||{},ia=+im.apport||0,iv=D.immo!=null?(+im.valeur||0):(cf.immo||0),noLoan=!(D.prets||[]).some(p=>p.date_debut&&p.capital),lo=loanAt(D,ao.slice(0,7)),st=im.date_achat?ao>=im.date_achat:(lo.st>0||noLoan),imm=st?(net_?ia+lo.paid:(iv||ia+lo.cap)):0;
@@ -418,7 +424,7 @@ function renderHome(){
   /* instantané du jour (points réels du graphique) */
   if(p&&ct&&brut>0){const td=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10),sn=LS.g('hub_snap')||{},o=sn[td],b=Math.round(brut),n=Math.round(net);
     if(!o||o.b!==b||o.n!==n){sn[td]={b,n};const ks=Object.keys(sn).sort();while(ks.length>900)delete sn[ks.shift()];LS.s('hub_snap',sn)}}
-  const EP=evoPoints(net_,A,D,cf,net_?net:brut);drawEvo(EP,m=>perfActifs(A,D,cf,m));drawTab(EP);
+  const EP=evoPoints(net_,A,D,cf,net_?net:brut);drawEvo(EP,m=>perfActifs(A,D,cf,m),(f,st)=>evoFine(net_,A,D,cf,net_?net:brut,f,st));drawTab(EP);
   const tI=todayI(),ai=$('#asof');if(!ai.value||ai.value>tI)ai.value=tI;const ao=ai.value,past=ao<tI;document.body.classList.toggle('past',past);
   let items=[['PEA','📈',p?p.total:0],['CTO','🏦',ct?ct.total:0],['Crypto','₿',cr?cr.total:0],['Épargne salariale','🎁',de.cur],['Comptes bancaires','🏧',sb],['Livrets','🐖',sl],['Immobilier','🏡',net_?immoNet:immoBrut,net_&&iv>0?'Bien estimé à '+eur(iv):'']];
   const asb=$('#asb');
