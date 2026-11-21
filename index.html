@@ -283,7 +283,7 @@ function evoPoints(net_,A,D,cf,cur){
   const f0=[...HS.map(h=>h[0][0].slice(0,7)),...L.map(s=>s.date.slice(0,7)),...(D.prets||[]).filter(p=>p.date_debut).map(p=>p.date_debut.slice(0,7)),...Object.keys(sn).map(k=>k.slice(0,7))].sort();
   if(!f0.length)return[];
   const out=[];let y=+f0[0].slice(0,4),m=+f0[0].slice(5,7);
-  for(let g=0;g<700;g++){const M=y+'-'+String(m).padStart(2,'0'),e=M+'-31',lo=loanAt(D,M),st=lo.st>0||noLoan;
+  for(let g=0;g<700;g++){const M=y+'-'+String(m).padStart(2,'0'),e=M+'-31',lo=loanAt(D,M),st=im.date_achat?e>=im.date_achat:(lo.st>0||noLoan);
     const sk=Object.keys(sn).filter(k=>k.slice(0,7)===M).sort().pop();
     let v;if(M===cm)v=cur;else if(sk)v=net_?sn[sk].n:sn[sk].b;
     else v=HS.reduce((t,h)=>t+serAt(h,e),0)+Math.max(0,L.filter(s=>Pl(s)&&s.date<=e).reduce((t,s)=>t+(s.montant||0),0)-Rt.filter(r=>r.date<=e).reduce((t,r)=>t+(r.montant||0),0))+bkAt(A,D,e)+(st?(net_?ia+lo.paid:(iv||ia+lo.cap)):0);
@@ -345,7 +345,7 @@ function stateAt(ao,A,D,cf,net_){
   const pea=A.some(a=>a.type==='PEA')?serAt(LS.g('hub_pea_hist'),ao):0,cto=A.filter(a=>a.type==='CTO').reduce((t,a)=>t+serAt(LS.g('hub_'+a.id+'_hist'),ao),0),cry=A.some(a=>a.type==='Crypto')?serAt(LS.g('hub_crypto_hist'),ao):0,
     pl=(D.interessement||[]).filter(s=>s.date&&s.date<=ao&&String(s.dest||'').startsWith('Placé')).reduce((t,s)=>t+(s.montant||0),0),rt=(D.retraits_epargne||[]).filter(r=>r.date&&r.date<=ao).reduce((t,r)=>t+(r.montant||0),0),
     sb=A.filter(a=>a.type==='Compte bancaire').reduce((t,a)=>t+acctBalAt(a,D,ao),0),sl=A.filter(a=>a.type==='Livret').reduce((t,a)=>t+livBal(a,D,ao),0),
-    im=D.immo||{},ia=+im.apport||0,iv=D.immo!=null?(+im.valeur||0):(cf.immo||0),noLoan=!(D.prets||[]).some(p=>p.date_debut&&p.capital),lo=loanAt(D,ao.slice(0,7)),st=lo.st>0||noLoan,imm=st?(net_?ia+lo.paid:(iv||ia+lo.cap)):0;
+    im=D.immo||{},ia=+im.apport||0,iv=D.immo!=null?(+im.valeur||0):(cf.immo||0),noLoan=!(D.prets||[]).some(p=>p.date_debut&&p.capital),lo=loanAt(D,ao.slice(0,7)),st=im.date_achat?ao>=im.date_achat:(lo.st>0||noLoan),imm=st?(net_?ia+lo.paid:(iv||ia+lo.cap)):0;
   const items=[['PEA','📈',pea],['CTO','🏦',cto],['Crypto','₿',cry],['Épargne salariale','🎁',Math.max(0,pl-rt)],['Comptes bancaires','🏧',sb],['Livrets','🐖',sl],['Immobilier','🏡',imm]];
   return{items,total:items.reduce((t,x)=>t+x[2],0)}}
 function renderHome(){
