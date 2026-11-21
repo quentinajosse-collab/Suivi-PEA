@@ -184,7 +184,20 @@ function acctBal(a,Dx){if(a.type==='Livret')return livBal(a,Dx);const s=+a.balan
   (Dx.transferts||[]).forEach(r=>{if(r.date&&r.date>=d0){if(r.de===a.id)t-=+r.montant||0;if(r.vers===a.id)t+=+r.montant||0}});return Math.round(t*100)/100}
 const bal=a=>acctBal(a,LS.g('depenses_v1'));
 /* Solde d'un compte à une date donnée (pour reconstituer l'historique du patrimoine) */
-function acctBalAt(a,Dx,d){if(a.type==='Livret')return livBal(a,Dx,d);const s=+a.balance||0;if(a.type!=='Compte bancaire')return s;Dx=Dx||{};const d0=a.initDate||'';let t=s;
+/* Avant la date d'initialisation du solde : on remonte le temps depuis ce solde en annulant les mouvements connus (dépenses/revenus, transferts, apports/retraits PEA-CTO, retraits d'épargne salariale, apport immobilier) ; le compte principal (premier compte initialisé) reçoit les mouvements non rattachés à un compte */
+const PF=new WeakMap();
+function pastFlows(a,Dx){let c=PF.get(Dx);if(!c){c={};PF.set(Dx,c)}if(c[a.id])return c[a.id];
+  const d0=a.initDate,F=[],add=(dt,v)=>{dt=String(dt||'').slice(0,10);if(dt&&dt<d0&&v)F.push([dt,v])},main=(accs().find(x=>x.type==='Compte bancaire'&&x.initDate)||{}).id===a.id;
+  (Dx.depenses||[]).forEach(o=>{if(o.compte===a.id||(main&&!o.compte)){const rv=o.sens?o.sens==='Revenu':['Salaire','Prime / Remboursement','Virement reçu'].includes(o.categorie);add(o.date,rv?(+o.montant||0):-(+o.montant||0))}});
+  (Dx.transferts||[]).forEach(r=>{if(r.de===a.id)add(r.date,-(+r.montant||0));if(r.vers===a.id)add(r.date,+r.montant||0)});
+  if(main){
+    accs().filter(x=>x.type==='PEA'||x.type==='CTO').forEach(x=>{(LS.g(x.id==='pea'?'raw':x.id+'_raw')||[]).forEach(o=>{if(o.Type==='APPORT')add(o.Date_Heure,-(parseFloat(o.Quantité)||0));else if(o.Type==='RETRAIT')add(o.Date_Heure,parseFloat(o.Quantité)||0)})});
+    const seen=new Set();(Dx.retraits_epargne||[]).forEach(r=>{const k=[r.date,r.montant,r.ref||''].join('|');if(seen.has(k))return;seen.add(k);add(r.date,+r.montant||0)});
+    const im=Dx.immo||{},acq=im.date_achat||(Dx.prets||[]).map(p=>p.date_debut).filter(Boolean).sort()[0];if(acq&&+im.apport>0)add(acq,-(+im.apport))}
+  return c[a.id]=F}
+function acctBalAt(a,Dx,d){if(a.type==='Livret')return livBal(a,Dx,d);const s=+a.balance||0;if(a.type!=='Compte bancaire')return s;Dx=Dx||{};
+  if(a.initDate&&d<a.initDate)return Math.round((s-pastFlows(a,Dx).reduce((t,f)=>t+(f[0]>d?f[1]:0),0))*100)/100;
+  const d0=a.initDate||'';let t=s;
   (Dx.depenses||[]).forEach(o=>{if(o.compte===a.id&&o.date&&o.date>=d0&&o.date<=d){const rv=o.sens?o.sens==='Revenu':['Salaire','Prime / Remboursement','Virement reçu'].includes(o.categorie);t+=rv?(+o.montant||0):-(+o.montant||0)}});
   (Dx.transferts||[]).forEach(r=>{if(r.date&&r.date>=d0&&r.date<=d){if(r.de===a.id)t-=+r.montant||0;if(r.vers===a.id)t+=+r.montant||0}});return Math.round(t*100)/100}
 const bkAt=(A,Dx,d)=>A.filter(isBk).reduce((t,a)=>t+acctBalAt(a,Dx,d),0);
@@ -517,7 +530,7 @@ $('#cfok').onclick=()=>{cfgSaveAll(true);dlg.close()};
 
 /* ---------- Sauvegarde complète (export / import JSON de toutes les données) ---------- */
 const OKEY=k=>/^(raw|csv|cfg|url|depenses_.*|hub_cfg|hub_acc|wl_list|wl_groups|cto\d*_(raw|csv|cfg))$/.test(k),bkst=t=>$('#bkst').textContent=t;
-$('#bkx').onclick=()=>{const d={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(OKEY(k))d[k]=localStorage.getItem(k)}
+$('#bkx').onclick=()=>{const d={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(OKEY(k)||/^hub_(pea|cto\d*|crypto)_hist$|^hub_snap$/.test(k))d[k]=localStorage.getItem(k)}
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({app:'patrimoine',version:1,date:new Date().toISOString(),data:d})],{type:'application/json'}));
   a.download='patrimoine_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
   bkst(Object.keys(d).length+' éléments exportés.')};
