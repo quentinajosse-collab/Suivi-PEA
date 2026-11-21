@@ -252,7 +252,10 @@ tbody tr{cursor:pointer}
 tbody tr:not(.gh):hover td{background:color-mix(in srgb,var(--acc) 8%,var(--card))}
 tr:last-child td{border-bottom:0}
 td small{display:block;color:var(--mute);font-size:11px}
-tr.gh{cursor:pointer}tr.gh td{background:var(--alt);color:var(--mute);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:left;max-width:none;padding:5px 10px}
+tr.gh{cursor:pointer}tr.gh .gt{display:inline-block;padding:4px 10px 4px 0;font-size:13px}tr.gh .gm{float:right;text-transform:none;letter-spacing:0;font-weight:600;color:var(--acc)}
+.chk{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.ck{display:flex;align-items:center;gap:10px;margin:0;padding:9px 10px;border-bottom:1px solid var(--line);font-size:14px;color:var(--ink);cursor:pointer}.ck:last-child{border-bottom:0}.ck input{width:auto;margin:0;flex:none}.ck span{flex:1}.ck small{color:var(--mute);font-size:11.5px}
+#gdlg{max-width:440px}tr.gh td{background:var(--alt);color:var(--mute);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:left;max-width:none;padding:5px 10px}
 tr.gh small{font-weight:500;text-transform:none;letter-spacing:0}
 select{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
 th.s-asc::after{content:" ▲";font-size:9px}th.s-desc::after{content:" ▼";font-size:9px}
@@ -277,6 +280,7 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
 #cc{position:relative;height:300px;touch-action:none;user-select:none;-webkit-user-select:none}
 #cc svg{width:100%;height:100%;display:block}
 #tbar{min-height:50px;display:flex;align-items:center;flex-wrap:wrap;gap:2px 14px;background:var(--alt);border:1px solid var(--line);border-radius:10px;padding:6px 10px;margin-bottom:8px;font-size:13px;line-height:1.35}
+#tbar:empty{display:none}
 #tbar .t{color:var(--mute);width:100%;font-size:12px}#tbar .hint{color:var(--mute)}
 #tip{position:absolute;pointer-events:none;display:none;background:#0f172a;color:#fff;border-radius:8px;padding:7px 10px;font-size:12.5px;line-height:1.45;white-space:nowrap;z-index:5;box-shadow:0 6px 18px rgba(15,23,42,.3)}
 #tip b{font-size:14px}
@@ -288,7 +292,7 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
 <main>
   <h1>👁️ Watchlist</h1>
   <div class="sub" id="sub"></div>
-  <div class="bar"><button class="pri" id="add">➕ Ajouter une valeur</button><button id="ref">🔄 Actualiser</button></div>
+  <div class="bar"><button class="pri" id="add">➕ Ajouter une valeur</button><button id="addg">📁 Créer un groupe</button></div>
   <div id="msg"></div>
   <div class="tw"><table><thead id="th"></thead><tbody id="tb"></tbody></table></div>
 </main>
@@ -301,6 +305,16 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
   <div class="cust" id="cust"><div><label>Du</label><input type="date" id="d1"></div><div><label>Au</label><input type="date" id="d2"></div><button class="pri" id="dok">OK</button></div>
   <div id="tbar"></div>
   <div id="cc"><div id="tip"></div></div>
+</dialog>
+
+<dialog id="gdlg">
+  <h2 id="gt" style="margin:0 0 4px;font-size:1.1rem">Créer un groupe</h2>
+  <label>Nom du groupe</label><input id="gn" autocomplete="off" maxlength="30" placeholder="Ex : ETF, Crypto, PEA…">
+  <label>Actions du groupe <b id="gc"></b></label>
+  <input id="gq" autocomplete="off" placeholder="Rechercher une action…" style="margin-bottom:6px">
+  <div class="chk" id="gls"></div>
+  <div class="msg" id="gerr" hidden></div>
+  <div class="bar" style="justify-content:space-between"><button class="dg" id="gdel" hidden>🗑 Supprimer le groupe</button><span style="flex:1"></span><button id="gcn">Annuler</button><button class="pri" id="gok">Enregistrer</button></div>
 </dialog>
 
 <dialog id="edlg">
@@ -331,10 +345,11 @@ const URL_=()=>LS.g('url')||'';
 const qs=a=>{const u=URL_();return u+(u.includes('?')?'&':'?')+a};
 
 /* ---------- Données ---------- */
-let W=LS.g('wl_list'),PX=LS.g('wl_px')||{},SORT={k:'pct',d:-1},synced=false,busy=false;
+let G=(LS.g('wl_groups')||[]).filter(Boolean),W=LS.g('wl_list'),PX=LS.g('wl_px')||{},SORT={k:'pct',d:-1},synced=false,busy=false;
 const norm=a=>(a||[]).filter(x=>x&&x.ticker).map(x=>({ticker:String(x.ticker).toUpperCase().trim(),nom:x.nom||x.ticker,zone_achat:x.zone_achat>0?+x.zone_achat:null,groupe:String(x.groupe||'').trim().slice(0,30)}));
 const merge=(a,b)=>{const m=new Map(a.map(x=>[x.ticker,x]));norm(b).forEach(x=>{if(!m.has(x.ticker))m.set(x.ticker,x)});return[...m.values()]};
 /* Reprise des anciennes watchlists (PEA, CTO, Crypto), stockées dans leurs réglages locaux */
+const allG=()=>[...new Set([...G,...W.map(x=>x.groupe)].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr',{sensitivity:'base'}));
 const grOfKey=k=>k==='cfg'?'PEA':/^crypto/i.test(k)?'Crypto':/^cto/i.test(k)?'CTO':'';
 function migrateLocal(){let L=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k==='cfg'||/_cfg$/.test(k)){const v=LS.g(k);if(v&&Array.isArray(v.watchlist)){const g=grOfKey(k);L=merge(L,v.watchlist.map(x=>({...x,groupe:g})))}}}return L}
 /* Anciennes valeurs sans groupe : on reprend le compte d'origine (PEA / CTO / Crypto) quand on le retrouve */
@@ -356,9 +371,10 @@ async function pull(){if(!connected())return;
       const c=await raw(`/rest/v1/app_storage?select=key,value&key=like.config*&user_id=eq.${uid}`,{},tk);let M=W;
       (c||[]).forEach(r=>{if(r.value&&Array.isArray(r.value.watchlist)){const g=r.key==='config'?'PEA':/^config_crypto/i.test(r.key)?'Crypto':/^config_cto/i.test(r.key)?'CTO':'';M=merge(M,r.value.watchlist.map(x=>({...x,groupe:g})))}});
       if(M.length){W=M;LS.s('wl_list',W);await save()}}
+    try{const gj=await raw(`/rest/v1/app_storage?select=value&key=eq.watchlist_groups&user_id=eq.${uid}`,{},tk);if(gj.length&&Array.isArray(gj[0].value)){G=gj[0].value.filter(Boolean);LS.s('wl_groups',G)}}catch(e){}
     render();refresh()}catch(e){synced=false}}
-async function save(){LS.s('wl_list',W);if(!connected()||!synced)return;
-  try{await raw('/rest/v1/app_storage?on_conflict=user_id,key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({user_id:SB.s.uid,key:'watchlist',value:W})},await ensure())}catch(e){}}
+async function save(){LS.s('wl_list',W);LS.s('wl_groups',G);if(!connected()||!synced)return;
+  try{await raw('/rest/v1/app_storage?on_conflict=user_id,key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify([{user_id:SB.s.uid,key:'watchlist',value:W},{user_id:SB.s.uid,key:'watchlist_groups',value:G}])},await ensure())}catch(e){}}
 
 /* ---------- Cours et tableau ---------- */
 function msg(t){$('#msg').innerHTML=t?`<div class="msg">${t}</div>`:''}
@@ -378,14 +394,13 @@ function render(){
   $('#th').innerHTML='<tr>'+cols.map(([k,l])=>`<th data-s="${k}" class="${SORT.k===k?(SORT.d>0?'s-asc':'s-desc'):''}">${l}</th>`).join('')+'</tr>';
   const key=r=>{const v=r[SORT.k];return v==null?null:typeof v==='string'?v.toLowerCase():v};
   R.sort((a,b)=>{const x=key(a),y=key(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return-1;return(x<y?-1:x>y?1:0)*SORT.d});
-  if(!R.length){$('#tb').innerHTML=`<tr><td colspan="2" class="empty">Ta watchlist est vide. Ajoute une première valeur.</td></tr>`;return}
+  if(!R.length&&!G.length){$('#tb').innerHTML=`<tr><td colspan="2" class="empty">Ta watchlist est vide. Ajoute une première valeur.</td></tr>`;return}
   const line=r=>`<tr data-tk="${esc(r.ticker)}"><td><b>${esc(r.nom)}</b></td><td><b>${r.p!=null?fPx(r.p)+' €':'–'}</b>${r.pct!=null?` <span class="${cls(r.pct)}" style="font-weight:700">(${arrow(r.pct)} ${SG(r.pct)}${nf(2).format(Math.abs(r.pct))} %)</span>`:''}</td></tr>`;
-  const names=[...new Set(R.map(r=>r.groupe||''))].sort((a,b)=>a===''?1:b===''?-1:a.localeCompare(b,'fr',{sensitivity:'base'})),groups=names.map(g=>[g,R.filter(r=>(r.groupe||'')===g)]);
+  const names=[...allG(),...(R.some(r=>!r.groupe)?['']:[])],groups=names.map(g=>[g,R.filter(r=>(r.groupe||'')===g)]);
   if(groups.length===1&&groups[0][0]===''){$('#tb').innerHTML=R.map(line).join('');return}
-  $('#tb').innerHTML=groups.map(([g,L])=>{const c=!!COLL[g||'_'];return`<tr class="gh" data-g="${esc(g||'_')}"><td colspan="2">${c?'▸':'▾'} ${g||'Sans groupe'} <small>· ${L.length}</small></td></tr>`+(c?'':L.map(line).join(''))}).join('')}
+  $('#tb').innerHTML=groups.map(([g,L])=>{const c=!!COLL[g||'_'];return`<tr class="gh" data-g="${esc(g||'_')}"><td colspan="2"><span class="gt">${c?'▸':'▾'}</span>${esc(g||'Sans groupe')} <small>· ${L.length}</small>${g?'<span class="gm">⚙ Gérer</span>':''}</td></tr>`+(c?'':L.map(line).join(''))}).join('')}
 $('#th').onclick=e=>{const th=e.target.closest('th');if(!th)return;const k=th.dataset.s;SORT=SORT.k===k?{k,d:-SORT.d}:{k,d:k==='nom'?1:-1};render()};
-$('#tb').onclick=e=>{const gh=e.target.closest('tr.gh');if(gh){const C=LS.g('wl_coll')||{},k=gh.dataset.g;C[k]=!C[k];LS.s('wl_coll',C);render();return}const tr=e.target.closest('tr[data-tk]');if(tr)openChart(tr.dataset.tk)};
-$('#ref').onclick=refresh;
+$('#tb').onclick=e=>{const gh=e.target.closest('tr.gh');if(gh){const k=gh.dataset.g;if(k!=='_'&&!e.target.closest('.gt')){openGroup(k);return}const C=LS.g('wl_coll')||{};C[k]=!C[k];LS.s('wl_coll',C);render();return}const tr=e.target.closest('tr[data-tk]');if(tr)openChart(tr.dataset.tk)};
 
 /* ---------- Séries de prix ---------- */
 const RG=[['1h','1 h'],['1j','1 j'],['7j','7 j'],['1m','1 mois'],['3m','3 mois'],['6m','6 mois'],['1a','1 an'],['5a','5 ans'],['10a','10 ans'],['max','Depuis le début'],['custom','Période…']];
@@ -397,8 +412,9 @@ async function series(tk,rg,d1,d2){
   if(!URL_())return{err:'Renseigne l’adresse du script Google dans le hub (⚙️ Réglages).'};
   const enc=encodeURIComponent,today=dstr(new Date());
   try{
-    if(INTRA[rg]){const[r,i]=INTRA[rg],j=await cached(tk+'|'+r+'|'+i,6e4,async()=>(await fetch(qs('c='+enc(tk)+'&range='+r+'&interval='+i))).json());
-      if(!j||!Array.isArray(j.t)||!j.t.length){delete MEM[tk+'|'+r+'|'+i];return{err:j&&j.error?'Yahoo ne renvoie pas de données intraday pour ce titre ('+j.error+').':'Le script Google ne renvoie pas l’intraday : colle la version « script_google_complet.gs » puis redéploie-le (Déployer > Gérer les déploiements > crayon > Nouvelle version).'}}
+    if(INTRA[rg]){const[r,i]=INTRA[rg],u=qs('c='+enc(tk)+'&range='+r+'&interval='+i),j=await cached(tk+'|'+r+'|'+i,6e4,async()=>{const rs=await fetch(u),tx=await rs.text();try{return JSON.parse(tx)}catch(_){return{_raw:tx.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,140),_http:rs.status}}});
+      if(!j||!Array.isArray(j.t)||!j.t.length){delete MEM[tk+'|'+r+'|'+i];const lk=u;
+        return{link:lk,err:j&&j._raw!=null?'Le script Google n’a pas renvoyé de JSON (HTTP '+j._http+') : « '+j._raw+' ». Vérifie le déploiement (accès « Tout le monde ») et que la dernière version est déployée.':j&&j.error?'Yahoo ne renvoie pas de données intraday pour ce titre ('+j.error+').':'Le script Google ne renvoie pas l’intraday (réponse : '+JSON.stringify(j||{}).slice(0,120)+'). Colle la version « script_google_complet.gs » puis redéploie-le (Déployer > Gérer les déploiements > crayon > Nouvelle version).'}}
       const hl=Array.isArray(j.h)&&Array.isArray(j.l);let pts=j.t.map((t,k)=>[t*1000,j.c[k],hl&&j.h[k]!=null?j.h[k]:j.c[k],hl&&j.l[k]!=null?j.l[k]:j.c[k]]);const last=pts[pts.length-1][0];
       if(rg==='1h')pts=pts.filter(p=>p[0]>=last-36e5);else if(rg==='7j')pts=pts.filter(p=>p[0]>=last-7*864e5);
       return pts.length<2?{err:'Pas assez de points sur cette période.'}:{pts,ref:rg==='1j'&&j.pc?j.pc:null,intra:rg!=='7j',hl}}
@@ -408,7 +424,7 @@ async function series(tk,rg,d1,d2){
     const hl=Array.isArray(h.hi)&&Array.isArray(h.lo),pts=[];h.d.forEach((d,i)=>{if(h.c[i]!=null&&d>=from&&(rg!=='custom'||!d2||d<=d2))pts.push([Date.parse(d+'T12:00:00'),h.c[i],hl&&h.hi[i]!=null?h.hi[i]:h.c[i],hl&&h.lo[i]!=null?h.lo[i]:h.c[i]])});
     const q=PX[tk];if(q&&q.p!=null&&(rg!=='custom'||!d2||d2>=today)&&(!pts.length||dstr(new Date(pts[pts.length-1][0]))<today))pts.push([Date.now(),q.p,q.p,q.p]);
     return pts.length<2?{err:'Pas assez de points sur cette période.'}:{pts,ref:null,intra:false,hl}}
-  catch(e){return{err:'Données indisponibles (script Google injoignable).'}}}
+  catch(e){return{err:'Données indisponibles : le navigateur n’a pas pu joindre le script Google ('+(e&&e.message||e)+').',link:INTRA[rg]?qs('c='+encodeURIComponent(tk)+'&range='+INTRA[rg][0]+'&interval='+INTRA[rg][1]):null}}}
 
 /* ---------- Graphique ---------- */
 let CUR=null,TOK=0;
@@ -429,7 +445,7 @@ async function loadChart(){const c=CUR;if(!c)return;const my=++TOK;
   const q=PX[c.tk]||{};$('#cp').textContent=q.p!=null?fPx(q.p)+' €':'';
   $('#cc').innerHTML='<div class="cmsg">Chargement…</div><div id="tip"></div>';$('#tbar').innerHTML='';
   const R=await series(c.tk,c.rg,$('#d1').value,$('#d2').value);if(my!==TOK)return;
-  if(R.err){$('#cc').innerHTML=`<div class="cmsg">${esc(R.err)}</div><div id="tip"></div>`;$('#cv').textContent='';return}
+  if(R.err){$('#cc').innerHTML=`<div class="cmsg"><div>${esc(R.err)}${R.link?`<br><a href="${esc(R.link)}" target="_blank" rel="noopener" style="color:var(--acc);font-weight:600">Ouvrir la réponse du script</a>`:''}</div></div><div id="tip"></div>`;$('#cv').textContent='';return}
   c.R=R;draw()}
 function draw(){const c=CUR;if(!c||!c.R)return;const R=c.R,P=R.pts,n=P.length,box=$('#cc'),Wd=box.clientWidth||320,Ht=300,pl=56,pr=10,pt=12,pb=26;
   const DEC=decs(P.flatMap(p=>[p[1],p[2],p[3]])),nfd=nfr(DEC,DEC),fC=v=>v==null||!isFinite(v)?'–':nfd.format(v);
@@ -462,7 +478,7 @@ addEventListener('resize',()=>{if($('#cdlg').open)draw()});
 /* ---------- Ajout / modification ---------- */
 let EDIT=null;
 function openEdit(tk){EDIT=tk||null;const it=tk&&W.find(x=>x.ticker===tk);
-  $('#et').textContent=it?'Modifier la valeur':'Ajouter une valeur';$('#en').value=it?it.nom:'';$('#etk').value=it?it.ticker:'';$('#etk').disabled=false;$('#eg').value=it&&it.groupe||'';$('#gl').innerHTML=[...new Set(W.map(x=>x.groupe).filter(Boolean))].sort().map(g=>`<option value="${esc(g)}">`).join('');
+  $('#et').textContent=it?'Modifier la valeur':'Ajouter une valeur';$('#en').value=it?it.nom:'';$('#etk').value=it?it.ticker:'';$('#etk').disabled=false;$('#eg').value=it&&it.groupe||'';$('#gl').innerHTML=allG().map(g=>`<option value="${esc(g)}">`).join('');
   $('#eerr').hidden=true;$('#edel').hidden=!it;$('#edlg').showModal()}
 $('#add').onclick=()=>openEdit();$('#ced').onclick=()=>{const t=CUR&&CUR.tk;$('#cdlg').close();openEdit(t)};
 $('#ecn').onclick=()=>$('#edlg').close();
@@ -471,11 +487,32 @@ $('#eok').onclick=async()=>{const nom=$('#en').value.trim(),tk=$('#etk').value.t
   const gp=$('#eg').value.trim().slice(0,30);
   if(EDIT){const it=W.find(x=>x.ticker===EDIT);if(tk!==EDIT){if(W.some(x=>x.ticker===tk))return er(tk+' est déjà dans la watchlist.');it.ticker=tk}it.nom=nom;it.groupe=gp}
   else{if(W.some(x=>x.ticker===tk))return er(tk+' est déjà dans la watchlist.');W.push({ticker:tk,nom,zone_achat:null,groupe:gp})}
+  if(gp&&!G.includes(gp))G.push(gp);
   $('#edlg').close();render();await save();refresh()};
 $('#edel').onclick=async()=>{if(!EDIT||!confirm('Retirer cette valeur de la watchlist ?'))return;W=W.filter(x=>x.ticker!==EDIT);$('#edlg').close();render();await save()};
 
+/* ---------- Groupes ---------- */
+let GE=null,GSEL=new Set();
+function gList(){const q=$('#gq').value.trim().toLowerCase(),L=W.filter(x=>!q||x.nom.toLowerCase().includes(q)||x.ticker.toLowerCase().includes(q)).sort((a,b)=>(GSEL.has(b.ticker)-GSEL.has(a.ticker))||a.nom.localeCompare(b.nom,'fr',{sensitivity:'base'}));
+  $('#gls').innerHTML=L.length?L.map(x=>`<label class="ck"><input type="checkbox" value="${esc(x.ticker)}" ${GSEL.has(x.ticker)?'checked':''}><span>${esc(x.nom)}</span>${x.groupe&&x.groupe!==GE?`<small>${esc(x.groupe)}</small>`:''}</label>`).join(''):'<div class="empty" style="padding:14px">Aucune action.</div>';
+  $('#gc').textContent='· '+GSEL.size+' sélectionnée'+(GSEL.size>1?'s':'')}
+function openGroup(g){GE=g||null;GSEL=new Set(g?W.filter(x=>x.groupe===g).map(x=>x.ticker):[]);
+  $('#gt').textContent=g?'Gérer le groupe':'Créer un groupe';$('#gn').value=g||'';$('#gq').value='';$('#gerr').hidden=true;$('#gdel').hidden=!g;gList();$('#gdlg').showModal()}
+$('#addg').onclick=()=>openGroup();
+$('#gq').oninput=gList;
+$('#gls').onchange=e=>{const i=e.target;if(i.type!=='checkbox')return;i.checked?GSEL.add(i.value):GSEL.delete(i.value);$('#gc').textContent='· '+GSEL.size+' sélectionnée'+(GSEL.size>1?'s':'')};
+$('#gcn').onclick=()=>$('#gdlg').close();
+$('#gok').onclick=async()=>{const nn=$('#gn').value.trim().slice(0,30),er=t=>{$('#gerr').textContent=t;$('#gerr').hidden=false};
+  if(!nn)return er('Donne un nom au groupe.');
+  if(allG().some(g=>g!==GE&&g.toLowerCase()===nn.toLowerCase()))return er('Un groupe « '+nn+' » existe déjà.');
+  W.forEach(x=>{if(GSEL.has(x.ticker))x.groupe=nn;else if(GE&&x.groupe===GE)x.groupe=''});
+  G=G.filter(g=>g!==GE&&g!==nn);G.push(nn);
+  $('#gdlg').close();render();await save()};
+$('#gdel').onclick=async()=>{if(!GE||!confirm('Supprimer le groupe « '+GE+' » ? Ses actions restent dans la watchlist, sans groupe.'))return;
+  W.forEach(x=>{if(x.groupe===GE)x.groupe=''});G=G.filter(g=>g!==GE);$('#gdlg').close();render();await save()};
+
 /* ---------- Démarrage ---------- */
-addEventListener('storage',e=>{if(e.key==='url')refresh();if(e.key==='sb')pull();if(e.key==='wl_list'){W=norm(LS.g('wl_list'));render()}});
+addEventListener('storage',e=>{if(e.key==='url')refresh();if(e.key==='sb')pull();if(e.key==='wl_list'){W=norm(LS.g('wl_list'));render()}if(e.key==='wl_groups'){G=(LS.g('wl_groups')||[]).filter(Boolean);render()}});
 addEventListener('message',e=>{if(e.source===parent&&e.data&&e.data.hubHome){document.querySelectorAll('dialog[open]').forEach(d=>{try{d.close()}catch(_){}});scrollTo(0,0)}});
 setInterval(()=>{if(!document.hidden)refresh()},6e4);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
