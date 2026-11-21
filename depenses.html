@@ -276,6 +276,8 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
 .cust input{width:auto}
 #cc{position:relative;height:300px;touch-action:none;user-select:none;-webkit-user-select:none}
 #cc svg{width:100%;height:100%;display:block}
+#tbar{min-height:50px;display:flex;align-items:center;flex-wrap:wrap;gap:2px 14px;background:var(--alt);border:1px solid var(--line);border-radius:10px;padding:6px 10px;margin-bottom:8px;font-size:13px;line-height:1.35}
+#tbar .t{color:var(--mute);width:100%;font-size:12px}#tbar .hint{color:var(--mute)}
 #tip{position:absolute;pointer-events:none;display:none;background:#0f172a;color:#fff;border-radius:8px;padding:7px 10px;font-size:12.5px;line-height:1.45;white-space:nowrap;z-index:5;box-shadow:0 6px 18px rgba(15,23,42,.3)}
 #tip b{font-size:14px}
 .cmsg{display:flex;align-items:center;justify-content:center;height:100%;color:var(--mute);text-align:center;padding:0 18px}
@@ -297,6 +299,7 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
   <div class="big" id="cp"></div><div id="cv" style="font-weight:700"></div>
   <div class="chips" id="chips"></div>
   <div class="cust" id="cust"><div><label>Du</label><input type="date" id="d1"></div><div><label>Au</label><input type="date" id="d2"></div><button class="pri" id="dok">OK</button></div>
+  <div id="tbar"></div>
   <div id="cc"><div id="tip"></div></div>
 </dialog>
 
@@ -424,7 +427,7 @@ function openChart(tk){const it=W.find(x=>x.ticker===tk);if(!it)return;CUR={tk,i
 async function loadChart(){const c=CUR;if(!c)return;const my=++TOK;
   document.querySelectorAll('#chips button').forEach(b=>b.classList.toggle('on',b.dataset.r===c.rg));$('#cust').classList.toggle('on',c.rg==='custom');
   const q=PX[c.tk]||{};$('#cp').textContent=q.p!=null?fPx(q.p)+' €':'';
-  $('#cc').innerHTML='<div class="cmsg">Chargement…</div><div id="tip"></div>';
+  $('#cc').innerHTML='<div class="cmsg">Chargement…</div><div id="tip"></div>';$('#tbar').innerHTML='';
   const R=await series(c.tk,c.rg,$('#d1').value,$('#d2').value);if(my!==TOK)return;
   if(R.err){$('#cc').innerHTML=`<div class="cmsg">${esc(R.err)}</div><div id="tip"></div>`;$('#cv').textContent='';return}
   c.R=R;draw()}
@@ -446,12 +449,11 @@ function draw(){const c=CUR;if(!c||!c.R)return;const R=c.R,P=R.pts,n=P.length,bo
   box.innerHTML=`<svg viewBox="0 0 ${Wd} ${Ht}" preserveAspectRatio="none"><defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" style="stop-color:${col};stop-opacity:.28"/><stop offset="1" style="stop-color:${col};stop-opacity:0"/></linearGradient></defs>${gl}${xl}${rl}
    <path d="${path}L${X(n-1).toFixed(1)} ${Ht-pb}L${pl} ${Ht-pb}Z" fill="url(#g)"/><path d="${path}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round"/>
    <line id="xl" y1="${pt}" y2="${Ht-pb}" stroke="var(--mute)" stroke-dasharray="3 3" style="display:none"/><circle id="xc" r="4.5" fill="${col}" stroke="var(--card)" stroke-width="2" style="display:none"/></svg><div id="tip"></div>`;
-  const sv=box.querySelector('svg'),tip=$('#tip'),xl_=$('#xl'),xc=$('#xc');
+  const sv=box.querySelector('svg'),tb=$('#tbar'),HINT='<span class="hint">Survole ou fais glisser ton doigt sur le graphique pour voir le prix et la variation.</span>',xl_=$('#xl'),xc=$('#xc');tb.innerHTML=HINT;
   const mv=e=>{const r=sv.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*Wd,i=Math.max(0,Math.min(n-1,Math.round((px-pl)/((Wd-pl-pr)/(n-1))))),x=X(i),y=Y(P[i][1]),pv=i>0?P[i-1][1]:null,d=pv==null?null:P[i][1]-pv,p=pv?d/pv*100:0;
     xl_.setAttribute('x1',x);xl_.setAttribute('x2',x);xc.setAttribute('cx',x);xc.setAttribute('cy',y);xl_.style.display=xc.style.display='';
-    tip.innerHTML=`<div>${fTime(P[i][0],R,c.rg,true)}</div><b>${fC(P[i][1])} €</b>${d==null?'<div style="opacity:.7">Début de la période</div>':`<div style="color:${d>=0?'#4ade80':'#f87171'}">${arrow(d)} ${fVar(d,p,fC)}</div><div style="opacity:.65;font-size:11px">vs point précédent</div>`}${P[i][2]!==P[i][3]?`<div style="opacity:.65;font-size:11px">Haut ${fC(P[i][2])} · Bas ${fC(P[i][3])}</div>`:''}`;tip.style.display='block';
-    const bw=box.clientWidth,tw=tip.offsetWidth,lx=x/Wd*bw;tip.style.left=Math.max(4,Math.min(bw-tw-4,lx-tw/2))+'px';tip.style.top=Math.max(0,y/Ht*box.clientHeight-tip.offsetHeight-14)+'px'};
-  sv.onpointermove=mv;sv.onpointerdown=mv;sv.onpointerleave=e=>{if(e.pointerType==='touch')return;tip.style.display='none';xl_.style.display=xc.style.display='none'}}
+    tb.innerHTML=`<div class="t">${fTime(P[i][0],R,c.rg,true)}</div><b style="font-size:15px">${fC(P[i][1])} €</b>${d==null?'<span style="color:var(--mute)">Début de la période</span>':`<span class="${cls(d)}" style="font-weight:700">${arrow(d)} ${fVar(d,p,fC)}</span><span style="color:var(--mute);font-size:12px">vs point précédent</span>`}${P[i][2]!==P[i][3]?`<span style="color:var(--mute);font-size:12px">Haut ${fC(P[i][2])} · Bas ${fC(P[i][3])}</span>`:''}`};
+  sv.onpointermove=mv;sv.onpointerdown=mv;sv.onpointerleave=e=>{if(e.pointerType==='touch')return;tb.innerHTML=HINT;xl_.style.display=xc.style.display='none'}}
 $('#chips').onclick=e=>{const b=e.target.closest('[data-r]');if(!b||!CUR)return;CUR.rg=b.dataset.r;loadChart()};
 $('#dok').onclick=()=>{if($('#d1').value&&$('#d2').value&&$('#d1').value<=$('#d2').value)loadChart()};
 $('#ccl').onclick=()=>$('#cdlg').close();
