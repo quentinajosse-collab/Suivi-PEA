@@ -249,9 +249,12 @@ th{color:var(--mute);font-weight:600;font-size:12px;text-transform:uppercase;let
 th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:inherit;max-width:52vw;overflow:hidden;text-overflow:ellipsis}
 td:first-child{background:var(--card)}
 tbody tr{cursor:pointer}
-tbody tr:hover td{background:color-mix(in srgb,var(--acc) 8%,var(--card))}
+tbody tr:not(.gh):hover td{background:color-mix(in srgb,var(--acc) 8%,var(--card))}
 tr:last-child td{border-bottom:0}
 td small{display:block;color:var(--mute);font-size:11px}
+tr.gh{cursor:pointer}tr.gh td{background:var(--alt);color:var(--mute);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:left;max-width:none;padding:5px 10px}
+tr.gh small{font-weight:500;text-transform:none;letter-spacing:0}
+select{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
 th.s-asc::after{content:" ▲";font-size:9px}th.s-desc::after{content:" ▼";font-size:9px}
 .pill{display:inline-block;min-width:78px;text-align:center;padding:3px 9px;border-radius:999px;font-weight:700;font-size:13px}
 .pill.up{background:color-mix(in srgb,var(--up) 14%,transparent)}.pill.dn{background:color-mix(in srgb,var(--dn) 14%,transparent)}.pill.fl{background:var(--alt);color:var(--mute)}
@@ -301,6 +304,7 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
   <h2 id="et" style="margin:0 0 4px;font-size:1.1rem">Ajouter une valeur</h2>
   <label>Nom</label><input id="en" autocomplete="off" placeholder="Ex : LVMH">
   <label>Ticker (Yahoo Finance)</label><input id="etk" autocomplete="off" autocapitalize="characters" placeholder="Ex : MC.PA, AAPL, BTC-EUR">
+  <label>Groupe</label><select id="eg"><option value="">Sans groupe</option><option>PEA</option><option>CTO</option><option>ETF</option><option>Crypto</option></select>
   <div class="msg" id="eerr" hidden></div>
   <div class="bar" style="justify-content:space-between"><button class="dg" id="edel" hidden>🗑 Supprimer</button><span style="flex:1"></span><button id="ecn">Annuler</button><button class="pri" id="eok">Enregistrer</button></div>
 </dialog>
@@ -322,11 +326,15 @@ const qs=a=>{const u=URL_();return u+(u.includes('?')?'&':'?')+a};
 
 /* ---------- Données ---------- */
 let W=LS.g('wl_list'),PX=LS.g('wl_px')||{},SORT={k:'pct',d:1},synced=false,busy=false;
-const norm=a=>(a||[]).filter(x=>x&&x.ticker).map(x=>({ticker:String(x.ticker).toUpperCase().trim(),nom:x.nom||x.ticker,zone_achat:x.zone_achat>0?+x.zone_achat:null}));
+const GR=['PEA','CTO','ETF','Crypto'];
+const norm=a=>(a||[]).filter(x=>x&&x.ticker).map(x=>({ticker:String(x.ticker).toUpperCase().trim(),nom:x.nom||x.ticker,zone_achat:x.zone_achat>0?+x.zone_achat:null,groupe:GR.includes(x.groupe)?x.groupe:''}));
 const merge=(a,b)=>{const m=new Map(a.map(x=>[x.ticker,x]));norm(b).forEach(x=>{if(!m.has(x.ticker))m.set(x.ticker,x)});return[...m.values()]};
 /* Reprise des anciennes watchlists (PEA, CTO, Crypto), stockées dans leurs réglages locaux */
-function migrateLocal(){let L=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k==='cfg'||/_cfg$/.test(k)){const v=LS.g(k);if(v&&Array.isArray(v.watchlist))L=merge(L,v.watchlist)}}return L}
-if(!Array.isArray(W)){W=migrateLocal();LS.s('wl_list',W)}else W=norm(W);
+const grOfKey=k=>k==='cfg'?'PEA':/^crypto/i.test(k)?'Crypto':/^cto/i.test(k)?'CTO':'';
+function migrateLocal(){let L=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k==='cfg'||/_cfg$/.test(k)){const v=LS.g(k);if(v&&Array.isArray(v.watchlist)){const g=grOfKey(k);L=merge(L,v.watchlist.map(x=>({...x,groupe:g})))}}}return L}
+/* Anciennes valeurs sans groupe : on reprend le compte d'origine (PEA / CTO / Crypto) quand on le retrouve */
+function backfill(){const m=new Map();migrateLocal().forEach(x=>m.set(x.ticker,x.groupe));let ch=false;W.forEach(x=>{if(!x.groupe&&m.get(x.ticker)){x.groupe=m.get(x.ticker);ch=true}});return ch}
+if(!Array.isArray(W)){W=migrateLocal();LS.s('wl_list',W)}else{W=norm(W);if(backfill())LS.s('wl_list',W)}
 
 /* ---------- Supabase ---------- */
 const SB={get s(){return LS.g('sb')||{}},set s(v){LS.s('sb',v)}};
@@ -340,8 +348,8 @@ async function pull(){if(!connected())return;
   try{const tk=await ensure(),uid=SB.s.uid,j=await raw(`/rest/v1/app_storage?select=value&key=eq.watchlist&user_id=eq.${uid}`,{},tk);synced=true;
     if(j.length&&Array.isArray(j[0].value)){W=norm(j[0].value);LS.s('wl_list',W)}
     else{ /* première fois : reprise des watchlists enregistrées dans les réglages PEA / CTO / Crypto */
-      const c=await raw(`/rest/v1/app_storage?select=value&key=like.config*&user_id=eq.${uid}`,{},tk);let M=W;
-      (c||[]).forEach(r=>{if(r.value&&Array.isArray(r.value.watchlist))M=merge(M,r.value.watchlist)});
+      const c=await raw(`/rest/v1/app_storage?select=key,value&key=like.config*&user_id=eq.${uid}`,{},tk);let M=W;
+      (c||[]).forEach(r=>{if(r.value&&Array.isArray(r.value.watchlist)){const g=r.key==='config'?'PEA':/^config_crypto/i.test(r.key)?'Crypto':/^config_cto/i.test(r.key)?'CTO':'';M=merge(M,r.value.watchlist.map(x=>({...x,groupe:g})))}});
       if(M.length){W=M;LS.s('wl_list',W);await save()}}
     render();refresh()}catch(e){synced=false}}
 async function save(){LS.s('wl_list',W);if(!connected()||!synced)return;
@@ -359,16 +367,19 @@ async function refresh(){if(busy||!W.length)return;
 const rowsOf=()=>W.map(it=>{const q=PX[it.ticker]||{},p=q.p!=null?q.p:null,pc=q.pc!=null?q.pc:null,d=p!=null&&pc?p-pc:null,pct=d!=null?d/pc*100:null;
   return{...it,p,d,pct}});
 function render(){
-  const R=rowsOf(),at=LS.g('wl_pxAt');
+  const R=rowsOf(),at=LS.g('wl_pxAt'),COLL=LS.g('wl_coll')||{};
   $('#sub').textContent=W.length+' valeur'+(W.length>1?'s':'')+(at?' · cours de '+new Date(at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'');
   const cols=[['nom','Valeur'],['pct','Prix (var. jour)']];
   $('#th').innerHTML='<tr>'+cols.map(([k,l])=>`<th data-s="${k}" class="${SORT.k===k?(SORT.d>0?'s-asc':'s-desc'):''}">${l}</th>`).join('')+'</tr>';
   const key=r=>{const v=r[SORT.k];return v==null?null:typeof v==='string'?v.toLowerCase():v};
   R.sort((a,b)=>{const x=key(a),y=key(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return-1;return(x<y?-1:x>y?1:0)*SORT.d});
   if(!R.length){$('#tb').innerHTML=`<tr><td colspan="2" class="empty">Ta watchlist est vide. Ajoute une première valeur.</td></tr>`;return}
-  $('#tb').innerHTML=R.map(r=>`<tr data-tk="${esc(r.ticker)}"><td><b>${esc(r.nom)}</b></td><td><b>${r.p!=null?fPx(r.p)+' €':'–'}</b>${r.pct!=null?` <span class="${cls(r.pct)}" style="font-weight:700">(${arrow(r.pct)} ${SG(r.pct)}${nf(2).format(Math.abs(r.pct))} %)</span>`:''}</td></tr>`).join('')}
+  const line=r=>`<tr data-tk="${esc(r.ticker)}"><td><b>${esc(r.nom)}</b></td><td><b>${r.p!=null?fPx(r.p)+' €':'–'}</b>${r.pct!=null?` <span class="${cls(r.pct)}" style="font-weight:700">(${arrow(r.pct)} ${SG(r.pct)}${nf(2).format(Math.abs(r.pct))} %)</span>`:''}</td></tr>`;
+  const groups=[...GR,''].map(g=>[g,R.filter(r=>(r.groupe||'')===g)]).filter(x=>x[1].length);
+  if(groups.length===1&&groups[0][0]===''){$('#tb').innerHTML=R.map(line).join('');return}
+  $('#tb').innerHTML=groups.map(([g,L])=>{const c=!!COLL[g||'_'];return`<tr class="gh" data-g="${esc(g||'_')}"><td colspan="2">${c?'▸':'▾'} ${g||'Sans groupe'} <small>· ${L.length}</small></td></tr>`+(c?'':L.map(line).join(''))}).join('')}
 $('#th').onclick=e=>{const th=e.target.closest('th');if(!th)return;const k=th.dataset.s;SORT=SORT.k===k?{k,d:-SORT.d}:{k,d:1};render()};
-$('#tb').onclick=e=>{const tr=e.target.closest('tr[data-tk]');if(tr)openChart(tr.dataset.tk)};
+$('#tb').onclick=e=>{const gh=e.target.closest('tr.gh');if(gh){const C=LS.g('wl_coll')||{},k=gh.dataset.g;C[k]=!C[k];LS.s('wl_coll',C);render();return}const tr=e.target.closest('tr[data-tk]');if(tr)openChart(tr.dataset.tk)};
 $('#ref').onclick=refresh;
 
 /* ---------- Séries de prix ---------- */
@@ -422,7 +433,11 @@ function draw(){const c=CUR;if(!c||!c.R)return;const R=c.R,P=R.pts,n=P.length,bo
   const sp=(hi-lo)||Math.abs(hi)*.02||1;lo-=sp*.08;hi+=sp*.08;
   const X=i=>pl+i*(Wd-pl-pr)/(n-1),Y=v=>pt+(hi-v)/(hi-lo)*(Ht-pt-pb);
   const path=P.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p[1]).toFixed(1)).join('');
-  const gl=[0,1,2,3].map(k=>{const v=lo+(hi-lo)*k/3,y=Y(v).toFixed(1);return`<line x1="${pl}" x2="${Wd-pr}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-dasharray="3 3"/><text x="${pl-6}" y="${(+y+4)}" text-anchor="end" font-size="11" fill="var(--mute)">${fPx(v)}</text>`}).join('');
+  const vals=P.map(p=>p[1]),dmax=Math.max(...vals),dmin=Math.min(...vals),imax=vals.indexOf(dmax),imin=vals.indexOf(dmin);
+  const tk_=(v,strong,c)=>{const y=Y(v).toFixed(1);return`<line x1="${pl}" x2="${Wd-pr}" y1="${y}" y2="${y}" stroke="${strong?c:'var(--line)'}" stroke-width="${strong?1:1}" stroke-dasharray="${strong?'':'3 3'}" opacity="${strong?.55:1}"/><text x="${pl-6}" y="${(+y+4)}" text-anchor="end" font-size="11" ${strong?`font-weight="700" fill="${c}"`:'fill="var(--mute)"'}>${fPx(v)}</text>`};
+  let gl=tk_(dmax,1,'var(--up)');
+  if(dmax>dmin){gl+=tk_(dmin,1,'var(--dn)');[1,2].forEach(k=>{const v=dmin+(dmax-dmin)*k/3;if(Math.abs(Y(v)-Y(dmax))>16&&Math.abs(Y(v)-Y(dmin))>16)gl+=tk_(v,0)})}
+  gl+=`<circle cx="${X(imax).toFixed(1)}" cy="${Y(dmax).toFixed(1)}" r="3.5" fill="var(--up)"/>`+(dmax>dmin?`<circle cx="${X(imin).toFixed(1)}" cy="${Y(dmin).toFixed(1)}" r="3.5" fill="var(--dn)"/>`:'');
   const ti=[...new Set([0,.25,.5,.75,1].map(f=>Math.round(f*(n-1))))],xl=ti.map(i=>`<text x="${X(i).toFixed(1)}" y="${Ht-7}" font-size="11" fill="var(--mute)" text-anchor="${i===0?'start':i===n-1?'end':'middle'}">${fTime(P[i][0],R,c.rg,false)}</text>`).join('');
   const rl=R.ref!=null?`<line x1="${pl}" x2="${Wd-pr}" y1="${Y(R.ref).toFixed(1)}" y2="${Y(R.ref).toFixed(1)}" stroke="var(--mute)" stroke-dasharray="5 4"/>`:'';
   box.innerHTML=`<svg viewBox="0 0 ${Wd} ${Ht}" preserveAspectRatio="none"><defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" style="stop-color:${col};stop-opacity:.28"/><stop offset="1" style="stop-color:${col};stop-opacity:0"/></linearGradient></defs>${gl}${xl}${rl}
@@ -442,14 +457,15 @@ addEventListener('resize',()=>{if($('#cdlg').open)draw()});
 /* ---------- Ajout / modification ---------- */
 let EDIT=null;
 function openEdit(tk){EDIT=tk||null;const it=tk&&W.find(x=>x.ticker===tk);
-  $('#et').textContent=it?'Modifier la valeur':'Ajouter une valeur';$('#en').value=it?it.nom:'';$('#etk').value=it?it.ticker:'';$('#etk').disabled=!!it;
+  $('#et').textContent=it?'Modifier la valeur':'Ajouter une valeur';$('#en').value=it?it.nom:'';$('#etk').value=it?it.ticker:'';$('#etk').disabled=false;$('#eg').value=it&&it.groupe||'';
   $('#eerr').hidden=true;$('#edel').hidden=!it;$('#edlg').showModal()}
 $('#add').onclick=()=>openEdit();$('#ced').onclick=()=>{const t=CUR&&CUR.tk;$('#cdlg').close();openEdit(t)};
 $('#ecn').onclick=()=>$('#edlg').close();
 $('#eok').onclick=async()=>{const nom=$('#en').value.trim(),tk=$('#etk').value.trim().toUpperCase(),er=t=>{$('#eerr').textContent=t;$('#eerr').hidden=false};
   if(!tk)return er('Le ticker est obligatoire.');if(!nom)return er('Le nom est obligatoire.');
-  if(EDIT){const it=W.find(x=>x.ticker===EDIT);it.nom=nom}
-  else{if(W.some(x=>x.ticker===tk))return er(tk+' est déjà dans la watchlist.');W.push({ticker:tk,nom,zone_achat:null})}
+  const gp=$('#eg').value;
+  if(EDIT){const it=W.find(x=>x.ticker===EDIT);if(tk!==EDIT){if(W.some(x=>x.ticker===tk))return er(tk+' est déjà dans la watchlist.');it.ticker=tk}it.nom=nom;it.groupe=gp}
+  else{if(W.some(x=>x.ticker===tk))return er(tk+' est déjà dans la watchlist.');W.push({ticker:tk,nom,zone_achat:null,groupe:gp})}
   $('#edlg').close();render();await save();refresh()};
 $('#edel').onclick=async()=>{if(!EDIT||!confirm('Retirer cette valeur de la watchlist ?'))return;W=W.filter(x=>x.ticker!==EDIT);$('#edlg').close();render();await save()};
 
