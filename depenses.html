@@ -304,7 +304,7 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
   <h2 id="et" style="margin:0 0 4px;font-size:1.1rem">Ajouter une valeur</h2>
   <label>Nom</label><input id="en" autocomplete="off" placeholder="Ex : LVMH">
   <label>Ticker (Yahoo Finance)</label><input id="etk" autocomplete="off" autocapitalize="characters" placeholder="Ex : MC.PA, AAPL, BTC-EUR">
-  <label>Groupe</label><select id="eg"><option value="">Sans groupe</option><option>PEA</option><option>CTO</option><option>ETF</option><option>Crypto</option></select>
+  <label>Groupe</label><input id="eg" list="gl" autocomplete="off" maxlength="30" placeholder="Choisir ou créer un groupe (facultatif)"><datalist id="gl"></datalist>
   <div class="msg" id="eerr" hidden></div>
   <div class="bar" style="justify-content:space-between"><button class="dg" id="edel" hidden>🗑 Supprimer</button><span style="flex:1"></span><button id="ecn">Annuler</button><button class="pri" id="eok">Enregistrer</button></div>
 </dialog>
@@ -314,20 +314,22 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
 const $=s=>document.querySelector(s);
 const LS={g(k){try{return JSON.parse(localStorage.getItem(k))}catch{return null}},s(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
 const nf=d=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const nfr=(a,b)=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:a,maximumFractionDigits:b});
+/* pas de cotation : nombre de décimales réellement présentes dans les données (2 au minimum, 4 au maximum) */
+const decs=a=>{let m=2;for(const v of a){if(v==null||!isFinite(v))continue;const t=(+v).toFixed(4).replace(/0+$/,''),i=t.indexOf('.'),d=i<0?0:t.length-i-1;if(d>m)m=d}return Math.min(m,4)};
 const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const pad=n=>String(n).padStart(2,'0'),dstr=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
-const fPx=v=>v==null||!isFinite(v)?'–':nf(Math.abs(v)<1?4:2).format(v);
+const fPx=v=>v==null||!isFinite(v)?'–':nfr(2,Math.abs(v)<1?4:2).format(v);
 const SG=v=>v>0?'+':v<0?'−':'';
-const fVar=(d,p)=>d==null?'–':`${SG(d)}${fPx(Math.abs(d))} (${SG(p)}${nf(2).format(Math.abs(p))} %)`;
+const fVar=(d,p,f=fPx)=>d==null?'–':`${SG(d)}${f(Math.abs(d))} (${SG(p)}${nf(2).format(Math.abs(p))} %)`;
 const cls=v=>v>0.00001?'up':v<-0.00001?'dn':'fl';
 const arrow=v=>v>0.00001?'▲':v<-0.00001?'▼':'▬';
 const URL_=()=>LS.g('url')||'';
 const qs=a=>{const u=URL_();return u+(u.includes('?')?'&':'?')+a};
 
 /* ---------- Données ---------- */
-let W=LS.g('wl_list'),PX=LS.g('wl_px')||{},SORT={k:'pct',d:1},synced=false,busy=false;
-const GR=['PEA','CTO','ETF','Crypto'];
-const norm=a=>(a||[]).filter(x=>x&&x.ticker).map(x=>({ticker:String(x.ticker).toUpperCase().trim(),nom:x.nom||x.ticker,zone_achat:x.zone_achat>0?+x.zone_achat:null,groupe:GR.includes(x.groupe)?x.groupe:''}));
+let W=LS.g('wl_list'),PX=LS.g('wl_px')||{},SORT={k:'pct',d:-1},synced=false,busy=false;
+const norm=a=>(a||[]).filter(x=>x&&x.ticker).map(x=>({ticker:String(x.ticker).toUpperCase().trim(),nom:x.nom||x.ticker,zone_achat:x.zone_achat>0?+x.zone_achat:null,groupe:String(x.groupe||'').trim().slice(0,30)}));
 const merge=(a,b)=>{const m=new Map(a.map(x=>[x.ticker,x]));norm(b).forEach(x=>{if(!m.has(x.ticker))m.set(x.ticker,x)});return[...m.values()]};
 /* Reprise des anciennes watchlists (PEA, CTO, Crypto), stockées dans leurs réglages locaux */
 const grOfKey=k=>k==='cfg'?'PEA':/^crypto/i.test(k)?'Crypto':/^cto/i.test(k)?'CTO':'';
@@ -375,10 +377,10 @@ function render(){
   R.sort((a,b)=>{const x=key(a),y=key(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return-1;return(x<y?-1:x>y?1:0)*SORT.d});
   if(!R.length){$('#tb').innerHTML=`<tr><td colspan="2" class="empty">Ta watchlist est vide. Ajoute une première valeur.</td></tr>`;return}
   const line=r=>`<tr data-tk="${esc(r.ticker)}"><td><b>${esc(r.nom)}</b></td><td><b>${r.p!=null?fPx(r.p)+' €':'–'}</b>${r.pct!=null?` <span class="${cls(r.pct)}" style="font-weight:700">(${arrow(r.pct)} ${SG(r.pct)}${nf(2).format(Math.abs(r.pct))} %)</span>`:''}</td></tr>`;
-  const groups=[...GR,''].map(g=>[g,R.filter(r=>(r.groupe||'')===g)]).filter(x=>x[1].length);
+  const names=[...new Set(R.map(r=>r.groupe||''))].sort((a,b)=>a===''?1:b===''?-1:a.localeCompare(b,'fr',{sensitivity:'base'})),groups=names.map(g=>[g,R.filter(r=>(r.groupe||'')===g)]);
   if(groups.length===1&&groups[0][0]===''){$('#tb').innerHTML=R.map(line).join('');return}
   $('#tb').innerHTML=groups.map(([g,L])=>{const c=!!COLL[g||'_'];return`<tr class="gh" data-g="${esc(g||'_')}"><td colspan="2">${c?'▸':'▾'} ${g||'Sans groupe'} <small>· ${L.length}</small></td></tr>`+(c?'':L.map(line).join(''))}).join('')}
-$('#th').onclick=e=>{const th=e.target.closest('th');if(!th)return;const k=th.dataset.s;SORT=SORT.k===k?{k,d:-SORT.d}:{k,d:1};render()};
+$('#th').onclick=e=>{const th=e.target.closest('th');if(!th)return;const k=th.dataset.s;SORT=SORT.k===k?{k,d:-SORT.d}:{k,d:k==='nom'?1:-1};render()};
 $('#tb').onclick=e=>{const gh=e.target.closest('tr.gh');if(gh){const C=LS.g('wl_coll')||{},k=gh.dataset.g;C[k]=!C[k];LS.s('wl_coll',C);render();return}const tr=e.target.closest('tr[data-tk]');if(tr)openChart(tr.dataset.tk)};
 $('#ref').onclick=refresh;
 
@@ -394,15 +396,15 @@ async function series(tk,rg,d1,d2){
   try{
     if(INTRA[rg]){const[r,i]=INTRA[rg],j=await cached(tk+'|'+r+'|'+i,6e4,async()=>(await fetch(qs('c='+enc(tk)+'&range='+r+'&interval='+i))).json());
       if(!j||!Array.isArray(j.t)||!j.t.length){delete MEM[tk+'|'+r+'|'+i];return{err:j&&j.error?'Yahoo ne renvoie pas de données intraday pour ce titre ('+j.error+').':'Le script Google ne renvoie pas l’intraday : colle la version « script_google_complet.gs » puis redéploie-le (Déployer > Gérer les déploiements > crayon > Nouvelle version).'}}
-      let pts=j.t.map((t,k)=>[t*1000,j.c[k]]);const last=pts[pts.length-1][0];
+      const hl=Array.isArray(j.h)&&Array.isArray(j.l);let pts=j.t.map((t,k)=>[t*1000,j.c[k],hl&&j.h[k]!=null?j.h[k]:j.c[k],hl&&j.l[k]!=null?j.l[k]:j.c[k]]);const last=pts[pts.length-1][0];
       if(rg==='1h')pts=pts.filter(p=>p[0]>=last-36e5);else if(rg==='7j')pts=pts.filter(p=>p[0]>=last-7*864e5);
-      return pts.length<2?{err:'Pas assez de points sur cette période.'}:{pts,ref:rg==='1j'&&j.pc?j.pc:null,intra:rg!=='7j'}}
+      return pts.length<2?{err:'Pas assez de points sur cette période.'}:{pts,ref:rg==='1j'&&j.pc?j.pc:null,intra:rg!=='7j',hl}}
     const from=rg==='custom'?d1:rg==='max'?'1990-01-01':dstr(new Date(Date.now()-DAYS[rg]*864e5));
-    const j=await cached(tk+'|h|'+from,18e5,async()=>(await fetch(qs('h='+enc(tk)+'&from='+from))).json()),h=j&&(j[tk]||Object.values(j)[0]);
+    const j=await cached(tk+'|hl|'+from,18e5,async()=>(await fetch(qs('h='+enc(tk)+'&from='+from+'&hl=1'))).json()),h=j&&(j[tk]||Object.values(j)[0]);
     if(!h||!Array.isArray(h.d)||!h.d.length)return{err:'Historique indisponible pour ce titre.'};
-    const pts=[];h.d.forEach((d,i)=>{if(h.c[i]!=null&&d>=from&&(rg!=='custom'||!d2||d<=d2))pts.push([Date.parse(d+'T12:00:00'),h.c[i]])});
-    const q=PX[tk];if(q&&q.p!=null&&(rg!=='custom'||!d2||d2>=today)&&(!pts.length||dstr(new Date(pts[pts.length-1][0]))<today))pts.push([Date.now(),q.p]);
-    return pts.length<2?{err:'Pas assez de points sur cette période.'}:{pts,ref:null,intra:false}}
+    const hl=Array.isArray(h.hi)&&Array.isArray(h.lo),pts=[];h.d.forEach((d,i)=>{if(h.c[i]!=null&&d>=from&&(rg!=='custom'||!d2||d<=d2))pts.push([Date.parse(d+'T12:00:00'),h.c[i],hl&&h.hi[i]!=null?h.hi[i]:h.c[i],hl&&h.lo[i]!=null?h.lo[i]:h.c[i]])});
+    const q=PX[tk];if(q&&q.p!=null&&(rg!=='custom'||!d2||d2>=today)&&(!pts.length||dstr(new Date(pts[pts.length-1][0]))<today))pts.push([Date.now(),q.p,q.p,q.p]);
+    return pts.length<2?{err:'Pas assez de points sur cette période.'}:{pts,ref:null,intra:false,hl}}
   catch(e){return{err:'Données indisponibles (script Google injoignable).'}}}
 
 /* ---------- Graphique ---------- */
@@ -427,14 +429,15 @@ async function loadChart(){const c=CUR;if(!c)return;const my=++TOK;
   if(R.err){$('#cc').innerHTML=`<div class="cmsg">${esc(R.err)}</div><div id="tip"></div>`;$('#cv').textContent='';return}
   c.R=R;draw()}
 function draw(){const c=CUR;if(!c||!c.R)return;const R=c.R,P=R.pts,n=P.length,box=$('#cc'),Wd=box.clientWidth||320,Ht=300,pl=56,pr=10,pt=12,pb=26;
+  const DEC=decs(P.flatMap(p=>[p[1],p[2],p[3]])),nfd=nfr(DEC,DEC),fC=v=>v==null||!isFinite(v)?'–':nfd.format(v);
   const ref=R.ref!=null?R.ref:P[0][1],last=P[n-1][1],dd=last-ref,dp=ref?dd/ref*100:0,col=dd>=0?'var(--up)':'var(--dn)';
-  $('#cp').textContent=fPx(last)+' €';$('#cv').innerHTML=`<span class="${cls(dd)}">${arrow(dd)} ${fVar(dd,dp)}</span> <span class="sub" style="font-weight:400">sur la période</span>`;
-  let lo=Math.min(...P.map(p=>p[1])),hi=Math.max(...P.map(p=>p[1]));if(R.ref!=null){lo=Math.min(lo,R.ref);hi=Math.max(hi,R.ref)}
+  $('#cp').textContent=fC(last)+' €';$('#cv').innerHTML=`<span class="${cls(dd)}">${arrow(dd)} ${fVar(dd,dp,fC)}</span> <span class="sub" style="font-weight:400">sur la période</span>`+(R.hl?'':'<div class="sub" style="font-weight:400;font-size:11.5px">Plus haut / plus bas calculés sur les clôtures (mets à jour le script Google pour les extrêmes réels).</div>');
+  const hs=P.map(p=>p[2]),ls=P.map(p=>p[3]),dmax=Math.max(...hs),dmin=Math.min(...ls),imax=hs.indexOf(dmax),imin=ls.indexOf(dmin);
+  let lo=dmin,hi=dmax;if(R.ref!=null){lo=Math.min(lo,R.ref);hi=Math.max(hi,R.ref)}
   const sp=(hi-lo)||Math.abs(hi)*.02||1;lo-=sp*.08;hi+=sp*.08;
   const X=i=>pl+i*(Wd-pl-pr)/(n-1),Y=v=>pt+(hi-v)/(hi-lo)*(Ht-pt-pb);
   const path=P.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p[1]).toFixed(1)).join('');
-  const vals=P.map(p=>p[1]),dmax=Math.max(...vals),dmin=Math.min(...vals),imax=vals.indexOf(dmax),imin=vals.indexOf(dmin);
-  const tk_=(v,strong,c)=>{const y=Y(v).toFixed(1);return`<line x1="${pl}" x2="${Wd-pr}" y1="${y}" y2="${y}" stroke="${strong?c:'var(--line)'}" stroke-width="${strong?1:1}" stroke-dasharray="${strong?'':'3 3'}" opacity="${strong?.55:1}"/><text x="${pl-6}" y="${(+y+4)}" text-anchor="end" font-size="11" ${strong?`font-weight="700" fill="${c}"`:'fill="var(--mute)"'}>${fPx(v)}</text>`};
+  const tk_=(v,strong,cl)=>{const y=Y(v).toFixed(1);return`<line x1="${pl}" x2="${Wd-pr}" y1="${y}" y2="${y}" stroke="${strong?cl:'var(--line)'}" stroke-width="${strong?1.4:1}" ${strong?'stroke-dasharray="1.5 4" stroke-linecap="round"':''}/><text x="${pl-6}" y="${(+y+4)}" text-anchor="end" font-size="11" ${strong?`font-weight="700" fill="${cl}"`:'fill="var(--mute)"'}>${fC(v)}</text>`};
   let gl=tk_(dmax,1,'var(--up)');
   if(dmax>dmin){gl+=tk_(dmin,1,'var(--dn)');[1,2].forEach(k=>{const v=dmin+(dmax-dmin)*k/3;if(Math.abs(Y(v)-Y(dmax))>16&&Math.abs(Y(v)-Y(dmin))>16)gl+=tk_(v,0)})}
   gl+=`<circle cx="${X(imax).toFixed(1)}" cy="${Y(dmax).toFixed(1)}" r="3.5" fill="var(--up)"/>`+(dmax>dmin?`<circle cx="${X(imin).toFixed(1)}" cy="${Y(dmin).toFixed(1)}" r="3.5" fill="var(--dn)"/>`:'');
@@ -446,7 +449,7 @@ function draw(){const c=CUR;if(!c||!c.R)return;const R=c.R,P=R.pts,n=P.length,bo
   const sv=box.querySelector('svg'),tip=$('#tip'),xl_=$('#xl'),xc=$('#xc');
   const mv=e=>{const r=sv.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*Wd,i=Math.max(0,Math.min(n-1,Math.round((px-pl)/((Wd-pl-pr)/(n-1))))),x=X(i),y=Y(P[i][1]),pv=i>0?P[i-1][1]:null,d=pv==null?null:P[i][1]-pv,p=pv?d/pv*100:0;
     xl_.setAttribute('x1',x);xl_.setAttribute('x2',x);xc.setAttribute('cx',x);xc.setAttribute('cy',y);xl_.style.display=xc.style.display='';
-    tip.innerHTML=`<div>${fTime(P[i][0],R,c.rg,true)}</div><b>${fPx(P[i][1])} €</b>${d==null?'<div style="opacity:.7">Début de la période</div>':`<div style="color:${d>=0?'#4ade80':'#f87171'}">${arrow(d)} ${fVar(d,p)}</div><div style="opacity:.65;font-size:11px">vs point précédent</div>`}`;tip.style.display='block';
+    tip.innerHTML=`<div>${fTime(P[i][0],R,c.rg,true)}</div><b>${fC(P[i][1])} €</b>${d==null?'<div style="opacity:.7">Début de la période</div>':`<div style="color:${d>=0?'#4ade80':'#f87171'}">${arrow(d)} ${fVar(d,p,fC)}</div><div style="opacity:.65;font-size:11px">vs point précédent</div>`}${P[i][2]!==P[i][3]?`<div style="opacity:.65;font-size:11px">Haut ${fC(P[i][2])} · Bas ${fC(P[i][3])}</div>`:''}`;tip.style.display='block';
     const bw=box.clientWidth,tw=tip.offsetWidth,lx=x/Wd*bw;tip.style.left=Math.max(4,Math.min(bw-tw-4,lx-tw/2))+'px';tip.style.top=Math.max(0,y/Ht*box.clientHeight-tip.offsetHeight-14)+'px'};
   sv.onpointermove=mv;sv.onpointerdown=mv;sv.onpointerleave=e=>{if(e.pointerType==='touch')return;tip.style.display='none';xl_.style.display=xc.style.display='none'}}
 $('#chips').onclick=e=>{const b=e.target.closest('[data-r]');if(!b||!CUR)return;CUR.rg=b.dataset.r;loadChart()};
@@ -457,13 +460,13 @@ addEventListener('resize',()=>{if($('#cdlg').open)draw()});
 /* ---------- Ajout / modification ---------- */
 let EDIT=null;
 function openEdit(tk){EDIT=tk||null;const it=tk&&W.find(x=>x.ticker===tk);
-  $('#et').textContent=it?'Modifier la valeur':'Ajouter une valeur';$('#en').value=it?it.nom:'';$('#etk').value=it?it.ticker:'';$('#etk').disabled=false;$('#eg').value=it&&it.groupe||'';
+  $('#et').textContent=it?'Modifier la valeur':'Ajouter une valeur';$('#en').value=it?it.nom:'';$('#etk').value=it?it.ticker:'';$('#etk').disabled=false;$('#eg').value=it&&it.groupe||'';$('#gl').innerHTML=[...new Set(W.map(x=>x.groupe).filter(Boolean))].sort().map(g=>`<option value="${esc(g)}">`).join('');
   $('#eerr').hidden=true;$('#edel').hidden=!it;$('#edlg').showModal()}
 $('#add').onclick=()=>openEdit();$('#ced').onclick=()=>{const t=CUR&&CUR.tk;$('#cdlg').close();openEdit(t)};
 $('#ecn').onclick=()=>$('#edlg').close();
 $('#eok').onclick=async()=>{const nom=$('#en').value.trim(),tk=$('#etk').value.trim().toUpperCase(),er=t=>{$('#eerr').textContent=t;$('#eerr').hidden=false};
   if(!tk)return er('Le ticker est obligatoire.');if(!nom)return er('Le nom est obligatoire.');
-  const gp=$('#eg').value;
+  const gp=$('#eg').value.trim().slice(0,30);
   if(EDIT){const it=W.find(x=>x.ticker===EDIT);if(tk!==EDIT){if(W.some(x=>x.ticker===tk))return er(tk+' est déjà dans la watchlist.');it.ticker=tk}it.nom=nom;it.groupe=gp}
   else{if(W.some(x=>x.ticker===tk))return er(tk+' est déjà dans la watchlist.');W.push({ticker:tk,nom,zone_achat:null,groupe:gp})}
   $('#edlg').close();render();await save();refresh()};
