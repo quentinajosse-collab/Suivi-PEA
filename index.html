@@ -321,7 +321,7 @@ function perfActifs(A,D,cf,m0){
   (D.interessement||[]).forEach(x=>{if(String(x.dest||'').startsWith('Placé'))add(x.date,+x.montant||0)});
   const seen=new Set();(D.retraits_epargne||[]).forEach(r=>{const k=[r.date,r.montant,r.ref||''].join('|');if(seen.has(k))return;seen.add(k);add(r.date,-(+r.montant||0))});
   const im=D.immo||{},acq=im.date_achat||(D.prets||[]).map(p=>p.date_debut).filter(Boolean).sort()[0];
-  if(acq)add(acq,+im.prix>0?+im.prix:(+im.apport||0)+(D.prets||[]).reduce((t,p)=>t+(+p.capital||0),0));
+  if(acq)add(acq,+im.prix>0?(+im.prix)+(+im.frais||0):(+im.apport||0)+(D.prets||[]).reduce((t,p)=>t+(+p.capital||0),0));
   let c=0,w=0;F.forEach(([dt,v])=>{c+=v;w+=v*Math.max(0,Math.min(1,(T1-new Date(dt+'T12:00:00').getTime())/sp))});
   const den=v0+w;return den>1?(v1-v0-c)/den*100:null}
 function drawEvo(all,pf,ff){
