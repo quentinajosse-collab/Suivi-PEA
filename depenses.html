@@ -415,7 +415,7 @@ async function series(tk,rg,d1,d2){
   if(!URL_())return{err:'Renseigne l’adresse du script Google dans le hub (⚙️ Réglages).'};
   const enc=encodeURIComponent,today=dstr(new Date());
   try{
-    if(INTRA[rg]){const[r,i]=INTRA[rg],u=qs('c='+enc(tk)+'&range='+r+'&interval='+i),j=await cached(tk+'|'+r+'|'+i,6e4,async()=>{const rs=await fetch(u),tx=await rs.text();try{return JSON.parse(tx)}catch(_){return{_raw:tx.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,140),_http:rs.status}}});
+    if(INTRA[rg]){const[r,i]=INTRA[rg],u=qs('chart=1&tk='+enc(tk)+'&rg='+r+'&iv='+i),j=await cached(tk+'|'+r+'|'+i,6e4,async()=>{const rs=await fetch(u),tx=await rs.text();try{return JSON.parse(tx)}catch(_){return{_raw:tx.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,140),_http:rs.status}}});
       if(!j||!Array.isArray(j.t)||!j.t.length){delete MEM[tk+'|'+r+'|'+i];const lk=u;
         return{link:lk,err:j&&j._raw!=null?'Le script Google n’a pas renvoyé de JSON (HTTP '+j._http+') : « '+j._raw+' ». Vérifie le déploiement (accès « Tout le monde ») et que la dernière version est déployée.':j&&j.error?'Yahoo ne renvoie pas de données intraday pour ce titre ('+j.error+').':'Le script Google ne renvoie pas l’intraday (réponse : '+JSON.stringify(j||{}).slice(0,120)+'). Colle la version « script_google_complet.gs » puis redéploie-le (Déployer > Gérer les déploiements > crayon > Nouvelle version).'}}
       const hl=Array.isArray(j.h)&&Array.isArray(j.l);let pts=j.t.map((t,k)=>[t*1000,j.c[k],hl&&j.h[k]!=null?j.h[k]:j.c[k],hl&&j.l[k]!=null?j.l[k]:j.c[k]]);const last=pts[pts.length-1][0];
@@ -427,7 +427,7 @@ async function series(tk,rg,d1,d2){
     const hl=Array.isArray(h.hi)&&Array.isArray(h.lo),pts=[];h.d.forEach((d,i)=>{if(h.c[i]!=null&&d>=from&&(rg!=='custom'||!d2||d<=d2))pts.push([Date.parse(d+'T12:00:00'),h.c[i],hl&&h.hi[i]!=null?h.hi[i]:h.c[i],hl&&h.lo[i]!=null?h.lo[i]:h.c[i]])});
     const q=PX[tk];if(q&&q.p!=null&&(rg!=='custom'||!d2||d2>=today)&&(!pts.length||dstr(new Date(pts[pts.length-1][0]))<today))pts.push([Date.now(),q.p,q.p,q.p]);
     return pts.length<2?{err:'Pas assez de points sur cette période.'}:{pts,ref:null,intra:false,hl}}
-  catch(e){return{err:'Données indisponibles : le navigateur n’a pas pu joindre le script Google ('+(e&&e.message||e)+').',link:INTRA[rg]?qs('c='+encodeURIComponent(tk)+'&range='+INTRA[rg][0]+'&interval='+INTRA[rg][1]):null}}}
+  catch(e){return{err:'Données indisponibles : le navigateur n’a pas pu joindre le script Google ('+(e&&e.message||e)+').',link:INTRA[rg]?qs('chart=1&tk='+encodeURIComponent(tk)+'&rg='+INTRA[rg][0]+'&iv='+INTRA[rg][1]):null}}}
 
 /* ---------- Graphique ---------- */
 let CUR=null,TOK=0;
