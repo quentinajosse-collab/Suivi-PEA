@@ -279,7 +279,7 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
 .cust input{width:auto}
 #cc{position:relative;height:300px;touch-action:none;user-select:none;-webkit-user-select:none}
 #cc svg{width:100%;height:100%;display:block}
-#tbar{min-height:50px;display:flex;align-items:center;flex-wrap:wrap;gap:2px 14px;background:var(--alt);border:1px solid var(--line);border-radius:10px;padding:6px 10px;margin-bottom:8px;font-size:13px;line-height:1.35}
+#tbar{min-height:92px;display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:6px 12px;align-content:start;background:var(--alt);border:1px solid var(--line);border-radius:12px;padding:9px 12px;margin-bottom:8px;font-size:13px;line-height:1.3}#tbar .tc span,.stats span{display:block;color:var(--mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.03em}#tbar .tc b{font-size:13.5px;white-space:nowrap}#tbar .tc.w{grid-column:span 2}#tbar .hint{grid-column:1/-1}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(68px,1fr));gap:6px 10px;margin-top:8px;font-weight:400}.stats b{font-size:13px;font-weight:700;white-space:nowrap}
 #tbar:empty{display:none}
 #tbar .t{color:var(--mute);width:100%;font-size:12px}#tbar .hint{color:var(--mute)}
 #tip{position:absolute;pointer-events:none;display:none;background:#0f172a;color:#fff;border-radius:8px;padding:7px 10px;font-size:12.5px;line-height:1.45;white-space:nowrap;z-index:5;box-shadow:0 6px 18px rgba(15,23,42,.3)}
@@ -418,20 +418,21 @@ async function series(tk,rg,d1,d2){
     if(INTRA[rg]){const[r,i]=INTRA[rg],u=qs('chart=1&tk='+enc(tk)+'&rg='+r+'&iv='+i),j=await cached(tk+'|'+r+'|'+i,6e4,async()=>{const rs=await fetch(u),tx=await rs.text();try{return JSON.parse(tx)}catch(_){return{_raw:tx.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,140),_http:rs.status}}});
       if(!j||!Array.isArray(j.t)||!j.t.length){delete MEM[tk+'|'+r+'|'+i];const lk=u;
         return{link:lk,err:j&&j._raw!=null?'Le script Google n’a pas renvoyé de JSON (HTTP '+j._http+') : « '+j._raw+' ». Vérifie le déploiement (accès « Tout le monde ») et que la dernière version est déployée.':j&&j.error?'Yahoo ne renvoie pas de données intraday pour ce titre ('+j.error+').':'Le script Google ne renvoie pas l’intraday (réponse : '+JSON.stringify(j||{}).slice(0,120)+'). Colle la version « script_google_complet.gs » puis redéploie-le (Déployer > Gérer les déploiements > crayon > Nouvelle version).'}}
-      const hl=Array.isArray(j.h)&&Array.isArray(j.l);let pts=j.t.map((t,k)=>[t*1000,j.c[k],hl&&j.h[k]!=null?j.h[k]:j.c[k],hl&&j.l[k]!=null?j.l[k]:j.c[k]]);const last=pts[pts.length-1][0];
+      const hl=Array.isArray(j.h)&&Array.isArray(j.l),hv=Array.isArray(j.v);let pts=j.t.map((t,k)=>[t*1000,j.c[k],hl&&j.h[k]!=null?j.h[k]:j.c[k],hl&&j.l[k]!=null?j.l[k]:j.c[k],hv&&j.v[k]!=null?j.v[k]:null]);const last=pts[pts.length-1][0];
       if(rg==='1h')pts=pts.filter(p=>p[0]>=last-36e5);else if(rg==='7j')pts=pts.filter(p=>p[0]>=last-7*864e5);
       return pts.length<2?{err:'Pas assez de points sur cette période.'}:{pts,ref:rg==='1j'&&j.pc?j.pc:null,intra:rg!=='7j',hl}}
     const from=rg==='custom'?d1:rg==='max'?'1990-01-01':dstr(new Date(Date.now()-DAYS[rg]*864e5));
     const j=await cached(tk+'|hl|'+from,18e5,async()=>(await fetch(qs('h='+enc(tk)+'&from='+from+'&hl=1'))).json()),h=j&&(j[tk]||Object.values(j)[0]);
     if(!h||!Array.isArray(h.d)||!h.d.length)return{err:'Historique indisponible pour ce titre.'};
-    const hl=Array.isArray(h.hi)&&Array.isArray(h.lo),pts=[];h.d.forEach((d,i)=>{if(h.c[i]!=null&&d>=from&&(rg!=='custom'||!d2||d<=d2))pts.push([Date.parse(d+'T12:00:00'),h.c[i],hl&&h.hi[i]!=null?h.hi[i]:h.c[i],hl&&h.lo[i]!=null?h.lo[i]:h.c[i]])});
-    const q=PX[tk];if(q&&q.p!=null&&(rg!=='custom'||!d2||d2>=today)&&(!pts.length||dstr(new Date(pts[pts.length-1][0]))<today))pts.push([Date.now(),q.p,q.p,q.p]);
+    const hl=Array.isArray(h.hi)&&Array.isArray(h.lo),hv=Array.isArray(h.v),pts=[];h.d.forEach((d,i)=>{if(h.c[i]!=null&&d>=from&&(rg!=='custom'||!d2||d<=d2))pts.push([Date.parse(d+'T12:00:00'),h.c[i],hl&&h.hi[i]!=null?h.hi[i]:h.c[i],hl&&h.lo[i]!=null?h.lo[i]:h.c[i],hv&&h.v[i]!=null?h.v[i]:null])});
+    const q=PX[tk];if(q&&q.p!=null&&(rg!=='custom'||!d2||d2>=today)&&(!pts.length||dstr(new Date(pts[pts.length-1][0]))<today))pts.push([Date.now(),q.p,q.p,q.p,null]);
     return pts.length<2?{err:'Pas assez de points sur cette période.'}:{pts,ref:null,intra:false,hl}}
   catch(e){return{err:'Données indisponibles : le navigateur n’a pas pu joindre le script Google ('+(e&&e.message||e)+').',link:INTRA[rg]?qs('chart=1&tk='+encodeURIComponent(tk)+'&rg='+INTRA[rg][0]+'&iv='+INTRA[rg][1]):null}}}
 
 /* ---------- Graphique ---------- */
 let CUR=null,TOK=0;
 const JS=['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'],MS=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+const nfV0=new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}),nfV2=new Intl.NumberFormat('fr-FR',{maximumFractionDigits:2}),fV=v=>v==null||!isFinite(v)?'–':v>=1e9?nfV2.format(v/1e9)+' Md':v>=1e6?nfV2.format(v/1e6)+' M':nfV0.format(v);
 function fTime(ts,R,rg,long){const d=new Date(ts);
   if(R.intra)return pad(d.getHours())+':'+pad(d.getMinutes());
   if(rg==='7j')return long?`${JS[d.getDay()]} ${pad(d.getDate())}/${pad(d.getMonth()+1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`:`${pad(d.getDate())}/${pad(d.getMonth()+1)}`;
@@ -446,32 +447,38 @@ function openChart(tk){const it=W.find(x=>x.ticker===tk);if(!it)return;CUR={tk,i
 async function loadChart(){const c=CUR;if(!c)return;const my=++TOK;
   document.querySelectorAll('#chips button').forEach(b=>b.classList.toggle('on',b.dataset.r===c.rg));$('#cust').classList.toggle('on',c.rg==='custom');
   const q=PX[c.tk]||{};$('#cp').textContent=q.p!=null?fPx(q.p)+' €':'';
-  $('#cc').innerHTML='<div class="cmsg">Chargement…</div><div id="tip"></div>';$('#tbar').innerHTML='';
+  $('#cc').style.height='300px';$('#cc').innerHTML='<div class="cmsg">Chargement…</div><div id="tip"></div>';$('#tbar').innerHTML='';
   const R=await series(c.tk,c.rg,$('#d1').value,$('#d2').value);if(my!==TOK)return;
   if(R.err){$('#cc').innerHTML=`<div class="cmsg"><div>${esc(R.err)}${R.link?`<br><a href="${esc(R.link)}" target="_blank" rel="noopener" style="color:var(--acc);font-weight:600">Ouvrir la réponse du script</a>`:''}</div></div><div id="tip"></div>`;$('#cv').textContent='';return}
   c.R=R;draw()}
-function draw(){const c=CUR;if(!c||!c.R)return;const R=c.R,P=R.pts,n=P.length,box=$('#cc'),Wd=box.clientWidth||320,Ht=300,pl=56,pr=10,pt=12,pb=26;
+function draw(){const c=CUR;if(!c||!c.R)return;const R=c.R,P=R.pts,n=P.length,box=$('#cc'),Wd=box.clientWidth||320,pl=56,pr=10,pt=12,pb=26,hasV=P.some(p=>p[4]>0),vh=hasV?58:0,Ht=300+vh,yb=Ht-pb-(vh?vh+8:0);box.style.height=Ht+'px';
   const DEC=decs(P.flatMap(p=>[p[1],p[2],p[3]])),nfd=nfr(DEC,DEC),fC=v=>v==null||!isFinite(v)?'–':nfd.format(v);
   const ref=R.ref!=null?R.ref:P[0][1],last=P[n-1][1],dd=last-ref,dp=ref?dd/ref*100:0,col=dd>=0?'var(--up)':'var(--dn)';
   $('#cp').textContent=fC(last)+' €';$('#cv').innerHTML=`<span class="${cls(dd)}">${arrow(dd)} ${fVar(dd,dp,fC)}</span> <span class="sub" style="font-weight:400">sur la période</span>`+(R.hl?'':'<div class="sub" style="font-weight:400;font-size:11.5px">Plus haut / plus bas calculés sur les clôtures (mets à jour le script Google pour les extrêmes réels).</div>');
   const hs=P.map(p=>p[2]),ls=P.map(p=>p[3]),dmax=Math.max(...hs),dmin=Math.min(...ls),imax=hs.indexOf(dmax),imin=ls.indexOf(dmin);
+  {const vtot=P.reduce((t,p)=>t+(p[4]||0),0),stc=(l,v,k)=>`<div><span>${l}</span><b${k?` class="${k}"`:''}>${v}</b></div>`;
+   $('#cv').insertAdjacentHTML('beforeend',`<div class="stats">${stc('Début',fC(P[0][1]))}${stc('+ Haut',fC(dmax))}${stc('+ Bas',fC(dmin))}${stc('Dernier',fC(last))}${stc('Var.',(dp<0?'−':'+')+Math.abs(dp).toFixed(2).replace('.',',')+' %',cls(dd))}${hasV?stc('Volume',fV(vtot)):''}</div>`)}
   let lo=dmin,hi=dmax;if(R.ref!=null){lo=Math.min(lo,R.ref);hi=Math.max(hi,R.ref)}
   const sp=(hi-lo)||Math.abs(hi)*.02||1;lo-=sp*.08;hi+=sp*.08;
-  const X=i=>pl+i*(Wd-pl-pr)/(n-1),Y=v=>pt+(hi-v)/(hi-lo)*(Ht-pt-pb);
+  const X=i=>pl+i*(Wd-pl-pr)/(n-1),Y=v=>pt+(hi-v)/(hi-lo)*(yb-pt);
   const path=P.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p[1]).toFixed(1)).join('');
   const tk_=(v,strong,cl)=>{const y=Y(v).toFixed(1);return`<line x1="${pl}" x2="${Wd-pr}" y1="${y}" y2="${y}" stroke="${strong?cl:'var(--line)'}" stroke-width="${strong?1.4:1}" ${strong?'stroke-dasharray="1.5 4" stroke-linecap="round"':''}/><text x="${pl-6}" y="${(+y+4)}" text-anchor="end" font-size="11" ${strong?`font-weight="700" fill="${cl}"`:'fill="var(--mute)"'}>${fC(v)}</text>`};
   let gl=tk_(dmax,1,'var(--up)');
   if(dmax>dmin){gl+=tk_(dmin,1,'var(--dn)');[1,2].forEach(k=>{const v=dmin+(dmax-dmin)*k/3;if(Math.abs(Y(v)-Y(dmax))>16&&Math.abs(Y(v)-Y(dmin))>16)gl+=tk_(v,0)})}
   gl+=`<circle cx="${X(imax).toFixed(1)}" cy="${Y(dmax).toFixed(1)}" r="3.5" fill="var(--up)"/>`+(dmax>dmin?`<circle cx="${X(imin).toFixed(1)}" cy="${Y(dmin).toFixed(1)}" r="3.5" fill="var(--dn)"/>`:'');
   const ti=[...new Set([0,.25,.5,.75,1].map(f=>Math.round(f*(n-1))))],xl=ti.map(i=>`<text x="${X(i).toFixed(1)}" y="${Ht-7}" font-size="11" fill="var(--mute)" text-anchor="${i===0?'start':i===n-1?'end':'middle'}">${fTime(P[i][0],R,c.rg,false)}</text>`).join('');
+  let vb='';if(hasV){const vm=Math.max(...P.map(p=>p[4]||0)),vy=Ht-pb,bw=Math.max(1,Math.min(14,(Wd-pl-pr)/n*.7));
+    vb=P.map((p,i)=>{const v=p[4]||0;if(!v)return'';const h=Math.max(1,v/vm*(vh-6)),up=i===0?p[1]>=(R.ref!=null?R.ref:p[1]):p[1]>=P[i-1][1];return`<rect x="${(X(i)-bw/2).toFixed(1)}" y="${(vy-h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="1" fill="${up?'var(--up)':'var(--dn)'}" opacity=".6"/>`}).join('')
+      +`<line x1="${pl}" x2="${Wd-pr}" y1="${vy}" y2="${vy}" stroke="var(--line)"/><text x="${pl-6}" y="${vy-vh+10}" text-anchor="end" font-size="10" fill="var(--mute)">${fV(vm)}</text><text x="${pl-6}" y="${vy}" text-anchor="end" font-size="10" fill="var(--mute)">0</text><text x="${pl+4}" y="${vy-vh+11}" font-size="10" font-weight="600" fill="var(--mute)">VOLUME</text>`}
   const rl=R.ref!=null?`<line x1="${pl}" x2="${Wd-pr}" y1="${Y(R.ref).toFixed(1)}" y2="${Y(R.ref).toFixed(1)}" stroke="var(--mute)" stroke-dasharray="5 4"/>`:'';
   box.innerHTML=`<svg viewBox="0 0 ${Wd} ${Ht}" preserveAspectRatio="none"><defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" style="stop-color:${col};stop-opacity:.28"/><stop offset="1" style="stop-color:${col};stop-opacity:0"/></linearGradient></defs>${gl}${xl}${rl}
-   <path d="${path}L${X(n-1).toFixed(1)} ${Ht-pb}L${pl} ${Ht-pb}Z" fill="url(#g)"/><path d="${path}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round"/>
+   ${vb}<path d="${path}L${X(n-1).toFixed(1)} ${yb}L${pl} ${yb}Z" fill="url(#g)"/><path d="${path}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round"/>
    <line id="xl" y1="${pt}" y2="${Ht-pb}" stroke="var(--mute)" stroke-dasharray="3 3" style="display:none"/><circle id="xc" r="4.5" fill="${col}" stroke="var(--card)" stroke-width="2" style="display:none"/></svg><div id="tip"></div>`;
   const sv=box.querySelector('svg'),tb=$('#tbar'),HINT='<span class="hint">Survole ou fais glisser ton doigt sur le graphique pour voir le prix et la variation.</span>',xl_=$('#xl'),xc=$('#xc');tb.innerHTML=HINT;
   const mv=e=>{const r=sv.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*Wd,i=Math.max(0,Math.min(n-1,Math.round((px-pl)/((Wd-pl-pr)/(n-1))))),x=X(i),y=Y(P[i][1]),pv=i>0?P[i-1][1]:null,d=pv==null?null:P[i][1]-pv,p=pv?d/pv*100:0;
     xl_.setAttribute('x1',x);xl_.setAttribute('x2',x);xc.setAttribute('cx',x);xc.setAttribute('cy',y);xl_.style.display=xc.style.display='';
-    tb.innerHTML=`<div class="t">${fTime(P[i][0],R,c.rg,true)}</div><b style="font-size:15px">${fC(P[i][1])} €</b>${d==null?'<span style="color:var(--mute)">Début de la période</span>':`<span class="${cls(d)}" style="font-weight:700">${arrow(d)} ${fVar(d,p,fC)}</span>`}${P[i][2]!==P[i][3]?`<span style="color:var(--mute);font-size:12px">Haut ${fC(P[i][2])} · Bas ${fC(P[i][3])}</span>`:''}`};
+    const s0=P[0][1],ds=P[i][1]-s0,ps=s0?ds/s0*100:0,cell=(l,v,k,w)=>`<div class="tc${w?' w':''}"><span>${l}</span><b${k?` class="${k}"`:''}>${v}</b></div>`;
+    tb.innerHTML=cell('Date',fTime(P[i][0],R,c.rg,true),'',1)+cell('Cours',fC(P[i][1])+' €')+cell('Var.',d==null?'–':`${arrow(d)} ${fVar(d,p,fC)}`,d==null?'':cls(d),1)+cell('Depuis le début',i===0?'–':`${arrow(ds)} ${fVar(ds,ps,fC)}`,i===0?'':cls(ds),1)+(P[i][2]!==P[i][3]?cell('Haut',fC(P[i][2]))+cell('Bas',fC(P[i][3])):'')+(hasV?cell('Volume',fV(P[i][4]||0)):'')};
   sv.onpointermove=mv;sv.onpointerdown=mv;sv.onpointerleave=e=>{if(e.pointerType==='touch')return;tb.innerHTML=HINT;xl_.style.display=xc.style.display='none'}}
 $('#chips').onclick=e=>{const b=e.target.closest('[data-r]');if(!b||!CUR)return;CUR.rg=b.dataset.r;loadChart()};
 $('#dok').onclick=()=>{if($('#d1').value&&$('#d2').value&&$('#d1').value<=$('#d2').value)loadChart()};
