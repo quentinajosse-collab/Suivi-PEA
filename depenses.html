@@ -346,6 +346,14 @@ const fVar=(d,p,f=fPx)=>d==null?'–':`${SG(d)}${f(Math.abs(d))} (${SG(p)}${nf(2
 const cls=v=>v>0.00001?'up':v<-0.00001?'dn':'fl';
 const arrow=v=>v>0.00001?'▲':v<-0.00001?'▼':'▬';
 const URL_=()=>LS.g('url')||'';
+/* Types de valeurs : crypto (direct via Coinbase), hors US (suffixe de Bourse : Euronext, Xetra…, différé 15 min chez Yahoo), US (direct chez Yahoo) */
+const isCrypto=t=>/^[A-Z0-9]{2,10}-(EUR|USD|GBP)$/.test(t);
+const isDelayed=t=>!isCrypto(t)&&/\.[A-Z]{1,3}$/.test(t);
+const isUS=t=>!isCrypto(t)&&!isDelayed(t)&&!/^\^/.test(t);
+async function liveCrypto(){const L=W.filter(x=>isCrypto(x.ticker));if(!L.length)return false;let ok=false;
+  await Promise.all(L.map(async it=>{try{const r=await fetch('https://api.exchange.coinbase.com/products/'+encodeURIComponent(it.ticker)+'/ticker'),j=await r.json(),p=parseFloat(j.price);
+    if(p>0){const q=PX[it.ticker]||{};PX[it.ticker]={...q,p,live:1};ok=true}}catch(e){}}));
+  if(ok){LS.s('wl_px',PX);LS.s('wl_pxAt',Date.now())}return ok}
 const qs=a=>{const u=URL_();return u+(u.includes('?')?'&':'?')+a};
 
 /* ---------- Données ---------- */
@@ -384,24 +392,31 @@ async function save(){LS.s('wl_list',W);LS.s('wl_groups',G);LS.s('wl_dirty',1);i
 
 /* ---------- Cours et tableau ---------- */
 function msg(t){$('#msg').innerHTML=t?`<div class="msg">${t}</div>`:''}
-async function refresh(){if(busy||!W.length)return;
+async function refresh(sub){if(busy||!W.length)return;
   if(!URL_()){msg('Renseigne l’adresse du script Google dans le hub (⚙️ Réglages) pour afficher les cours.');return}
   busy=true;
-  try{const j=await(await fetch(qs('t='+encodeURIComponent(W.map(x=>x.ticker).join(','))))).json();
-    for(const k in j)if(j[k]&&j[k].p!=null)PX[k]=j[k];LS.s('wl_px',PX);LS.s('wl_pxAt',Date.now());msg('')}
+  try{const j=await(await fetch(qs('t='+encodeURIComponent((sub||W).map(x=>x.ticker).join(','))))).json();
+    for(const k in j)if(j[k]&&j[k].p!=null)PX[k]=j[k];await liveCrypto();LS.s('wl_px',PX);LS.s('wl_pxAt',Date.now());msg('')}
   catch(e){msg('Cours indisponibles (script Google injoignable) : derniers cours connus affichés.')}
-  busy=false;render()}
+  busy=false;patch()}
 const rowsOf=()=>W.map(it=>{const q=PX[it.ticker]||{},p=q.p!=null?q.p:null,pc=q.pc!=null?q.pc:null,d=p!=null&&pc?p-pc:null,pct=d!=null?d/pc*100:null;
   return{...it,p,d,pct}});
-function render(){
-  const R=rowsOf(),at=LS.g('wl_pxAt'),COLL=LS.g('wl_coll')||{};
-  $('#sub').textContent=W.length+' valeur'+(W.length>1?'s':'')+(at?' · cours de '+new Date(at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'');
+function render(){const y=scrollY,tw=document.querySelector('.tw'),sl=tw?tw.scrollLeft:0;render0();if(scrollY!==y)scrollTo(0,y);const t2=document.querySelector('.tw');if(t2&&sl)t2.scrollLeft=sl}
+function setSub(){const at=LS.g('wl_pxAt');$('#sub').textContent=W.length+' valeur'+(W.length>1?'s':'')+(at?' · cours de '+new Date(at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'')+' · crypto et US en direct · ⏱ = différé 15 min'}
+const priceCell=r=>`<b>${r.p!=null?fPx(r.p)+' €':'–'}</b>${r.pct!=null?` <span class="${cls(r.pct)}" style="font-weight:700">(${arrow(r.pct)} ${SG(r.pct)}${nf(2).format(Math.abs(r.pct))} %)</span>`:''}`;
+/* Mise à jour des prix sur place : aucune ligne n'est reconstruite, l'affichage ne bouge pas (l'ordre ne change qu'à une action de ta part) */
+function patch(){const R=rowsOf(),m=new Map(R.map(r=>[r.ticker,r])),rows=document.querySelectorAll('#tb tr[data-tk]');
+  if(!rows.length&&R.length){render();return}
+  rows.forEach(tr=>{const r=m.get(tr.dataset.tk);if(r&&tr.cells[1])tr.cells[1].innerHTML=priceCell(r)});setSub()}
+function render0(){
+  const R=rowsOf(),COLL=LS.g('wl_coll')||{};
+  setSub();
   const cols=[['nom','Valeur'],['pct','Prix (var. jour)']];
   $('#th').innerHTML='<tr>'+cols.map(([k,l])=>`<th data-s="${k}" class="${SORT.k===k?(SORT.d>0?'s-asc':'s-desc'):''}">${l}</th>`).join('')+'</tr>';
   const key=r=>{const v=r[SORT.k];return v==null?null:typeof v==='string'?v.toLowerCase():v};
   R.sort((a,b)=>{const x=key(a),y=key(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return-1;return(x<y?-1:x>y?1:0)*SORT.d});
   if(!R.length&&!G.length){$('#tb').innerHTML=`<tr><td colspan="2" class="empty">Ta watchlist est vide. Ajoute une première valeur.</td></tr>`;return}
-  const line=r=>`<tr data-tk="${esc(r.ticker)}"><td><b>${esc(r.nom)}</b></td><td><b>${r.p!=null?fPx(r.p)+' €':'–'}</b>${r.pct!=null?` <span class="${cls(r.pct)}" style="font-weight:700">(${arrow(r.pct)} ${SG(r.pct)}${nf(2).format(Math.abs(r.pct))} %)</span>`:''}</td></tr>`;
+  const line=r=>`<tr data-tk="${esc(r.ticker)}"><td><b>${esc(r.nom)}</b>${isDelayed(r.ticker)?' <span title="Cours différé de 15 min" style="color:var(--mute);font-size:11px">⏱</span>':''}</td><td>${priceCell(r)}</td></tr>`;
   const names=[...allG(),...(R.some(r=>!(r.groupes||[]).length)?['']:[])],groups=names.map(g=>[g,R.filter(r=>g===''?!(r.groupes||[]).length:(r.groupes||[]).includes(g))]);
   if(groups.length===1&&groups[0][0]===''){$('#tb').innerHTML=R.map(line).join('');return}
   $('#tb').innerHTML=groups.map(([g,L])=>{const c=!!COLL[g||'_'];return`<tr class="gh" data-g="${esc(g||'_')}"><td colspan="2"><span class="gt">${c?'▸':'▾'}</span>${esc(g||'Sans groupe')} <small>· ${L.length}</small>${g?'<span class="gm" title="Gérer le groupe">⚙</span>':''}</td></tr>`+(c?'':L.map(line).join(''))}).join('')}
@@ -409,7 +424,7 @@ $('#th').onclick=e=>{const th=e.target.closest('th');if(!th)return;const k=th.da
 $('#tb').onclick=e=>{const gh=e.target.closest('tr.gh');if(gh){const k=gh.dataset.g;if(k!=='_'&&!e.target.closest('.gt')){openGroup(k);return}const C=LS.g('wl_coll')||{};C[k]=!C[k];LS.s('wl_coll',C);render();return}const tr=e.target.closest('tr[data-tk]');if(tr)openChart(tr.dataset.tk)};
 
 /* ---------- Séries de prix ---------- */
-const RG=[['1h','1 h'],['1j','1 j'],['7j','7 j'],['1m','1 mois'],['3m','3 mois'],['6m','6 mois'],['1a','1 an'],['5a','5 ans'],['10a','10 ans'],['max','Depuis le début'],['custom','Période…']];
+const RG=[['1h','1 h'],['1j','Jour'],['7j','7 j'],['1m','1 mois'],['3m','3 mois'],['6m','6 mois'],['1a','1 an'],['5a','5 ans'],['10a','10 ans'],['max','Depuis le début'],['custom','Période…']];
 const DAYS={'1m':31,'3m':92,'6m':183,'1a':366,'5a':1827,'10a':3653};
 const INTRA={'1h':['1d','1m'],'1j':['1d','5m'],'7j':['1mo','30m']};
 const MEM={};
@@ -442,26 +457,28 @@ function fTime(ts,R,rg,long){const d=new Date(ts);
   const span=(R.pts[R.pts.length-1][0]-R.pts[0][0])/864e5;
   if(long)return `${JS[d.getDay()]} ${d.getDate()} ${MS[d.getMonth()]} ${d.getFullYear()}`;
   return span>500?`${MS[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`:`${pad(d.getDate())}/${pad(d.getMonth()+1)}`}
+function dayPct(tk){const q=PX[tk];return q&&q.p!=null&&q.pc?(q.p-q.pc)/q.pc*100:null}
+function dayVarHtml(tk){const q=PX[tk],p=dayPct(tk);return p==null?'':`<span class="${cls(p)}">${arrow(p)} ${fVar(q.p-q.pc,p)}</span> <span class="sub" style="font-weight:400">sur la journée</span>`}
 function openChart(tk){const it=W.find(x=>x.ticker===tk);if(!it)return;CUR={tk,it,rg:'1j'};
   const t=new Date(),m=new Date(t.getTime()-30*864e5);$('#d1').value=dstr(m);$('#d2').value=dstr(t);
-  $('#ct').textContent=it.nom;$('#cs').textContent=tk;
+  $('#ct').textContent=it.nom;$('#cs').textContent=tk+(isDelayed(tk)?' · cours différé de 15 min':isCrypto(tk)?' · crypto en direct':' · US en direct');
   $('#chips').innerHTML=RG.map(([k,l])=>`<button data-r="${k}">${l}</button>`).join('');
   if(!$('#cdlg').open)$('#cdlg').showModal();loadChart()}
 async function loadChart(){const c=CUR;if(!c)return;const my=++TOK;
   document.querySelectorAll('#chips button').forEach(b=>b.classList.toggle('on',b.dataset.r===c.rg));$('#cust').classList.toggle('on',c.rg==='custom');
-  const q=PX[c.tk]||{};$('#cp').textContent=q.p!=null?fPx(q.p)+' €':'';
+  const q=PX[c.tk]||{};$('#cp').textContent=q.p!=null?fPx(q.p)+' €':'';$('#cv').innerHTML=dayVarHtml(c.tk);
   $('#cc').style.height='300px';$('#cc').innerHTML='<div class="cmsg">Chargement…</div><div id="tip"></div>';$('#tbar').innerHTML='';
   const R=await series(c.tk,c.rg,$('#d1').value,$('#d2').value);if(my!==TOK)return;
-  if(R.err){$('#cc').innerHTML=`<div class="cmsg"><div>${esc(R.err)}${R.link?`<br><a href="${esc(R.link)}" target="_blank" rel="noopener" style="color:var(--acc);font-weight:600">Ouvrir la réponse du script</a>`:''}</div></div><div id="tip"></div>`;$('#cv').textContent='';return}
+  if(R.err){$('#cc').innerHTML=`<div class="cmsg"><div>${esc(R.err)}${R.link?`<br><a href="${esc(R.link)}" target="_blank" rel="noopener" style="color:var(--acc);font-weight:600">Ouvrir la réponse du script</a>`:''}</div></div><div id="tip"></div>`;$('#cv').innerHTML=dayVarHtml(c.tk);return}
   c.R=R;draw()}
 function draw(){const c=CUR;if(!c||!c.R)return;const R=c.R,P=R.pts,n=P.length,box=$('#cc'),Wd=box.clientWidth||320,pr=10,pt=12,pb=26,hasV=P.some(p=>p[4]>0),vh=hasV?58:0,Ht=300+vh,yb=Ht-pb-(vh?vh+8:0);box.style.height=Ht+'px';
   const DEC=decs(P.flatMap(p=>[p[1],p[2],p[3]])),nfd=nfr(DEC,DEC),fC=v=>v==null||!isFinite(v)?'–':nfd.format(v);
   const axL=Math.max(fC(Math.max(...P.map(p=>p[2]))).length,fC(Math.min(...P.map(p=>p[3]))).length),axFs=axL>9?10:11,pl=Math.min(92,Math.max(40,Math.ceil(axL*axFs*.58)+14));
   const ref=R.ref!=null?R.ref:P[0][1],last=P[n-1][1],dd=last-ref,dp=ref?dd/ref*100:0,col=dd>=0?'var(--up)':'var(--dn)';
-  $('#cp').textContent=fC(last)+' €';$('#cv').innerHTML=`<span class="${cls(dd)}">${arrow(dd)} ${fVar(dd,dp,fC)}</span> <span class="sub" style="font-weight:400">sur la période</span>`+(R.hl?'':'<div class="sub" style="font-weight:400;font-size:11.5px">Plus haut / plus bas calculés sur les clôtures (mets à jour le script Google pour les extrêmes réels).</div>');
+  $('#cp').textContent=fC(last)+' €';$('#cv').innerHTML=`<span class="${cls(dd)}">${arrow(dd)} ${fVar(dd,dp,fC)}</span> <span class="sub" style="font-weight:400">${c.rg==='1j'?'sur la journée':'sur la période'}</span>`+(R.hl?'':'<div class="sub" style="font-weight:400;font-size:11.5px">Plus haut / plus bas calculés sur les clôtures (mets à jour le script Google pour les extrêmes réels).</div>');
   const hs=P.map(p=>p[2]),ls=P.map(p=>p[3]),dmax=Math.max(...hs),dmin=Math.min(...ls),imax=hs.indexOf(dmax),imin=ls.indexOf(dmin);
   {const vtot=P.reduce((t,p)=>t+(p[4]||0),0),stc=(l,v,k)=>`<div><span>${l}</span><b${k?` class="${k}"`:''}>${v}</b></div>`;
-   $('#cv').insertAdjacentHTML('beforeend',`<div class="stats">${stc('Début',fC(P[0][1]))}${stc('+ Haut',fC(dmax))}${stc('+ Bas',fC(dmin))}${stc('Dernier',fC(last))}${stc('Var.',(dp<0?'−':'+')+Math.abs(dp).toFixed(2).replace('.',',')+' %',cls(dd))}${hasV?stc('Volume',fV(vtot)):''}</div>`)}
+   $('#cv').insertAdjacentHTML('beforeend',`<div class="stats">${stc('Début',fC(P[0][1]))}${stc('+ Haut',fC(dmax))}${stc('+ Bas',fC(dmin))}${stc('Dernier',fC(last))}${stc('Var.',(dp<0?'−':'+')+Math.abs(dp).toFixed(2).replace('.',',')+' %',cls(dd))}${dayPct(c.tk)!=null?stc('Jour',(dayPct(c.tk)<0?'−':'+')+Math.abs(dayPct(c.tk)).toFixed(2).replace('.',',')+' %',cls(dayPct(c.tk))):''}${hasV?stc('Volume',fV(vtot)):''}</div>`)}
   let lo=dmin,hi=dmax;if(R.ref!=null){lo=Math.min(lo,R.ref);hi=Math.max(hi,R.ref)}
   const sp=(hi-lo)||Math.abs(hi)*.02||1;lo-=sp*.08;hi+=sp*.08;
   const X=i=>pl+i*(Wd-pl-pr)/(n-1),Y=v=>pt+(hi-v)/(hi-lo)*(yb-pt);
@@ -532,6 +549,9 @@ $('#gdel').onclick=async()=>{if(!GE||!confirm('Supprimer le groupe « '+GE+' » 
 addEventListener('storage',e=>{if(e.key==='url')refresh();if(e.key==='sb')pull();if(e.key==='wl_list'){W=norm(LS.g('wl_list'));render()}if(e.key==='wl_groups'){G=(LS.g('wl_groups')||[]).filter(Boolean);render()}});
 addEventListener('message',e=>{if(e.source===parent&&e.data&&e.data.hubHome){document.querySelectorAll('dialog[open]').forEach(d=>{try{d.close()}catch(_){}});scrollTo(0,0)}});
 setInterval(()=>{if(!document.hidden)refresh()},6e4);
+/* Valeurs US : toutes les 15 s (peu de requêtes, quota Apps Script préservé) ; crypto : toutes les 5 s directement chez Coinbase */
+setInterval(()=>{if(document.hidden||!URL_())return;const us=W.filter(x=>isUS(x.ticker));if(us.length)refresh(us)},15e3);
+setInterval(async()=>{if(document.hidden)return;if(await liveCrypto())patch()},5e3);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
 addEventListener('online',pull);render();refresh();pull();
 <\/script>
