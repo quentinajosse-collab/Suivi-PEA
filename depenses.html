@@ -426,7 +426,7 @@ $('#tb').onclick=e=>{const gh=e.target.closest('tr.gh');if(gh){const k=gh.datase
 /* ---------- Séries de prix ---------- */
 const RG=[['1h','1 h'],['1j','Jour'],['7j','7 j'],['1m','1 mois'],['3m','3 mois'],['6m','6 mois'],['1a','1 an'],['5a','5 ans'],['10a','10 ans'],['max','Depuis le début'],['custom','Période…']];
 const DAYS={'1m':31,'3m':92,'6m':183,'1a':366,'5a':1827,'10a':3653};
-const INTRA={'1h':['1d','1m'],'1j':['1d','5m'],'7j':['1mo','30m']};
+const INTRA={'1h':['1d','1m'],'1j':['1d','1m'],'7j':['1mo','30m']};
 const MEM={};
 async function cached(key,ttl,fn){const c=MEM[key];if(c&&Date.now()-c.t<ttl)return c.v;const v=await fn();MEM[key]={t:Date.now(),v};return v}
 async function series(tk,rg,d1,d2){
