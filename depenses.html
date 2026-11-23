@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#0284c7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Dépenses">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Mes Dépenses, Salaires, Primes, Crédit, Santé &amp; Impôts</title>
@@ -459,12 +460,12 @@ function fTime(ts,R,rg,long){const d=new Date(ts);
   return span>500?`${MS[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`:`${pad(d.getDate())}/${pad(d.getMonth()+1)}`}
 function dayPct(tk){const q=PX[tk];return q&&q.p!=null&&q.pc?(q.p-q.pc)/q.pc*100:null}
 function dayVarHtml(tk){const q=PX[tk],p=dayPct(tk);return p==null?'':`<span class="${cls(p)}">${arrow(p)} ${fVar(q.p-q.pc,p)}</span> <span class="sub" style="font-weight:400">sur la journée</span>`}
-function openChart(tk){const it=W.find(x=>x.ticker===tk);if(!it)return;CUR={tk,it,rg:'1j'};
+function openChart(tk,rg){const it=W.find(x=>x.ticker===tk);if(!it)return;CUR={tk,it,rg:rg&&RG.some(x=>x[0]===rg&&rg!=='custom')?rg:'1j'};
   const t=new Date(),m=new Date(t.getTime()-30*864e5);$('#d1').value=dstr(m);$('#d2').value=dstr(t);
   $('#ct').textContent=it.nom;$('#cs').textContent=tk+(isDelayed(tk)?' · cours différé de 15 min':isCrypto(tk)?' · crypto en direct':' · US en direct');
   $('#chips').innerHTML=RG.map(([k,l])=>`<button data-r="${k}">${l}</button>`).join('');
   if(!$('#cdlg').open)$('#cdlg').showModal();loadChart()}
-async function loadChart(){const c=CUR;if(!c)return;const my=++TOK;
+async function loadChart(){const c=CUR;if(!c)return;const my=++TOK;try{sessionStorage.setItem('wl_open',JSON.stringify({tk:c.tk,rg:c.rg}))}catch(e){}
   document.querySelectorAll('#chips button').forEach(b=>b.classList.toggle('on',b.dataset.r===c.rg));$('#cust').classList.toggle('on',c.rg==='custom');
   const q=PX[c.tk]||{};$('#cp').textContent=q.p!=null?fPx(q.p)+' €':'';$('#cv').innerHTML=dayVarHtml(c.tk);
   $('#cc').style.height='300px';$('#cc').innerHTML='<div class="cmsg">Chargement…</div><div id="tip"></div>';$('#tbar').innerHTML='';
@@ -497,7 +498,7 @@ function draw(){const c=CUR;if(!c||!c.R)return;const R=c.R,P=R.pts,n=P.length,bo
    <line id="xl" y1="${pt}" y2="${Ht-pb}" stroke="var(--mute)" stroke-dasharray="3 3" style="display:none"/><circle id="xc" r="4.5" fill="${col}" stroke="var(--card)" stroke-width="2" style="display:none"/></svg><div id="tip"></div>`;
   const sv=box.querySelector('svg'),tb=$('#tbar'),xl_=$('#xl'),xc=$('#xc');
   const show=i=>{const pv=i>0?P[i-1][1]:null,d=pv==null?null:P[i][1]-pv,p=pv?d/pv*100:0,s0=P[0][1],ds=P[i][1]-s0,ps=s0?ds/s0*100:0,cell=(l,v,k,w)=>`<div class="tc${w?' w':''}"><span>${l}</span><b${k?` class="${k}"`:''}>${v}</b></div>`;
-    tb.innerHTML=cell('Date',fTime(P[i][0],R,c.rg,true),'',1)+cell('Cours',fC(P[i][1])+' €')+cell('Var.',d==null?'–':`${arrow(d)} ${fVar(d,p,fC)}`,d==null?'':cls(d),1)+cell('Depuis le début',i===0?'–':`${arrow(ds)} ${fVar(ds,ps,fC)}`,i===0?'':cls(ds),1)+(P[i][2]!==P[i][3]?cell('Haut',fC(P[i][2]))+cell('Bas',fC(P[i][3])):'')+(hasV?cell('Volume',fV(P[i][4]||0)):'')};
+    tb.innerHTML=cell('Date',fTime(P[i][0],R,c.rg,true),'',1)+cell('Cours',fC(P[i][1])+' €')+cell('Var.',d==null?'–':`${arrow(d)} ${fVar(d,p,fC)}`,d==null?'':cls(d),1)+cell('Depuis le début',i===0?'–':`${arrow(ds)} ${fVar(ds,ps,fC)}`,i===0?'':cls(ds),1)+(hasV?cell('Volume',fV(P[i][4]||0)):'')};
   show(n-1);
   const mv=e=>{const r=sv.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*Wd,i=Math.max(0,Math.min(n-1,Math.round((px-pl)/((Wd-pl-pr)/(n-1))))),x=X(i),y=Y(P[i][1]);
     xl_.setAttribute('x1',x);xl_.setAttribute('x2',x);xc.setAttribute('cx',x);xc.setAttribute('cy',y);xl_.style.display=xc.style.display='';show(i)};
@@ -505,6 +506,7 @@ function draw(){const c=CUR;if(!c||!c.R)return;const R=c.R,P=R.pts,n=P.length,bo
 $('#chips').onclick=e=>{const b=e.target.closest('[data-r]');if(!b||!CUR)return;CUR.rg=b.dataset.r;loadChart()};
 $('#dok').onclick=()=>{if($('#d1').value&&$('#d2').value&&$('#d1').value<=$('#d2').value)loadChart()};
 $('#ccl').onclick=()=>$('#cdlg').close();
+$('#cdlg').addEventListener('close',()=>{try{sessionStorage.removeItem('wl_open')}catch(e){}});
 addEventListener('resize',()=>{if($('#cdlg').open)draw()});
 
 /* ---------- Ajout / modification ---------- */
@@ -554,6 +556,7 @@ setInterval(()=>{if(document.hidden||!URL_())return;const us=W.filter(x=>isUS(x.
 setInterval(async()=>{if(document.hidden)return;if(await liveCrypto())patch()},5e3);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
 addEventListener('online',pull);render();refresh();pull();
+try{const o=JSON.parse(sessionStorage.getItem('wl_open')||'null');if(o&&W.some(x=>x.ticker===o.tk))openChart(o.tk,o.rg)}catch(e){}
 <\/script>
 </body>
 </html>
