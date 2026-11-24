@@ -305,6 +305,25 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
 .ob .oa1{background:linear-gradient(to right,color-mix(in srgb,var(--dn) 24%,transparent) var(--w),transparent var(--w))}
 .ob .ob1 b{color:var(--up)}.ob .oa1 b{color:var(--dn)}
 .ob .on{color:var(--mute);font-size:11.5px;margin-top:8px}
+:root{--amb:#b45309}@media(prefers-color-scheme:dark){:root{--amb:#fbbf24}}
+.am{color:var(--amb)}
+.mode{display:flex;gap:6px;margin:12px 0 4px}.mode button{flex:1;padding:9px 6px;border-radius:999px}.mode button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+#pane2{display:none}#cdlg.mA #pane1{display:none}#cdlg.mA #pane2{display:block}
+.ac{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px}.ac h3{margin:0 0 8px;font-size:1.05rem}
+.chips2{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.chips2 span{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--mute)}
+.sc{font-size:2.6rem;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin:4px 0}.sc small{font-size:1rem;font-weight:500;color:var(--mute);margin-left:4px}.zl{font-weight:700;margin-bottom:10px}
+.gg{position:relative;height:10px;border-radius:6px;margin:14px 0 4px;background:linear-gradient(90deg,color-mix(in srgb,var(--dn) 35%,transparent) 0 45%,color-mix(in srgb,var(--amb) 35%,transparent) 45% 70%,color-mix(in srgb,var(--up) 35%,transparent) 70% 100%)}
+.gg i{position:absolute;top:50%;width:18px;height:18px;border-radius:50%;background:var(--card);border:4px solid var(--amb);transform:translate(-50%,-50%)}
+.gl{display:flex;justify-content:space-between;font-size:11.5px;color:var(--mute);margin-bottom:12px}
+.ar{margin:10px 0}.al{display:flex;justify-content:space-between;gap:8px;font-size:13.5px}.al i{color:var(--mute);font-style:normal}.al b{white-space:nowrap;color:var(--mute);font-weight:600}
+.ab{height:6px;border-radius:4px;background:var(--line);margin-top:5px;overflow:hidden}.ab u{display:block;height:100%;border-radius:4px;text-decoration:none}.ab u.up{background:var(--up)}.ab u.am{background:var(--amb)}.ab u.dn{background:var(--dn)}
+.kg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.kg .ac{margin-top:0}.k span{display:block;color:var(--mute);font-size:12px}.k b{display:block;font-size:1.25rem;margin:4px 0}.k small{color:var(--mute);font-size:11.5px}
+.fz{position:relative;height:10px;border-radius:6px;background:var(--line);margin:40px 8px 44px}.zt{position:absolute;top:0;height:100%;border-radius:6px;background:color-mix(in srgb,var(--up) 45%,transparent)}
+.fm{position:absolute;top:-8px;width:2px;height:26px;transform:translateX(-50%)}.fl{position:absolute;transform:translateX(-50%);font-size:12px;white-space:nowrap;color:var(--ink)}
+.mt{margin-top:14px}.mt div{display:flex;justify-content:space-between;gap:8px;font-weight:600}.mt small{color:var(--mute);font-size:12.5px}
+.tabs2{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}.tabs2 button{padding:6px 12px;border-radius:12px;font-size:13px;color:var(--mute)}.tabs2 button.on{background:color-mix(in srgb,var(--acc) 14%,var(--card));border-color:var(--acc);color:var(--ink)}
+.lr{margin:14px 0}.bd{display:inline-block;border:1.5px solid currentColor;border-radius:8px;padding:2px 8px;font-size:13px;font-weight:700}.bd.mu{color:var(--mute)}.ll{color:var(--mute);font-size:13px;margin:4px 0 2px}
+.tw2{overflow-x:auto}.nt th{position:static;cursor:default;white-space:normal;text-transform:none;font-size:12.5px;text-align:right}.nt td{text-align:right}.nt th:first-child,.nt td:first-child{text-align:left;position:static;max-width:none}
 </style>
 </head>
 <body>
@@ -320,11 +339,15 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
   <div class="hd"><div><h2 id="ct"></h2><div class="sub" id="cs"></div></div>
     <div style="display:flex;gap:6px"><button id="ced" title="Modifier">✎</button><button id="ccl">✕</button></div></div>
   <div class="big" id="cp"></div><div id="cv" style="font-weight:700"></div>
+  <div class="mode" id="mode"><button data-m="c" class="on">📈 Cours</button><button data-m="a">🔍 Analyse</button></div>
+  <div id="pane1">
   <div class="chips" id="chips"></div>
   <div class="cust" id="cust"><div><label>Du</label><input type="date" id="d1"></div><div><label>Au</label><input type="date" id="d2"></div><button class="pri" id="dok">OK</button></div>
   <div id="tbar"></div>
   <div id="cc"><div id="tip"></div></div>
   <div id="obk"></div>
+  </div>
+  <div id="pane2"><div id="ana"></div></div>
 </dialog>
 
 <dialog id="gdlg">
@@ -480,7 +503,7 @@ function openChart(tk,rg){const it=W.find(x=>x.ticker===tk);if(!it)return;CUR={t
   const t=new Date(),m=new Date(t.getTime()-30*864e5);$('#d1').value=dstr(m);$('#d2').value=dstr(t);
   $('#ct').textContent=it.nom;$('#cs').textContent=tk+(isDelayed(tk)?' · cours différé de 15 min':isCrypto(tk)?' · crypto en direct':' · US en direct');
   $('#chips').innerHTML=RG.map(([k,l])=>`<button data-r="${k}">${l}</button>`).join('');
-  $('#obk').innerHTML='';OBN=0;
+  $('#obk').innerHTML='';OBN=0;$('#cdlg').classList.remove('mA');document.querySelectorAll('#mode button').forEach(x=>x.classList.toggle('on',x.dataset.m==='c'));ANT++;
   if(!$('#cdlg').open)$('#cdlg').showModal();loadChart();loadBook()}
 async function loadChart(){const c=CUR;if(!c)return;const my=++TOK;try{sessionStorage.setItem('wl_open',JSON.stringify({tk:c.tk,rg:c.rg}))}catch(e){}
   document.querySelectorAll('#chips button').forEach(b=>b.classList.toggle('on',b.dataset.r===c.rg));$('#cust').classList.toggle('on',c.rg==='custom');
@@ -565,6 +588,203 @@ async function loadBook(){const c=CUR;if(!c)return;const tk=c.tk;
   }catch(e){if(live())obMsg('Carnet indisponible : '+esc(e&&e.message||e))}}
 /* Rafraîchissement : crypto toutes les 0,5 s, actions US toutes les 2 s, valeurs différées toutes les 60 s */
 setInterval(()=>{if(document.hidden||!CUR||!$('#cdlg').open)return;OBN++;const tk=CUR.tk;if(isCrypto(tk)||(isUS(tk)&&OBN%4===0)||(isDelayed(tk)&&OBN%120===0))loadBook()},500);
+
+/* ---------- Analyse d'une valeur : fenêtre d'entrée, prix juste, paliers, lecture rapide ---------- */
+/*AN-MATH-START*/
+const clp=x=>Math.max(0,Math.min(1,x)),YRMS=31557600000;
+const FM=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+const dFr=t=>{const d=new Date(t);return d.getDate()+' '+MS[d.getMonth()]+' '+d.getFullYear()},mY=t=>{const d=new Date(t);return FM[d.getMonth()]+' '+d.getFullYear()};
+function anWeekly(h){const out=[];let key=null;
+  for(let i=0;i<h.d.length;i++){const c=h.c[i];if(c==null||!(c>0))continue;const t=Date.parse(h.d[i]+'T12:00:00'),wk=Math.floor((t/864e5+3)/7);
+    if(wk===key&&out.length)out[out.length-1]=[t,c];else{out.push([t,c]);key=wk}}
+  return out}
+const anSma=(a,n,i)=>{if(i+1<n)return null;let s=0;for(let k=i-n+1;k<=i;k++)s+=a[k];return s/n};
+function anTrend(t,c,upto){const n=upto+1;if(n<30)return null;const x0=t[0];let sx=0,sy=0,sxx=0,sxy=0;
+  for(let i=0;i<n;i++){const x=(t[i]-x0)/YRMS,y=Math.log(c[i]);sx+=x;sy+=y;sxx+=x*x;sxy+=x*y}
+  const den=n*sxx-sx*sx;if(!den)return null;const b=(n*sxy-sx*sy)/den,a=(sy-b*sx)/n;
+  return{rate:Math.exp(b)-1,at:i=>Math.exp(a+b*(t[i]-x0)/YRMS)}}
+function anRsi(c,i,n){n=n||14;if(i<n)return null;let g=0,l=0;for(let k=1;k<=n;k++){const d=c[k]-c[k-1];if(d>0)g+=d;else l-=d}g/=n;l/=n;
+  for(let k=n+1;k<=i;k++){const d=c[k]-c[k-1];g=(g*(n-1)+(d>0?d:0))/n;l=(l*(n-1)+(d<0?-d:0))/n}return l===0?100:100-100/(1+g/l)}
+/* paliers : zones de prix où le cours a passé le plus de temps (histogramme en échelle log) */
+function anLevels(c,i){const Nb=40;let a=Infinity,b=-Infinity;for(let k=0;k<=i;k++){if(c[k]<a)a=c[k];if(c[k]>b)b=c[k]}
+  if(!(b>a))return{bins:[],sup:[],res:[]};
+  const la=Math.log(a),st=(Math.log(b)-la)/Nb,n=new Array(Nb).fill(0);
+  for(let k=0;k<=i;k++)n[Math.min(Nb-1,Math.floor((Math.log(c[k])-la)/st))]++;
+  const s=n.map((v,k)=>(v*2+(k>0?n[k-1]:0)+(k<Nb-1?n[k+1]:0))/4),mean=s.reduce((x,y)=>x+y,0)/Nb,pk=[];
+  for(let k=0;k<Nb;k++){const l=k>0?s[k-1]:-1,r=k<Nb-1?s[k+1]:-1;if(s[k]>=l&&s[k]>r&&s[k]>mean*1.1)pk.push(Math.exp(la+(k+.5)*st))}
+  const p=c[i];
+  return{bins:n.map((v,k)=>({n:v,lo:Math.exp(la+k*st),hi:Math.exp(la+(k+1)*st)})),sup:pk.filter(v=>v<p*.995).sort((x,y)=>y-x),res:pk.filter(v=>v>p*1.005).sort((x,y)=>x-y)}}
+/* note sur 100 à la semaine i. per>0 : on ajoute la valorisation (15 points) ; sinon la note est ramenée sur 100 sans elle */
+function anScore(t,c,pk,i,per){
+  const p=c[i],w2=Math.min(200,i+1),w1=Math.min(50,i+1),m200=anSma(c,w2,i),m50=anSma(c,w1,i),tr=anTrend(t,c,i),
+    dev=tr?p/tr.at(i)-1:0,dd=p/pk[i]-1,rsi=anRsi(c,i),lv=anLevels(c,i),sup=lv.sup.length?lv.sup[0]:null,sd=sup?p/sup-1:null,r1=p/m200-1,r2=m50/m200-1;
+  const parts=[
+    {k:'trend',max:35,pts:35*(.5*clp(.5+r1/.3)+.5*clp(.5+r2/.3))},
+    {k:'hab',max:20,pts:20*clp(.6-dev)},
+    {k:'dd',max:10,pts:10*clp(-dd/.4)},
+    {k:'rsi',max:10,pts:rsi==null?5:10*clp((75-rsi)/43)},
+    {k:'sup',max:10,pts:sup==null?1:Math.max(1,10*clp(1-sd/.25))}];
+  if(per>0)parts.push({k:'per',max:15,pts:15*clp((30-per)/21)});
+  const tot=parts.reduce((s,x)=>s+x.pts,0)/parts.reduce((s,x)=>s+x.max,0)*100;
+  return{parts,total:tot,p,m50,m200,w1,w2,tr,dev,dd,rsi,sup,sd,r1,r2,lv}}
+/* relevé toutes les 4 semaines (sans le PER, dont l'historique n'est pas disponible) puis ce que le cours a fait un an plus tard */
+function anNoteHist(t,c,pk){const N=c.length,pts=[];
+  for(let i=N-1;i>=199;i-=4){const s=anScore(t,c,pk,i);pts.push({i,t:t[i],note:s.total,fut:i+52<=N-1?c[i+52]/c[i]-1:null})}
+  pts.reverse();
+  const cat=(lb,f)=>{const L=pts.filter(x=>x.fut!=null&&f(x.note));return{lb,n:L.length,avg:L.length?L.reduce((s,x)=>s+x.fut,0)/L.length:null,up:L.length?L.filter(x=>x.fut>0).length/L.length:null}};
+  return{pts,rows:[cat('fav',v=>v>=70),cat('neu',v=>v>=45&&v<70),cat('bad',v=>v<45)]}}
+/* prix juste : milieu entre la plus basse et la plus haute des méthodes disponibles */
+function anDivMethod(divs,t,c,i){if(!divs||!divs.length)return null;
+  const Y=new Date(t[i]).getFullYear(),by={};divs.forEach(([d,a])=>{const y=+d.slice(0,4);by[y]=(by[y]||0)+a});
+  const ys=[];for(let y=Y-10;y<Y;y++)if(by[y]>0){let s=0,n=0;for(let k=0;k<=i;k++)if(new Date(t[k]).getFullYear()===y){s+=c[k];n++}if(n)ys.push(by[y]/(s/n))}
+  if(ys.length<5)return null;const m=ys.reduce((a,b)=>a+b,0)/ys.length,lim=t[i]-365*864e5,ttm=divs.filter(x=>Date.parse(x[0]+'T12:00:00')>=lim).reduce((s,x)=>s+x[1],0);
+  return ttm>0&&m>0?ttm/m:null}
+/*AN-MATH-END*/
+
+/* ---------- Données ---------- */
+const ANC={};let ANT=0,ANA=null,ANTAB='paliers';
+async function anHist(tk){const from='1990-01-01',enc=encodeURIComponent;
+  const j=await cached(tk+'|hl|'+from,18e5,async()=>(await fetch(qs('h='+enc(tk)+'&from='+from+'&hl=1'))).json()),h=j&&(j[tk]||Object.values(j)[0]);
+  if(!h||!Array.isArray(h.d)||!h.d.length)return null;return anWeekly(h)}
+async function anFund(tk){try{const F=await cached(tk+'|f',216e5,async()=>{const r=await fetch(qs('fx='+encodeURIComponent(tk))),tx=await r.text();let j;try{j=JSON.parse(tx)}catch(_){return null}
+    const o=j&&(j[tk]||j);if(!o||typeof o!=='object'||o.error)return null;
+    const dv=Array.isArray(o.divs)?o.divs.filter(x=>Array.isArray(x)&&+x[1]>0).map(x=>[String(x[0]).slice(0,10),+x[1]]):[],
+      F={per:+o.per>0?+o.per:null,pe:+o.pe>0?+o.pe:null,target:+o.target>0?+o.target:null,divs:dv};
+    return F.per||F.pe||F.target||dv.length?F:null});
+    if(!F)delete MEM[tk+'|f'];return F}catch(e){return null}}
+const anBench=tk=>/\.PA$/.test(tk)?['^FCHI','CAC 40']:/\.DE$/.test(tk)?['^GDAXI','DAX']:/\.L$/.test(tk)?['^FTSE','FTSE 100']:['^GSPC','S&P 500'];
+function anTrim(w,tk){const q=PX[tk],lim=Date.now()-20*YRMS;let a=w.filter(x=>x[0]>=lim);
+  if(q&&q.p>0){const now=Date.now(),l=a[a.length-1];if(l&&Math.floor((l[0]/864e5+3)/7)===Math.floor((now/864e5+3)/7))a[a.length-1]=[l[0],q.p];else a.push([now,q.p])}
+  return a}
+async function anBuild(tk){
+  if(!URL_())throw new Error('Renseigne l’adresse du script Google dans le hub (⚙️ Réglages) pour charger l’historique.');
+  const[w0,F]=await Promise.all([anHist(tk),anFund(tk)]);
+  if(!w0||w0.length<60)throw new Error('Historique trop court pour une analyse (il faut au moins 14 mois de cours).');
+  const w=anTrim(w0,tk),t=w.map(x=>x[0]),c=w.map(x=>x[1]),n=c.length,i=n-1,pk=[];let m=0;c.forEach(v=>{m=Math.max(m,v);pk.push(m)});
+  const per=F&&F.per>0?F.per:null,S=anScore(t,c,pk,i,per),ddA=c.map((v,k)=>v/pk[k]-1);
+  let wi=0;ddA.forEach((v,k)=>{if(v<ddA[wi])wi=k});let hi=0;c.forEach((v,k)=>{if(v>=c[hi])hi=k});
+  const share=ddA.filter(v=>v>S.dd).length/n,yrs=(t[i]-t[0])/YRMS;
+  const trajV=S.tr?S.tr.at(i):null,divV=F?anDivMethod(F.divs,t,c,i):null,tgt=F&&F.target>0?F.target:null;
+  const meth=[trajV,divV,tgt].filter(v=>v>0),fair=meth.length?(Math.min(...meth)+Math.max(...meth))/2:null;
+  const ma=k=>c.map((_,j)=>j+1>=k?[t[j],anSma(c,k,j)]:null).filter(Boolean);
+  return{tk,w,t,c,n,i,p:c[i],pk,F,S,per,ddA,worst:{v:ddA[wi],t:t[wi]},high:{v:c[hi],t:t[hi]},share,yrs,trajV,divV,tgt,meth,fair,ma50:ma(S.w1),ma200:ma(S.w2),at:Date.now(),
+    hist:null,bench:null,benchErr:null}}
+async function loadAnalysis(){const c=CUR;if(!c)return;const tk=c.tk,my=++ANT;
+  if(ANC[tk]&&Date.now()-ANC[tk].at<6e5){ANA=ANC[tk];renderAna();return}
+  $('#ana').innerHTML='<div class="cmsg" style="height:140px">Analyse en cours…</div>';
+  try{const A=await anBuild(tk);if(my!==ANT||!CUR||CUR.tk!==tk)return;ANC[tk]=A;ANA=A;renderAna()}
+  catch(e){if(my!==ANT)return;$('#ana').innerHTML=`<div class="cmsg" style="height:140px">${esc(e&&e.message||e)}</div>`}}
+
+/* ---------- Dessin ---------- */
+function niceTicks(a,b,n){n=n||5;const s=(b-a)/n,m=Math.pow(10,Math.floor(Math.log10(s))),f=s/m,st=(f<1.5?1:f<3?2:f<7?5:10)*m,r=[];for(let v=Math.ceil(a/st)*st;v<=b+1e-9;v+=st)r.push(+v.toFixed(10));return r}
+function logTicks(a,b){const r=[];for(let e=Math.floor(Math.log10(a));e<=Math.ceil(Math.log10(b));e++)[1,2,5].forEach(m=>{const v=m*Math.pow(10,e);if(v>=a&&v<=b)r.push(v)});return r.length>=2?r:niceTicks(a,b)}
+function svgChart(o){const Wd=Math.max(300,o.W||320),H=o.H||250,pl=6,pr=o.pr||60,pt=10,pb=22,fy=o.fy||fp;
+  const S=o.S.map(s=>({...s,p:s.p.filter(q=>q[1]!=null&&isFinite(q[1])&&(!o.log||q[1]>0))})).filter(s=>s.p.length>1);if(!S.length)return'';
+  const all=S.flatMap(s=>s.p.map(q=>q[1])).concat((o.hl||[]).map(h=>h.v)).concat(o.base!=null?[o.base]:[]).filter(v=>v!=null&&isFinite(v)&&(!o.log||v>0));
+  let lo=o.lo!=null?o.lo:Math.min(...all),hi=o.hi!=null?o.hi:Math.max(...all);const rlo=lo,rhi=hi;
+  if(o.log){lo=Math.log(lo);hi=Math.log(hi)}const sp=(hi-lo)||1;if(o.lo==null)lo-=sp*.05;if(o.hi==null)hi+=sp*.05;
+  const t0=Math.min(...S.map(s=>s.p[0][0])),t1=Math.max(...S.map(s=>s.p[s.p.length-1][0]));
+  const X=t=>pl+(t-t0)/(t1-t0||1)*(Wd-pl-pr),Y=v=>pt+(hi-(o.log?Math.log(v):v))/(hi-lo)*(H-pt-pb),yb=H-pb;
+  let g='';(o.zones||[]).forEach(z=>{g+=`<rect x="${pl}" width="${Wd-pl-pr}" y="${Y(z.b).toFixed(1)}" height="${Math.max(0,Y(z.a)-Y(z.b)).toFixed(1)}" fill="${z.c}"/>`});
+  if(o.hist){const bw=(Wd-pl-pr)*.2;o.hist.forEach(b=>{if(b.f>0)g+=`<rect x="${pl}" y="${Y(b.hi).toFixed(1)}" width="${(b.f*bw).toFixed(1)}" height="${Math.max(1,Y(b.lo)-Y(b.hi)-1).toFixed(1)}" fill="var(--mute)" opacity=".22"/>`})}
+  const labs=(o.hl||[]).filter(h=>h.l).map(h=>({...h,y:Y(h.v)})).sort((a,b)=>a.y-b.y);for(let k=1;k<labs.length;k++)if(labs[k].y-labs[k-1].y<15)labs[k].y=labs[k-1].y+15;
+  const tks=o.ticks||(o.log?logTicks(rlo,rhi):niceTicks(rlo,rhi));
+  tks.forEach(v=>{const y=Y(v);if(y<pt-2||y>yb+2)return;g+=`<line x1="${pl}" x2="${Wd-pr}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)"/>`;
+    if(!labs.some(l=>Math.abs(l.y-y)<13))g+=`<text x="${Wd-pr+6}" y="${(y+4).toFixed(1)}" font-size="10.5" fill="var(--mute)">${esc(fy(v))}</text>`});
+  (o.hl||[]).forEach(h=>{const y=Y(h.v).toFixed(1);g+=`<line x1="${pl}" x2="${Wd-pr}" y1="${y}" y2="${y}" stroke="${h.c}" stroke-width="${h.w||1}" ${h.dash?`stroke-dasharray="${h.dash}"`:''}/>`});
+  const path=p=>p.map((q,k)=>(k?'L':'M')+X(q[0]).toFixed(1)+' '+Y(q[1]).toFixed(1)).join('');
+  S.forEach(s=>{if(s.area){const bs=o.base!=null?Y(o.base):yb;g+=`<path d="${path(s.p)}L${X(s.p[s.p.length-1][0]).toFixed(1)} ${bs.toFixed(1)}L${X(s.p[0][0]).toFixed(1)} ${bs.toFixed(1)}Z" fill="${s.c}" opacity=".16"/>`}
+    g+=`<path d="${path(s.p)}" fill="none" stroke="${s.c}" stroke-width="${s.w||1.6}" stroke-linejoin="round" ${s.dash?`stroke-dasharray="${s.dash}"`:''}/>`});
+  (o.marks||[]).forEach(m=>{g+=`<circle cx="${X(m.t).toFixed(1)}" cy="${Y(m.v).toFixed(1)}" r="${m.r||4}" fill="${m.c}" stroke="var(--card)" stroke-width="1.5"/>`});
+  labs.forEach(l=>{g+=`<rect x="${Wd-pr+3}" y="${(l.y-8).toFixed(1)}" width="${pr-4}" height="16" rx="4" style="fill:color-mix(in srgb,${l.c} 16%,transparent)"/><text x="${Wd-pr+3+(pr-4)/2}" y="${(l.y+4).toFixed(1)}" font-size="10.5" font-weight="700" text-anchor="middle" fill="${l.c}">${esc(l.l)}</text>`});
+  const y0=new Date(t0).getFullYear(),y1=new Date(t1).getFullYear(),stp=Math.max(1,Math.ceil((y1-y0)/6));
+  for(let y=y0+1;y<=y1;y+=stp){const x=X(Date.UTC(y,0,1));if(x>pl+10&&x<Wd-pr-10)g+=`<text x="${x.toFixed(1)}" y="${H-6}" font-size="10.5" fill="var(--mute)" text-anchor="middle">${y}</text>`}
+  return`<svg viewBox="0 0 ${Wd} ${H}" width="100%" height="${H}" style="display:block;overflow:visible">${g}</svg>`}
+
+/* ---------- Affichage ---------- */
+const fp=v=>v==null||!isFinite(v)?'–':Math.abs(v)>=10?nfr(1,1).format(v):fPx(v),fe=v=>fp(v)+' €';
+const sg0=v=>(v<0?'−':'+')+nf(0).format(Math.abs(v))+' %',sg1=v=>(v<0?'−':'+')+nf(1).format(Math.abs(v))+' %';
+const tone=(r)=>r>=.6?'up':r>=.4?'am':'dn',zcls=v=>v>=70?'up':v>=45?'am':'dn';
+const ANTABS=[['paliers','Cours et paliers'],['traj','Trajectoire'],['dd','Baisse depuis le sommet'],['mkt','Face au marché'],['note','Historique de la note'],['div','Dividendes']];
+const anW=()=>Math.max(300,Math.round(($('#ana').clientWidth||340)-34));
+function renderAna(){const A=ANA;if(!A)return;const S=A.S,p=A.p;
+  const txt={trend:()=>S.parts[0].pts/35>=.6?'haussière':S.parts[0].pts/35>=.4?'neutre':'baissière',
+    hab:()=>S.dev>.25?'au-dessus':S.dev<-.25?'en dessous':'dans la moyenne',
+    dd:()=>sg0(S.dd*100).replace('+','')+'',rsi:()=>'RSI '+nf(0).format(S.rsi==null?0:S.rsi),
+    sup:()=>S.sd==null?'aucun support en dessous':'à '+nf(0).format(S.sd*100)+' % du support',per:()=>'PER '+nf(1).format(A.per||0)};
+  const names={trend:'Tendance de fond',hab:'Prix par rapport à son habitude',dd:'Repli depuis le sommet',rsi:'Élan récent (RSI)',sup:'Proximité d’un support',per:'Valorisation (PER prévisionnel)'};
+  const tot=Math.round(S.total),zl=tot>=70?'Fenêtre favorable':tot>=45?'Fenêtre neutre':'Fenêtre peu favorable';
+  const rows=S.parts.map(x=>`<div class="ar"><div class="al"><span>${names[x.k]} <i>· ${esc(txt[x.k]())}</i></span><b>${Math.round(x.pts)} / ${x.max}</b></div><div class="ab"><u class="${tone(x.pts/x.max)}" style="width:${(x.pts/x.max*100).toFixed(0)}%"></u></div></div>`).join('');
+  const dv=S.dev,habL=dv>.25?'Au-dessus':dv<-.25?'En dessous':'Dans la moyenne';
+  const pc=A.fair?(p/A.fair-1)*100:null,vcls=pc==null?'':pc<-10?'up':pc>10?'dn':'am',
+    vtxt=pc==null?'':pc<-10?`Le cours est ${nf(0).format(-pc)} % en dessous : l’action paraît bon marché`:pc>10?`Le cours est ${nf(0).format(pc)} % au-dessus : l’action paraît chère`:'Le cours est proche du prix juste';
+  const up=A.tgt?(A.tgt/p-1)*100:null;
+  let fb='';if(A.fair){const v=[p,A.fair,...A.meth],lo=Math.min(...v)*.8,hi=Math.max(...v)*1.12,pos=x=>((x-lo)/(hi-lo)*100).toFixed(1),al=x=>pos(x)<18?'left:0;transform:none':pos(x)>82?'right:0;left:auto;transform:none':'left:'+pos(x)+'%',zl_=Math.min(...A.meth),zh=Math.max(...A.meth);
+    fb=`<div class="fz"><div class="zt" style="left:${pos(zl_)}%;width:${Math.max(1,pos(zh)-pos(zl_))}%"></div><i class="fm" style="left:${pos(p)}%;background:var(--ink)"></i><i class="fm" style="left:${pos(A.fair)}%;background:var(--up)"></i><span class="fl up" style="${al(A.fair)};top:-30px">prix juste ${fp(A.fair)} €</span><span class="fl" style="${al(p)};top:24px">cours ${fp(p)} €</span></div>`}
+  const noF=!A.F?'<div class="sub" style="margin-top:10px">PER, objectif des analystes et dividendes ne sont pas fournis par le script Google : redéploie la dernière version du script Google (script_google_complet.gs).</div>':'';
+  $('#ana').innerHTML=`<div class="chips2"><span>Dernier cours du ${dFr(A.t[A.i])}</span><span>Période analysée : ${nf(1).format(A.yrs)} ans</span><span>Cours Yahoo Finance, chargés le ${dFr(A.at)}</span></div>
+  <div class="ac"><h3>Fenêtre d’entrée</h3><div class="sc">${tot}<small>/100</small></div><div class="zl ${zcls(tot)}">${zl}</div>
+    <div class="gg"><i style="left:${Math.max(0,Math.min(100,tot))}%"></i></div><div class="gl"><span>Peu favorable</span><span>Neutre</span><span>Favorable</span></div>${rows}</div>
+  <div class="kg"><div class="ac k"><span>Écart au plus haut</span><b class="${S.dd<-.05?'dn':'up'}">${sg0(S.dd*100)}</b><small>plus haut : ${fe(A.high.v)}</small></div>
+    <div class="ac k"><span>Prix par rapport à son habitude</span><b>${habL}</b><small>trajectoire moyenne : ${S.tr?sg1(S.tr.rate*100):'–'} par an</small></div>
+    <div class="ac k"><span>PER prévisionnel</span><b>${A.per?nf(1).format(A.per)+'x':'–'}</b><small>${A.per?(A.F.pe?'sur les bénéfices passés : '+nf(1).format(A.F.pe)+'x':''):'donnée indisponible'}</small></div>
+    <div class="ac k"><span>Objectif des analystes</span><b class="${up==null?'':up>=0?'up':'dn'}">${up==null?'–':sg0(up)}</b><small>${A.tgt?'objectif moyen : '+fe(A.tgt):'donnée indisponible'}</small></div></div>
+  <div class="ac"><h3>Prix juste estimé</h3>${A.fair?`<div class="sc">${fp(A.fair)} €</div><div class="zl ${vcls}">${vtxt}</div>${fb}`:'<div class="sub">Pas assez de données pour estimer un prix juste.</div>'}
+    <div class="mt"><div><span>Trajectoire de long terme</span><b>${A.trajV?fe(A.trajV):'–'}</b></div><small>là où serait le cours s’il suivait sa progression moyenne (${S.tr?sg1(S.tr.rate*100):'–'} par an)</small></div>
+    <div class="mt"><div><span>Rendement du dividende</span><b>${A.divV?fe(A.divV):'–'}</b></div><small>${A.divV?'prix pour lequel le rendement reviendrait à sa moyenne des dernières années':A.F&&A.F.divs.length?'pas assez d’années de dividende':'donnée indisponible'}</small></div>
+    <div class="mt"><div><span>Objectif des analystes</span><b>${A.tgt?fe(A.tgt):'–'}</b></div><small>${A.tgt?'le prix visé en moyenne par les analystes d’ici un an':'donnée indisponible'}</small></div>
+    <div class="sub" style="margin-top:10px">Le prix juste est la valeur du milieu entre ${A.meth.length>1?'les '+A.meth.length+' méthodes':'les méthodes disponibles'} ; la zone verte va de la plus basse à la plus haute. Estimation mécanique, ni prévision ni conseil.</div>${noF}</div>
+  <div class="tabs2" id="atabs">${ANTABS.map(([k,l])=>`<button data-k="${k}" class="${k===ANTAB?'on':''}">${l}</button>`).join('')}</div>
+  <div class="ac" id="atab"></div>
+  <div class="ac" id="alec"></div>
+  <p class="sub" style="margin:4px 2px 10px">Lecture du passé du cours, à titre pédagogique. Ce n’est pas un conseil en investissement. Les performances passées ne préjugent pas des performances futures.</p>`;
+  renderLec();renderTab()}
+function renderLec(){const A=ANA,S=A.S,p=A.p,it=[];
+  const tr=S.parts[0].pts/35,tl=tr>=.6?'solide':tr>=.4?'neutre':'fragilisée';
+  it.push([tl[0].toUpperCase()+tl.slice(1),tone(tr),'Tendance de fond',`Le cours est ${S.r1<0?'en dessous':'au-dessus'} de sa moyenne des ${S.w2} dernières semaines (${sg0(S.r1*100)}). La tendance de fond est ${tl}.`]);
+  it.push([sg0(S.dd*100),S.dd<-.2?'dn':S.dd<-.08?'am':'up','Distance au sommet',S.dd>-.005?'L’action est à son plus haut de la période.':`L’action est à ${sg0(S.dd*100)} de son plus haut (${fe(A.high.v)}, ${mY(A.high.t)}). Elle a été plus proche de son sommet ${nf(0).format(A.share*100)} % du temps. Pire baisse de la période : ${sg0(A.worst.v*100)} (${mY(A.worst.t)}).`]);
+  const dv=S.dev;
+  it.push([dv>.25?'Au-dessus':dv<-.25?'En dessous':'Dans la moyenne',dv>.25?'dn':dv<-.25?'up':'mu','Prix par rapport à son habitude',S.tr?(Math.abs(dv)<=.25?`Le cours est proche de sa trajectoire moyenne, qui progresse de ${sg1(S.tr.rate*100)} par an sur la période.`:`Le cours est ${nf(0).format(Math.abs(dv)*100)} % ${dv>0?'au-dessus':'en dessous'} de sa trajectoire moyenne, qui progresse de ${sg1(S.tr.rate*100)} par an sur la période.`):'Trajectoire non calculable.']);
+  if(A.per){const l=A.per<15?'plutôt basse':A.per<25?'dans la moyenne':'élevée';it.push(['PER '+nf(1).format(A.per),A.per<15?'up':A.per<25?'am':'dn','Valorisation',`Le PER prévisionnel est de ${nf(1).format(A.per)}x : la valorisation est ${l}.`])}
+  if(A.tgt){const u=(A.tgt/p-1)*100;it.push([sg0(u),u>=0?'up':'dn','Objectif des analystes',`Les analystes visent en moyenne ${fe(A.tgt)} d’ici un an, soit ${sg0(u)} par rapport au cours.`])}
+  $('#alec').innerHTML='<h3>Lecture rapide</h3>'+it.map(([b,c,l,t])=>`<div class="lr"><span class="bd ${c}">${esc(b)}</span><div class="ll">${esc(l)}</div><div>${esc(t)}</div></div>`).join('')}
+async function renderTab(){const A=ANA,box=$('#atab');if(!A||!box)return;const k=ANTAB,Wd=anW(),S=A.S,t=A.t,c=A.c,p=A.p,H=(a,b)=>`<h3>${a}</h3><div class="sub" style="margin:2px 0 8px">${b}</div>`;
+  document.querySelectorAll('#atabs button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
+  if(k==='paliers'){const mx=Math.max(...S.lv.bins.map(b=>b.n))||1,hl=[...S.lv.res.slice(0,3).map(v=>({v,c:'var(--dn)',l:fp(v)+' €'})),...S.lv.sup.slice(0,3).map(v=>({v,c:'var(--up)',l:fp(v)+' €'})),{v:p,c:'var(--acc)',l:fp(p)+' €',dash:'4 3'}];
+    box.innerHTML=H('Cours et paliers',`${dFr(t[A.i])} · cours <b>${fe(p)}</b> · moy. ${S.w1} sem. <b>${fe(S.m50)}</b> · moy. ${S.w2} sem. <b>${fe(S.m200)}</b>`)+svgChart({W:Wd,H:300,log:true,S:[{p:A.w,c:'var(--acc)',w:1.5},{p:A.ma50,c:'#b45309',w:1.5},{p:A.ma200,c:'var(--ink)',w:1.8}],hl,hist:S.lv.bins.map(b=>({lo:b.lo,hi:b.hi,f:b.n/mx}))})+`<div class="sub" style="margin-top:6px">Les barres grises à gauche montrent où le cours a passé le plus de temps. Rouge : paliers au-dessus du cours, vert : en dessous. Échelle logarithmique.</div>`}
+  else if(k==='traj'){const tr=S.tr;if(!tr){box.innerHTML=H('Trajectoire','Pas assez de données.');return}
+    box.innerHTML=H('Trajectoire',`Le cours (en bleu) face à sa progression moyenne (pointillés) : ${sg1(tr.rate*100)} par an sur ${nf(1).format(A.yrs)} ans · aujourd’hui ${sg0(S.dev*100)} par rapport à elle`)+svgChart({W:Wd,H:280,log:true,S:[{p:A.w,c:'var(--acc)',w:1.5},{p:t.map((x,i)=>[x,tr.at(i)]),c:'#b45309',w:1.6,dash:'5 4'}],hl:[{v:p,c:'var(--acc)',l:fp(p)+' €'},{v:A.trajV,c:'#b45309',l:fp(A.trajV)+' €'}]})}
+  else if(k==='dd'){const dd=A.ddA.map(v=>v*100);box.innerHTML=H('Baisse depuis le sommet',`Écart du cours à son plus haut du moment · aujourd’hui ${sg0(S.dd*100)} · pire : ${sg0(A.worst.v*100)} (${mY(A.worst.t)})`)+svgChart({W:Wd,H:240,hi:0,base:0,fy:v=>nf(0).format(v)+' %',S:[{p:t.map((x,i)=>[x,dd[i]]),c:'var(--dn)',w:1.4,area:true}],marks:[{t:A.worst.t,v:A.worst.v*100,c:'var(--dn)'},{t:t[A.i],v:dd[A.i],c:'var(--ink)'}]})}
+  else if(k==='mkt'){box.innerHTML=H('Face au marché','Chargement…');
+    try{if(!A.bench&&!A.benchErr){const[bt,bn]=anBench(A.tk),bw=await anHist(bt);if(!bw||bw.length<30)throw 0;A.bench={nm:bn,w:anTrim(bw,bt)}}}catch(e){A.benchErr=1}
+    if(ANA!==A||ANTAB!=='mkt')return;
+    if(!A.bench){box.innerHTML=H('Face au marché','')+'<div class="sub">Indice de référence indisponible pour l’instant.</div>';return}
+    const B=A.bench.w,s0=Math.max(A.w[0][0],B[0][0]),a=A.w.filter(x=>x[0]>=s0),b=[];let j=0;
+    a.forEach(x=>{while(j+1<B.length&&B[j+1][0]<=x[0])j++;b.push([x[0],B[j][1]])});
+    if(a.length<10){box.innerHTML=H('Face au marché','')+'<div class="sub">Période commune trop courte.</div>';return}
+    const sa=a.map(x=>[x[0],x[1]/a[0][1]*100]),sb=b.map(x=>[x[0],x[1]/b[0][1]*100]),yr=(a[a.length-1][0]-a[0][0])/YRMS,
+      pa=sa[sa.length-1][1]/100-1,pb=sb[sb.length-1][1]/100-1,ya=Math.pow(1+pa,1/yr)-1,yb_=Math.pow(1+pb,1/yr)-1;
+    box.innerHTML=H('Face au marché',`Base 100 il y a ${nf(1).format(yr)} ans · ${esc(A.bench.nm)} en gris`)+svgChart({W:Wd,H:250,log:true,S:[{p:sb,c:'var(--mute)',w:1.4},{p:sa,c:'var(--acc)',w:1.7}],hl:[{v:sa[sa.length-1][1],c:'var(--acc)',l:nf(0).format(sa[sa.length-1][1])},{v:sb[sb.length-1][1],c:'var(--mute)',l:nf(0).format(sb[sb.length-1][1])}]})
+      +`<div class="stats" style="margin-top:8px"><div><span>Cette valeur</span><b class="${cls(pa)}">${sg0(pa*100)}</b></div><div><span>Par an</span><b class="${cls(ya)}">${sg1(ya*100)}</b></div><div><span>${esc(A.bench.nm)}</span><b class="${cls(pb)}">${sg0(pb*100)}</b></div><div><span>Par an</span><b class="${cls(yb_)}">${sg1(yb_*100)}</b></div></div>`}
+  else if(k==='note'){if(!A.hist)A.hist=anNoteHist(t,c,A.pk);const h=A.hist,pts=h.pts;
+    if(pts.length<5){box.innerHTML=H('Historique de la note','Historique trop court (il faut plus de 4 ans de cours).');return}
+    const cur=pts[pts.length-1],R=h.rows,lb={fav:['Favorable (70 et plus)','up'],neu:['Neutre (45 à 69)','am'],bad:['Peu favorable (moins de 45)','dn']},
+      few=R[0].n<10||R[2].n<10,verdict=few?'Trop peu de relevés en zone favorable ou peu favorable pour dire si la note a été utile sur cette action.':(R[0].avg>R[2].avg?'Sur cette action, la note a plutôt été utile : les cours montaient davantage après une note favorable.':'Sur cette action, la note n’a pas été utile : les cours ne montaient pas davantage après une note favorable.');
+    box.innerHTML=H('Historique de la note',`${dFr(t[A.i])} · note <b>${Math.round(cur.note)}</b> · cours <b>${fe(p)}</b> · suite pas encore connue`)
+      +svgChart({W:Wd,H:240,lo:0,hi:100,ticks:[0,45,70,100],fy:v=>nf(0).format(v),zones:[{a:0,b:45,c:'color-mix(in srgb,var(--dn) 10%,transparent)'},{a:45,b:70,c:'color-mix(in srgb,#b45309 9%,transparent)'},{a:70,b:100,c:'color-mix(in srgb,var(--up) 10%,transparent)'}],S:[{p:pts.map(x=>[x.t,x.note]),c:'var(--ink)',w:1.4}],marks:[{t:cur.t,v:cur.note,c:'var(--ink)'}],hl:[{v:cur.note,c:'var(--mute)',l:nf(0).format(cur.note)}]})
+      +`<p style="font-weight:700;margin:10px 0">${verdict}</p><div class="tw2"><table class="nt"><thead><tr><th>Quand la note était…</th><th>Relevés</th><th>Cours un an plus tard (moyenne)</th><th>En hausse un an plus tard</th></tr></thead><tbody>`
+      +R.map(r=>`<tr><td class="${lb[r.lb][1]}">${lb[r.lb][0]}</td><td>${r.n}</td><td>${r.avg==null?'–':sg0(r.avg*100)}</td><td>${r.up==null?'–':nf(0).format(r.up*100)+' % des fois'}</td></tr>`).join('')
+      +`</tbody></table></div><div class="sub" style="margin-top:8px">Un relevé toutes les 4 semaines, calculé sans le PER (son historique n’est pas disponible). Les périodes d’un an se chevauchent et le passé ne garantit rien : c’est une indication, pas une preuve.</div>`}
+  else if(k==='div'){const F=A.F,dv=F&&F.divs||[];
+    if(!dv.length){box.innerHTML=H('Dividendes','')+`<div class="sub">${F?'Aucun dividende trouvé pour cette valeur.':'Donnée indisponible : le script Google ne fournit pas les dividendes (redéploie le script Google).'}</div>`;return}
+    const by={};dv.forEach(([d,a])=>{const y=+d.slice(0,4);by[y]=(by[y]||0)+a});const ys=Object.keys(by).map(Number).sort((a,b)=>a-b).slice(-15),mx=Math.max(...ys.map(y=>by[y])),bw=(Wd-20)/ys.length,Hh=190,
+      ttm=dv.filter(x=>Date.parse(x[0]+'T12:00:00')>=Date.now()-365*864e5).reduce((s,x)=>s+x[1],0);
+    box.innerHTML=H('Dividendes',`Dividende versé par action et par année${ttm>0?' · sur 12 mois : <b>'+fe(ttm)+'</b> soit <b>'+nf(2).format(ttm/p*100)+' %</b> du cours':''}`)
+      +`<svg viewBox="0 0 ${Wd} ${Hh+26}" width="100%" height="${Hh+26}" style="display:block">`+ys.map((y,k)=>{const h=Math.max(1,by[y]/mx*(Hh-26)),x=10+k*bw;return`<rect x="${(x+bw*.15).toFixed(1)}" y="${(Hh-h).toFixed(1)}" width="${(bw*.7).toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="var(--up)" opacity=".75"/><text x="${(x+bw/2).toFixed(1)}" y="${(Hh-h-4).toFixed(1)}" font-size="9.5" text-anchor="middle" fill="var(--mute)">${fp(by[y])}</text><text x="${(x+bw/2).toFixed(1)}" y="${Hh+14}" font-size="10" text-anchor="middle" fill="var(--mute)">${String(y).slice(2)}</text>`}).join('')+'</svg>'}}
+document.addEventListener('click',e=>{const b=e.target.closest('#atabs button');if(b){ANTAB=b.dataset.k;renderTab()}});
+function setMode(m){const d=$('#cdlg');d.classList.toggle('mA',m==='a');document.querySelectorAll('#mode button').forEach(x=>x.classList.toggle('on',x.dataset.m===m));if(m==='a')loadAnalysis();else if(CUR&&CUR.R)draw()}
+$('#mode').onclick=e=>{const b=e.target.closest('[data-m]');if(b)setMode(b.dataset.m)};
+addEventListener('resize',()=>{if($('#cdlg').open&&$('#cdlg').classList.contains('mA')&&ANA){renderTab()}});
 
 /* ---------- Ajout / modification ---------- */
 let EDIT=null,ESEL=new Set();
