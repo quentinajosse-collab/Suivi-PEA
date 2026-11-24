@@ -290,6 +290,21 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
 #tip b{font-size:14px}
 .cmsg{display:flex;align-items:center;justify-content:center;height:100%;color:var(--mute);text-align:center;padding:0 18px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#obk:empty{display:none}
+.ob{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--card)}
+.ob .oh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.ob .oh b{font-size:14px}.ob .oh small{color:var(--mute);font-size:11px}
+.ob .os{display:grid;grid-template-columns:repeat(auto-fit,minmax(86px,1fr));gap:6px 10px;margin:8px 0}
+.ob .os span{display:block;color:var(--mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.03em}.ob .os b{font-size:13px;white-space:nowrap}
+.ob .oi{display:flex;height:8px;border-radius:5px;overflow:hidden;margin:2px 0 3px}.ob .oi i{display:block;height:100%}
+.ob .ol{display:flex;justify-content:space-between;font-size:11px;color:var(--mute);margin-bottom:8px}
+.ob .og{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px}
+.ob .oc{font-size:10.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.03em;display:flex;justify-content:space-between;padding:0 6px 3px}
+.ob .ob1,.ob .oa1{display:flex;justify-content:space-between;gap:6px;padding:3px 6px;font-size:12.5px;line-height:1.35;border-radius:4px;min-height:22px}
+.ob .ob1{background:linear-gradient(to left,color-mix(in srgb,var(--up) 24%,transparent) var(--w),transparent var(--w))}
+.ob .oa1{background:linear-gradient(to right,color-mix(in srgb,var(--dn) 24%,transparent) var(--w),transparent var(--w))}
+.ob .ob1 b{color:var(--up)}.ob .oa1 b{color:var(--dn)}
+.ob .on{color:var(--mute);font-size:11.5px;margin-top:8px}
 </style>
 </head>
 <body>
@@ -309,6 +324,7 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
   <div class="cust" id="cust"><div><label>Du</label><input type="date" id="d1"></div><div><label>Au</label><input type="date" id="d2"></div><button class="pri" id="dok">OK</button></div>
   <div id="tbar"></div>
   <div id="cc"><div id="tip"></div></div>
+  <div id="obk"></div>
 </dialog>
 
 <dialog id="gdlg">
@@ -464,7 +480,8 @@ function openChart(tk,rg){const it=W.find(x=>x.ticker===tk);if(!it)return;CUR={t
   const t=new Date(),m=new Date(t.getTime()-30*864e5);$('#d1').value=dstr(m);$('#d2').value=dstr(t);
   $('#ct').textContent=it.nom;$('#cs').textContent=tk+(isDelayed(tk)?' · cours différé de 15 min':isCrypto(tk)?' · crypto en direct':' · US en direct');
   $('#chips').innerHTML=RG.map(([k,l])=>`<button data-r="${k}">${l}</button>`).join('');
-  if(!$('#cdlg').open)$('#cdlg').showModal();loadChart()}
+  $('#obk').innerHTML='';OBN=0;
+  if(!$('#cdlg').open)$('#cdlg').showModal();loadChart();loadBook()}
 async function loadChart(){const c=CUR;if(!c)return;const my=++TOK;try{sessionStorage.setItem('wl_open',JSON.stringify({tk:c.tk,rg:c.rg}))}catch(e){}
   document.querySelectorAll('#chips button').forEach(b=>b.classList.toggle('on',b.dataset.r===c.rg));$('#cust').classList.toggle('on',c.rg==='custom');
   const q=PX[c.tk]||{};$('#cp').textContent=q.p!=null?fPx(q.p)+' €':'';$('#cv').innerHTML=dayVarHtml(c.tk);
@@ -508,6 +525,44 @@ $('#dok').onclick=()=>{if($('#d1').value&&$('#d2').value&&$('#d1').value<=$('#d2
 $('#ccl').onclick=()=>$('#cdlg').close();
 $('#cdlg').addEventListener('close',()=>{try{sessionStorage.removeItem('wl_open')}catch(e){}});
 addEventListener('resize',()=>{if($('#cdlg').open)draw()});
+
+/* ---------- Carnet d'ordres (sous le graphique) ----------
+   Crypto : carnet réel (20 meilleures limites, niveau 2) chez Coinbase, direct depuis le navigateur.
+   Actions : seulement le meilleur achat / la meilleure vente (niveau 1) via le script Google (?b=). Pas de carnet multi-niveaux gratuit. */
+let OBT=0,OBN=0;
+function obMsg(t){$('#obk').innerHTML=`<div class="ob"><div class="oh"><b>Carnet d’ordres</b></div><div class="on">${t}</div></div>`}
+function obHtml(B,A,src,note){
+  const bb=B[0][0],ba=A[0][0],sp=ba-bb,mid=(ba+bb)/2,spp=mid?sp/mid*100:0,
+    sB=B.reduce((t,x)=>t+(x[1]||0),0),sA=A.reduce((t,x)=>t+(x[1]||0),0),imb=sB+sA>0?sB/(sB+sA)*100:null,
+    dp=decs([...B,...A].map(x=>x[0])),fpx=v=>nfr(dp,dp).format(v),mq=Math.max(...B.map(x=>x[1]||0),...A.map(x=>x[1]||0)),qd=mq>=100?0:mq>=1?2:5,fq=v=>v==null||!isFinite(v)?'–':nfr(0,qd).format(v),
+    mx=Math.max(sB,sA)||1,n=Math.max(B.length,A.length);
+  let cb=0,ca=0,rows='';
+  for(let i=0;i<n;i++){const b=B[i],a=A[i];cb+=b?(b[1]||0):0;ca+=a?(a[1]||0):0;
+    rows+=`<div class="ob1" style="--w:${b?(n>1?cb/mx*100:100):0}%">${b?`<span>${fq(b[1])}</span><b>${fpx(b[0])}</b>`:''}</div><div class="oa1" style="--w:${a?(n>1?ca/mx*100:100):0}%">${a?`<b>${fpx(a[0])}</b><span>${fq(a[1])}</span>`:''}</div>`}
+  const st=(l,v,c)=>`<div><span>${l}</span><b${c?` class="${c}"`:''}>${v}</b></div>`;
+  return`<div class="ob"><div class="oh"><b>Carnet d’ordres</b><small>${src} · ${new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</small></div>
+    <div class="os">${st('Meilleur achat',fpx(bb)+' €','up')}${st('Meilleure vente',fpx(ba)+' €','dn')}${st('Écart (spread)',fpx(sp)+' € · '+nf(3).format(spp)+' %')}${n>1&&imb!=null?st('Sur '+n+' niveaux',nf(0).format(imb)+' % acheteurs'):''}</div>
+    ${n>1&&imb!=null?`<div class="oi"><i style="width:${imb.toFixed(1)}%;background:var(--up)"></i><i style="width:${(100-imb).toFixed(1)}%;background:var(--dn)"></i></div><div class="ol"><span>Achat ${fq(sB)}</span><span>Vente ${fq(sA)}</span></div>`:''}
+    <div class="og"><div class="oc"><span>Quantité</span><span>Achat</span></div><div class="oc"><span>Vente</span><span>Quantité</span></div>${rows}</div>
+    <div class="on">${note}</div></div>`}
+async function loadBook(){const c=CUR;if(!c)return;const tk=c.tk,my=++OBT;
+  if(/^\^/.test(tk)){$('#obk').innerHTML='';return}
+  const live=()=>my===OBT&&CUR&&CUR.tk===tk&&$('#cdlg').open;
+  try{
+    if(isCrypto(tk)){
+      const j=await(await fetch('https://api.exchange.coinbase.com/products/'+encodeURIComponent(tk)+'/book?level=2')).json();if(!live())return;
+      if(!j||!Array.isArray(j.bids)||!j.bids.length||!Array.isArray(j.asks)||!j.asks.length)throw new Error('carnet vide');
+      const m=a=>a.slice(0,10).map(x=>[+x[0],+x[1]]);
+      $('#obk').innerHTML=obHtml(m(j.bids),m(j.asks),'Coinbase · niveau 2 · en direct','10 meilleures limites de chaque côté, quantités cumulées en fond coloré. Mise à jour toutes les 5 s.')}
+    else{
+      if(!URL_()){obMsg('Renseigne l’adresse du script Google dans le hub (⚙️ Réglages) pour afficher le meilleur achat / la meilleure vente.');return}
+      const j=await(await fetch(qs('b='+encodeURIComponent(tk)))).json();if(!live())return;
+      if(j&&j.error)throw new Error(j.error);
+      if(!j||!(j.bid>0&&j.ask>0)){obMsg(j&&('bid' in j)?'Pas de meilleur achat / meilleure vente pour l’instant (marché fermé ou donnée non fournie par Yahoo).':'Le script Google ne renvoie pas le carnet : colle la dernière version de « script_google_complet.gs » puis redéploie-le (Déployer > Gérer les déploiements > crayon > Nouvelle version).');return}
+      $('#obk').innerHTML=obHtml([[+j.bid,j.bs!=null?+j.bs:null]],[[+j.ask,j.as!=null?+j.as:null]],'Yahoo · niveau 1'+(isDelayed(tk)?' · différé 15 min':''),'Seul le meilleur prix acheteur / vendeur est disponible gratuitement : un carnet multi-niveaux sur les actions est une donnée payante. Tailles telles que fournies par Yahoo (souvent en lots de 100 aux États-Unis).')}
+  }catch(e){if(live())obMsg('Carnet indisponible : '+esc(e&&e.message||e))}}
+/* Rafraîchissement : crypto toutes les 5 s, actions US toutes les 15 s, valeurs différées toutes les 60 s */
+setInterval(()=>{if(document.hidden||!CUR||!$('#cdlg').open)return;OBN++;const tk=CUR.tk;if(isCrypto(tk)||(isUS(tk)&&OBN%3===0)||(isDelayed(tk)&&OBN%12===0))loadBook()},5000);
 
 /* ---------- Ajout / modification ---------- */
 let EDIT=null,ESEL=new Set();
