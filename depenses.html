@@ -2131,20 +2131,27 @@ $("#frmR").onsubmit=e=>{const m=parseFloat($("#rMt").value);if(!(m>0)){e.prevent
 const LVT={taux:["📈","Taux"],cred:["💰","Intérêts crédités"],rel:["🔎","Relevé des intérêts en cours"]},fpx=v=>(+(+v).toFixed(3)+"").replace(".",",")+" %";
 const livLines=id=>(D.livrets_lignes||[]).map((l,i)=>({...l,i})).filter(l=>l.acc===id&&l.date).sort((x,y)=>x.date.localeCompare(y.date)||x.i-y.i);
 function tauxAt(L,d){let t=null;L.forEach(l=>{if(l.type==="taux"&&l.date<=d)t=l.v});if(t==null){const f=L.find(l=>l.type==="taux");t=f?f.v:null}return t}
-/* Intérêts calculés comme les banques françaises (Livret A, LDDS, LEP, livrets bancaires) : par quinzaine (1er-15, 16-fin de mois).
-   Pour chaque quinzaine, on retient le plus petit solde atteint : un dépôt ne compte qu'à partir de la quinzaine suivante, un retrait
-   fait perdre toute la quinzaine en cours. Base en euros entiers, intérêt = base × taux ÷ 24. Seules les quinzaines terminées sont acquises. */
+/* Intérêts : mêmes règles que ta banque (Livret A, LDDS, LEP, livrets bancaires). Base par quinzaine (1er-15, 16-fin de mois) = plus petit solde atteint :
+   un dépôt ne compte qu'à partir de la quinzaine suivante, un retrait fait perdre toute la quinzaine en cours. Les intérêts crédités du 1er au 15 janvier sont capitalisés au 31/12 (ils comptent dès le 1er janvier).
+   Intérêt de chaque jour = base entière × taux ÷ nombre de jours de l'année ; le jour en cours n'est pas encore compté. Livret au taux brut : intérêts en cours affichés nets du prélèvement forfaitaire (PFU), comme chez la banque. */
+const PFU_LIV=31.4;
 const dAdd=(d,n)=>{const x=new Date(d+"T12:00:00Z");x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10)};
 const qStart=d=>d.slice(0,8)+(+d.slice(8)<=15?"01":"16");
-function quinz(y){const o=[];for(let m=1;m<=12;m++){const mm=String(m).padStart(2,"0"),last=new Date(Date.UTC(y,m,0)).getUTCDate();o.push([y+"-"+mm+"-01",y+"-"+mm+"-15"],[y+"-"+mm+"-16",y+"-"+mm+"-"+String(last).padStart(2,"0")])}return o}
-function qBase(a,qs,qe,mv){let m=livBal(a,dAdd(qs,-1));mv.forEach(d=>{if(d>=qs&&d<=qe)m=Math.min(m,livBal(a,d))});return Math.max(0,Math.floor(m+1e-9))}
-/* Taux d'une quinzaine : si un changement de taux tombe en cours de quinzaine, l'ancien taux court jusqu'à la veille de la date du changement, le nouveau à partir de cette date (pondération au jour) */
-function tauxQ(L,qs,qe){if(!L.some(l=>l.type==="taux"&&l.date>qs&&l.date<=qe))return tauxAt(L,qs);let s=0,n=0;for(let x=qs;x<=qe;x=dAdd(x,1)){const t=tauxAt(L,x);if(t!=null){s+=t;n++}}return n?s/n:null}
-function intQuinz(L,a,fromQ,toD){const mv=[...new Set(livMoves(a).map(x=>x.d))];let s=0;
- for(let y=+fromQ.slice(0,4);y<=+toD.slice(0,4);y++)quinz(y).forEach(([qs,qe])=>{if(qs<fromQ||qe>toD)return;const t=tauxQ(L,qs,qe);if(t==null)return;s+=qBase(a,qs,qe,mv)*t/100/24});return s}
+const qEnd=d=>{if(+d.slice(8)<=15)return d.slice(0,8)+"15";const l=new Date(Date.UTC(+d.slice(0,4),+d.slice(5,7),0)).getUTCDate();return d.slice(0,8)+String(l).padStart(2,"0")};
+const yDays=y=>(y%4===0&&y%100!==0)||y%400===0?366:365;
+const livVal=d=>d.slice(5)<="01-15"?dAdd(d.slice(0,4)+"-01-01",-1):d;
+const livMovesV=a=>livMoves(a).map(x=>x.k==="int"?{...x,d:livVal(x.d)}:x);
+const balV=(a,mv,d)=>mv.length?rd2(mv.filter(x=>x.d<=d).reduce((t,x)=>t+x.v,0)):(+a.balance||0);
+function qBase(a,mv,qs,qe){let m=balV(a,mv,dAdd(qs,-1));mv.forEach(x=>{if(x.d>=qs&&x.d<=qe)m=Math.min(m,balV(a,mv,x.d))});return Math.max(0,Math.floor(m+1e-9))}
+function intPer(L,a,fromD,toD){const mv=livMovesV(a);let s=0,x=fromD;
+ while(x<=toD){const qs=qStart(x),qe=qEnd(x),e=qe<toD?qe:toD,b=qBase(a,mv,qs,qe);
+  for(let d=x;d<=e;d=dAdd(d,1)){const t=tauxAt(L,d);if(t!=null)s+=b*t/100/yDays(+d.slice(0,4))}
+  x=dAdd(e,1)}
+ return s}
 function livCalc(a){const L=livLines(a.id),bal=livBal(a),T=TODAY(),y=T.slice(0,4),cr=L.filter(l=>l.type==="cred"&&l.date<=T).pop(),
- c0=cr&&dAdd(cr.date,1)>y+"-01-01"?dAdd(cr.date,1):y+"-01-01",rel=L.filter(l=>l.type==="rel"&&l.date<=T&&l.date>=c0).pop(),
- fq=rel?qStart(rel.date):c0,acc=(rel?rel.v:0)+intQuinz(L,a,fq,dAdd(T,-1)),proj=acc+intQuinz(L,a,qStart(T),y+"-12-31"),taux=tauxAt(L,T);
+ ce=cr?livVal(cr.date):"",c0=cr&&dAdd(ce,1)>y+"-01-01"?dAdd(ce,1):y+"-01-01",rel=L.filter(l=>l.type==="rel"&&l.date<=T&&l.date>=c0).pop(),
+ fq=rel?rel.date:c0,kn=livNet(a)?1:1-PFU_LIV/100,Y=dAdd(T,-1),
+ acc=(rel?rel.v:0)+(fq<=Y?kn*intPer(L,a,fq,Y):0),proj=acc+kn*intPer(L,a,T,y+"-12-31"),taux=tauxAt(L,T);
  return{L,bal,acc,proj,taux,from:fq,cred:sum(L.filter(l=>l.type==="cred"&&l.date.slice(0,4)===y&&l.date<=T),"v"),credAll:sum(L.filter(l=>l.type==="cred"&&l.date<=T),"v"),next:L.find(l=>l.type==="taux"&&l.date>T)}}
 const noLiv=()=>card("liv-0","🐖 Livrets",'<div class="d">Aucun livret. Ajoute-en (➕ Livret) dans ⚙️ Réglages du tableau de bord général : nom et banque. </div>',"margin-top:0");
 function vLiv(){
@@ -2152,9 +2159,9 @@ function vLiv(){
  const shut=Sh.length?card("liv-c","🔒 Livrets clôturés · "+Sh.length,`<div class="d" style="margin:0 0 8px">Un livret est clôturé automatiquement quand son solde revient à 0 ; un nouveau transfert vers ce livret le rouvre.</div><div class="lst">${Sh.map(a=>{const m=livMoves(a),T=TODAY(),last=m.filter(x=>x.d<=T).pop(),it=sum(m.filter(x=>x.k==="int"&&x.d<=T),"v");return`<div class="op"><div class="m"><b>${esc(hubNm(a))}</b><small>Clôturé le ${fdy(last.d)}${a.broker?" · "+esc(a.broker):""}</small></div><span class="am">${it>0?"Intérêts reçus "+eur2(it):""}</span></div>`}).join("")}</div>`):"";
  if(!L.length)return card("liv-0","🐖 Épargne",'<div class="d">Tous tes livrets sont clôturés (solde à 0).</div>',"margin-top:0")+shut;
  const C=L.map(a=>({a,c:livCalc(a)})),tot=C.reduce((t,x)=>t+x.c.bal,0),ia=C.reduce((t,x)=>t+(x.c.taux!=null?x.c.acc:0),0),ip=C.reduce((t,x)=>t+(x.c.taux!=null?x.c.proj:0),0),any=C.some(x=>x.c.taux!=null),y=TODAY().slice(0,4),one=C.length===1;
- const boxes=`<div class="bkx"><div class="bal tot lv"><small>🐖 ${one?esc(hubNm(L[0]))+(L[0].broker?" · "+esc(L[0].broker):""):"Total des livrets"}</small><b>${eur2(tot)}</b><div class="s">${any?`Intérêts en cours <b style="display:inline;font-size:inherit">+${eur2(ia)}</b> · projetés au 31/12 <b style="display:inline;font-size:inherit">+${eur2(ip)}</b>`:"Ajoute un taux (onglet Taux &amp; intérêts) pour calculer les intérêts"}</div></div>${one?"":C.map(({a,c})=>`<div class="bal lv"><small>${esc(hubNm(a))}${a.broker?" · "+esc(a.broker):""}</small><b>${eur2(c.bal)}</b><div class="s">${c.taux!=null?`Taux ${fpx(c.taux)} ${txl(a)}${c.next?` · ${fpx(c.next.v)} dès le ${fdy(c.next.date)}`:""}<br>Intérêts en cours +${eur2(c.acc)}`:"Taux à saisir"}</div></div>`).join("")}</div>`;
+ const boxes=`<div class="bkx"><div class="bal tot lv"><small>🐖 ${one?esc(hubNm(L[0]))+(L[0].broker?" · "+esc(L[0].broker):""):"Total des livrets"}</small><b>${eur2(tot)}</b><div class="s">${any?`Intérêts en cours <b style="display:inline;font-size:inherit">+${eur2(ia)}</b> · projetés au 31/12 <b style="display:inline;font-size:inherit">+${eur2(ip)}</b>`:"Ajoute un taux (onglet Taux &amp; intérêts) pour calculer les intérêts"}</div></div>${one?"":C.map(({a,c})=>`<div class="bal lv"><small>${esc(hubNm(a))}${a.broker?" · "+esc(a.broker):""}</small><b>${eur2(c.bal)}</b><div class="s">${c.taux!=null?`Taux ${fpx(c.taux)} ${txl(a)}${c.next?` · ${fpx(c.next.v)} dès le ${fdy(c.next.date)}`:""}<br>Intérêts en cours +${eur2(c.acc)}${livNet(a)?"":" · net de PFU"}`:"Taux à saisir"}</div></div>`).join("")}</div>`;
  const act=card("liv-a","💰 Intérêts reçus",`<div class="d" style="margin:0 0 8px">Quand ta banque crédite des intérêts, saisis-les ici : ils s'ajoutent au solde du livret.</div>${C.map(({a})=>`<button type="button" class="sec" data-lvadd="${esc(a.id)}" data-lvtyp="cred" style="width:100%;margin-top:6px">💰 Intérêts reçus${one?"":" · "+esc(hubNm(a))}</button>`).join("")}`,"margin-top:0");
- const tbl=`<div class="tw"><table class="rc"><thead><tr><th>Livret</th><th>Solde</th><th>Taux</th><th>Intérêts en cours</th><th>Projeté 31/12</th><th>Crédités ${y}</th><th>Total crédité</th></tr></thead><tbody>${C.map(({a,c})=>`<tr><th>${esc(hubNm(a))}${a.broker?`<div class="d">${esc(a.broker)}</div>`:""}</th><td><b>${eur2(c.bal)}</b></td><td>${c.taux!=null?fpx(c.taux)+`<div class="d">${txl(a)}${c.next?` · ${fpx(c.next.v)} dès le ${fdy(c.next.date)}`:""}</div>`:"—"}</td><td class="${c.taux!=null?"pos":""}">${c.taux!=null?"+"+eur2(c.acc):"—"}</td><td>${c.taux!=null?"+"+eur2(c.proj):"—"}</td><td>${c.cred>0?eur2(c.cred):"—"}</td><td>${c.credAll>0?eur2(c.credAll):"—"}</td></tr>`).join("")}<tr class="tot"><th>Total</th><td><b>${eur2(tot)}</b></td><td></td><td class="pos">${any?"+"+eur2(ia):"—"}</td><td>${any?"+"+eur2(ip):"—"}</td><td>${eur2(C.reduce((t,x)=>t+x.c.cred,0))}</td><td>${eur2(C.reduce((t,x)=>t+x.c.credAll,0))}</td></tr></tbody></table></div>`;
+ const tbl=`<div class="tw"><table class="rc"><thead><tr><th>Livret</th><th>Solde</th><th>Taux</th><th>Intérêts en cours</th><th>Projeté 31/12</th><th>Crédités ${y}</th><th>Total crédité</th></tr></thead><tbody>${C.map(({a,c})=>`<tr><th>${esc(hubNm(a))}${a.broker?`<div class="d">${esc(a.broker)}</div>`:""}</th><td><b>${eur2(c.bal)}</b></td><td>${c.taux!=null?fpx(c.taux)+`<div class="d">${txl(a)}${c.next?` · ${fpx(c.next.v)} dès le ${fdy(c.next.date)}`:""}</div>`:"—"}</td><td class="${c.taux!=null?"pos":""}">${c.taux!=null?"+"+eur2(c.acc):"—"}${c.taux!=null&&!livNet(a)?'<div class="d">net de PFU</div>':""}</td><td>${c.taux!=null?"+"+eur2(c.proj):"—"}</td><td>${c.cred>0?eur2(c.cred):"—"}</td><td>${c.credAll>0?eur2(c.credAll):"—"}</td></tr>`).join("")}<tr class="tot"><th>Total</th><td><b>${eur2(tot)}</b></td><td></td><td class="pos">${any?"+"+eur2(ia):"—"}</td><td>${any?"+"+eur2(ip):"—"}</td><td>${eur2(C.reduce((t,x)=>t+x.c.cred,0))}</td><td>${eur2(C.reduce((t,x)=>t+x.c.credAll,0))}</td></tr></tbody></table></div>`;
  const m={};C.forEach(({a,c})=>{m[hubNm(a)]=c.bal});
  return boxes+card("liv-t","Détail des livrets",tbl)+shut
 }

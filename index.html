@@ -16,7 +16,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--txt);font:15px/1.4 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
-nav{position:fixed;inset:0 auto 0 0;width:62px;background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px;padding:calc(8px + env(safe-area-inset-top)) 4px calc(8px + env(safe-area-inset-bottom));z-index:5;overflow-y:auto}
+nav{position:fixed;inset:0 auto 0 0;width:62px;background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px;padding:calc(8px + env(safe-area-inset-top)) 4px calc(52px + env(safe-area-inset-bottom));z-index:5;overflow-y:auto}
 nav button{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border-radius:12px;font-size:10px;color:var(--mut);text-align:center;line-height:1.15}
 nav button b{font-size:20px;font-weight:400}
 nav button.on{background:color-mix(in srgb,var(--acc) 14%,transparent);color:var(--acc);font-weight:700}
@@ -35,9 +35,9 @@ body.past #tiles,body.past #acc,body.past #sy{display:none}
 body.nc nav{transform:translateX(-100%);visibility:hidden}
 body.nc #stage{left:0}
 body.nc .w{max-width:1200px}
-#ntg{all:unset;cursor:pointer;position:fixed;top:50%;left:62px;transform:translateY(-50%);z-index:20;width:22px;height:60px;display:flex;align-items:center;justify-content:center;border-radius:0 14px 14px 0;background:var(--card);border:1px solid var(--line);border-left:0;color:var(--acc);font-size:18px;font-weight:800;box-shadow:2px 2px 10px rgba(15,23,42,.15);opacity:.85;transition:left .2s,opacity .2s}
+#ntg{all:unset;cursor:pointer;position:fixed;bottom:calc(12px + env(safe-area-inset-bottom));left:17px;z-index:20;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--card);border:1px solid var(--line);color:var(--acc);font-size:16px;font-weight:800;line-height:1;box-shadow:0 2px 8px rgba(15,23,42,.18);opacity:.9;transition:left .2s,opacity .2s}
 #ntg:hover{opacity:1}
-body.nc #ntg{left:0;width:30px;height:64px;background:var(--acc);color:#fff;border-color:var(--acc)}
+body.nc #ntg{left:6px;background:var(--acc);color:#fff;border-color:var(--acc);opacity:.4}body.nc #ntg:hover,body.nc #ntg:active{opacity:1}
 iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bg);display:none}
 iframe.on{display:block}
 #home,#soon{position:absolute;inset:0;overflow:auto;padding:calc(16px + env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom));display:none}
@@ -77,7 +77,7 @@ dialog .hint{color:var(--mut);font-size:12px;margin:6px 0 0}
 .cd{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:0 0 12px;position:relative}
 .cd .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .cd h2{font-size:1rem;margin:0}
-.evr{display:flex;justify-content:space-between;gap:2px;margin-top:10px}.evr button{all:unset;cursor:pointer;flex:1;text-align:center;padding:7px 0;border-radius:999px;font-size:12px;font-weight:600;color:var(--mut)}.evr button.on{background:var(--acc);color:#fff}
+.evr{display:flex;gap:2px;margin-top:10px;overflow-x:auto;scrollbar-width:none}.evr::-webkit-scrollbar{display:none}.evr button{all:unset;cursor:pointer;flex:1 0 auto;text-align:center;padding:7px 9px;border-radius:999px;font-size:12px;font-weight:600;color:var(--mut);white-space:nowrap}.evr button.on{background:var(--acc);color:#fff}
 .rg{display:inline-flex;gap:4px;flex:none}.rg button{all:unset;cursor:pointer;padding:3px 10px;border-radius:999px;font-size:12px;color:var(--mut);border:1px solid var(--line)}.rg button.on{background:var(--acc);border-color:var(--acc);color:#fff}
 #rep .rw{display:flex;gap:22px;align-items:center;flex-wrap:wrap;margin-top:10px}
 #rep .dn-w{position:relative;width:200px;height:200px;flex:none;margin:0 auto}
@@ -271,18 +271,28 @@ function epargne(D){const L=(D.interessement||[]).filter(s=>s.date),P=s=>String(
   return{n:L.length,tp,tc,tr,has:per||leg,plans,cur:leg?sv.valeur:per?Object.values(plans).reduce((a,v)=>a+v,0):Math.max(0,tp-tr)}}
 /* Livrets : intérêts en cours (même calcul que le module Épargne : relevé / taux / intérêts crédités) */
 const livNetI=a=>a.rate?a.rate==='net':/livret\s*a\b|\bldds?\b|d[ée]veloppement durable|\blep\b|[ée]pargne populaire|livret jeune|livret bleu/i.test(a.label||'');
+/* Intérêts : mêmes règles que ta banque. Base par quinzaine (1er-15, 16-fin de mois) = plus petit solde atteint (un dépôt ne compte qu'à la quinzaine suivante, un retrait fait perdre la quinzaine en cours) ;
+   intérêts crédités du 1er au 15 janvier = capitalisés au 31/12 (comptent dès le 1er janvier) ; intérêt de chaque jour = base entière × taux ÷ jours de l'année ; le jour en cours n'est pas encore compté.
+   Livret au taux brut : intérêts en cours affichés nets du prélèvement forfaitaire (PFU), comme chez la banque. */
+const PFU_LIV=31.4;
 function livAcc(D,a){const T=tdy(),y=T.slice(0,4),
-  L=(D.livrets_lignes||[]).filter(l=>l.acc===a.id&&l.date).sort((x,z)=>x.date<z.date?-1:x.date>z.date?1:0),MV=[...new Set(livMv(a,D).map(x=>x[0]))],
+  L=(D.livrets_lignes||[]).filter(l=>l.acc===a.id&&l.date).sort((x,z)=>x.date<z.date?-1:x.date>z.date?1:0),
   tx=d=>{let t=null;L.forEach(l=>{if(l.type==='taux'&&l.date<=d)t=l.v});if(t==null){const f=L.find(l=>l.type==='taux');t=f?f.v:null}return t},
   dAdd=(d,n)=>{const x=new Date(d+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10)},
-  qStart=d=>d.slice(0,8)+(+d.slice(8)<=15?'01':'16'),
-  txq=(qs,qe)=>{if(!L.some(l=>l.type==='taux'&&l.date>qs&&l.date<=qe))return tx(qs);let s=0,n=0;for(let x=qs;x<=qe;x=dAdd(x,1)){const t=tx(x);if(t!=null){s+=t;n++}}return n?s/n:null},
-  quinz=Y=>{const o=[];for(let m=1;m<=12;m++){const mm=String(m).padStart(2,'0'),last=new Date(Date.UTC(Y,m,0)).getUTCDate();o.push([Y+'-'+mm+'-01',Y+'-'+mm+'-15'],[Y+'-'+mm+'-16',Y+'-'+mm+'-'+String(last).padStart(2,'0')])}return o},
-  qb=(qs,qe)=>{let m=livBal(a,D,dAdd(qs,-1));MV.forEach(d=>{if(d>=qs&&d<=qe)m=Math.min(m,livBal(a,D,d))});return Math.max(0,Math.floor(m+1e-9))},
-  sumQ=(fq,td)=>{let s=0;for(let Y=+fq.slice(0,4);Y<=+td.slice(0,4);Y++)quinz(Y).forEach(([qs,qe])=>{if(qs<fq||qe>td)return;const t=txq(qs,qe);if(t!=null)s+=qb(qs,qe)*t/100/24});return s},
-  cr=L.filter(l=>l.type==='cred'&&l.date<=T).pop(),c0=cr&&dAdd(cr.date,1)>y+'-01-01'?dAdd(cr.date,1):y+'-01-01',
-  rel=L.filter(l=>l.type==='rel'&&l.date<=T&&l.date>=c0).pop(),taux=tx(T);
-  return{taux,acc:taux==null?0:(rel?rel.v:0)+sumQ(rel?qStart(rel.date):c0,dAdd(T,-1))}}
+  qS=d=>d.slice(0,8)+(+d.slice(8)<=15?'01':'16'),
+  qE=d=>{if(+d.slice(8)<=15)return d.slice(0,8)+'15';const l=new Date(Date.UTC(+d.slice(0,4),+d.slice(5,7),0)).getUTCDate();return d.slice(0,8)+String(l).padStart(2,'0')},
+  yD=Y=>(Y%4===0&&Y%100!==0)||Y%400===0?366:365,
+  vd=d=>d.slice(5)<='01-15'?dAdd(d.slice(0,4)+'-01-01',-1):d,
+  MV=[];
+  (D.transferts||[]).forEach(r=>{if(!r.date)return;const v=+r.montant||0;if(r.vers===a.id)MV.push([r.date,v]);if(r.de===a.id)MV.push([r.date,-v])});
+  L.forEach(l=>{if(l.type==='cred')MV.push([vd(l.date),+l.v||0])});
+  const DT=[...new Set(MV.map(x=>x[0]))],
+  bv=d=>!MV.length?(+a.balance||0):Math.round(MV.filter(x=>x[0]<=d).reduce((t,x)=>t+x[1],0)*100)/100,
+  qb=(qs,qe)=>{let m=bv(dAdd(qs,-1));DT.forEach(d=>{if(d>=qs&&d<=qe)m=Math.min(m,bv(d))});return Math.max(0,Math.floor(m+1e-9))},
+  per=(f,t)=>{let s=0,x=f;while(x<=t){const qs=qS(x),qe=qE(x),e=qe<t?qe:t,b=qb(qs,qe);for(let d=x;d<=e;d=dAdd(d,1)){const r=tx(d);if(r!=null)s+=b*r/100/yD(+d.slice(0,4))}x=dAdd(e,1)}return s},
+  cr=L.filter(l=>l.type==='cred'&&l.date<=T).pop(),ce=cr?vd(cr.date):'',c0=cr&&dAdd(ce,1)>y+'-01-01'?dAdd(ce,1):y+'-01-01',
+  rel=L.filter(l=>l.type==='rel'&&l.date<=T&&l.date>=c0).pop(),taux=tx(T),f0=rel?rel.date:c0,Y=dAdd(T,-1),kn=livNetI(a)?1:1-PFU_LIV/100;
+  return{taux,acc:taux==null?0:(rel?rel.v:0)+(f0<=Y?kn*per(f0,Y):0)}}
 /* ---------- Évolution du patrimoine ---------- */
 const MOIS=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'],mlab=d=>MOIS[+d.slice(5,7)-1]+' '+d.slice(2,4);
 const serAt=(s,d)=>{let v=0;if(s)for(const x of s){if(x[0]<=d)v=x[1];else break}return v};
@@ -326,9 +336,9 @@ function perfActifs(A,D,cf,m0){
   let c=0,w=0;F.forEach(([dt,v])=>{c+=v;w+=v*Math.max(0,Math.min(1,(T1-new Date(dt+'T12:00:00').getTime())/sp))});
   const den=v0+w;return den>1?(v1-v0-c)/den*100:null}
 function drawEvo(all,pf,ff){
-  const el=$('#evo'),N={'1m':1,'6m':6,'1a':12,'3a':36,'5a':60,all:0}[EVR],cy=String(new Date().getFullYear()),pts0=EVR==='ytd'?all.slice(Math.max(0,all.findIndex(q=>q[0].slice(0,4)===cy)-1)):N?all.slice(-(N+1)):all,rg=`<div class="evr">${[['1m','1 m'],['6m','6 m'],['ytd','YTD'],['1a','1 an'],['3a','3 ans'],['5a','5 ans'],['all','Tout']].map(([k,l])=>`<button data-r="${k}"${EVR===k?' class="on"':''}>${l}</button>`).join('')}</div>`;
-  let pts=pts0;{const iso=x=>new Date(x.getTime()-x.getTimezoneOffset()*6e4).toISOString().slice(0,10),ago=n=>{const x=new Date();x.setDate(x.getDate()-n);return iso(x)},FS={'1m':[ago(30),1],'6m':[ago(182),3],ytd:[(+cy-1)+'-12-31',3],'1a':[ago(365),5]}[EVR],fp=FS&&ff?ff(FS[0],FS[1]):null;if(fp&&fp.length>1)pts=fp}
-  const plab=d=>d.length>=10?(+d.slice(8,10))+' '+MOIS[+d.slice(5,7)-1]+(EVR==='1m'?'':' '+d.slice(2,4)):mlab(d);
+  const el=$('#evo'),N={'1m':1,'6m':6,'1a':12,'3a':36,'5a':60,'10a':120,all:0}[EVR],cy=String(new Date().getFullYear()),pts0=EVR==='ytd'?all.slice(Math.max(0,all.findIndex(q=>q[0].slice(0,4)===cy)-1)):N?all.slice(-(N+1)):all,rg=`<div class="evr">${[['1j','1 j'],['7j','7 j'],['1m','1 m'],['6m','6 m'],['ytd','YTD'],['1a','1 an'],['3a','3 ans'],['5a','5 ans'],['10a','10 ans'],['all','Tout']].map(([k,l])=>`<button data-r="${k}"${EVR===k?' class="on"':''}>${l}</button>`).join('')}</div>`;
+  let pts=pts0;{const iso=x=>new Date(x.getTime()-x.getTimezoneOffset()*6e4).toISOString().slice(0,10),ago=n=>{const x=new Date();x.setDate(x.getDate()-n);return iso(x)},FS={'1j':[ago(1),1],'7j':[ago(7),1],'1m':[ago(30),1],'6m':[ago(182),3],ytd:[(+cy-1)+'-12-31',3],'1a':[ago(365),5]}[EVR],fp=FS&&ff?ff(FS[0],FS[1]):null;if(fp&&fp.length>1)pts=fp}
+  const plab=d=>d.length>=10?(+d.slice(8,10))+' '+MOIS[+d.slice(5,7)-1]+(EVR==='1m'||EVR==='1j'||EVR==='7j'?'':' '+d.slice(2,4)):mlab(d);
   if(pts.length<2){el.innerHTML=`<div class="hd"><h2>📈 Évolution du patrimoine</h2></div><div class="sub" style="margin-top:6px">Pas encore assez de données : ouvre le PEA et les CTO une fois (cours en ligne), l’historique se construit ensuite tout seul.</div>`;return}
   const W=600,H=230,pl=50,pr=10,pt=12,pb=24,vs=pts.map(x=>x[1]);const mn=Math.min(...vs),mx=Math.max(...vs);let lo=mn,hi=mx;const sp0=(hi-lo)||Math.abs(hi)*.1||1,rs=sp0/4,mg=Math.pow(10,Math.floor(Math.log10(rs))),nr=rs/mg,stp=(nr<=1?1:nr<=2?2:nr<=2.5?2.5:nr<=5?5:10)*mg;lo=Math.floor(lo/stp)*stp;hi=Math.ceil(hi/stp)*stp;if(mn>=0&&lo<0)lo=0;if(hi===lo)hi=lo+stp;const TK=[];for(let v=lo;v<=hi+stp/1e3;v+=stp)TK.push(v);
   const X=i=>pl+i*(W-pl-pr)/(pts.length-1),Y=v=>pt+(hi-v)/(hi-lo)*(H-pt-pb),d=smooth(pts.map((q,i)=>[X(i),Y(q[1])])),
@@ -340,6 +350,7 @@ function drawEvo(all,pf,ff){
     <path d="${d}L${X(pts.length-1).toFixed(1)} ${H-pb}L${pl} ${H-pb}Z" fill="url(#evg)"/><path d="${d}" fill="none" stroke="${col}" stroke-width="7" opacity=".14" stroke-linejoin="round" stroke-linecap="round"/><path d="${d}" fill="none" stroke="${col}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${X(pts.length-1).toFixed(1)}" cy="${Y(vs[vs.length-1]).toFixed(1)}" r="9" fill="${col}" opacity=".18"/><circle cx="${X(pts.length-1).toFixed(1)}" cy="${Y(vs[vs.length-1]).toFixed(1)}" r="4.2" fill="${col}" stroke="var(--card)" stroke-width="2"/>
     <line id="evl" y1="${pt}" y2="${H-pb}" stroke="var(--mut)" stroke-dasharray="3 3" style="display:none"/><circle id="evc" r="4.5" fill="${col}" stroke="var(--card)" stroke-width="2" style="display:none"/></svg><div id="evt"></div>${rg}`;
   el.onclick=e=>{const b=e.target.closest('[data-r]');if(b){EVR=b.dataset.r;LS.s('hub_evr',EVR);drawEvo(all,pf,ff)}};
+  {const rr=el.querySelector('.evr'),on=rr&&rr.querySelector('.on');if(rr&&on)rr.scrollLeft=on.offsetLeft-rr.clientWidth/2+on.offsetWidth/2}
   const sv=$('#evs'),tp=$('#evt'),ln=$('#evl'),ci=$('#evc'),mv=e=>{const r=sv.getBoundingClientRect(),i=Math.max(0,Math.min(pts.length-1,Math.round(((e.clientX-r.left)/r.width*W-pl)/((W-pl-pr)/(pts.length-1)))));
     const x=X(i),y=Y(pts[i][1]);ln.setAttribute('x1',x);ln.setAttribute('x2',x);ci.setAttribute('cx',x);ci.setAttribute('cy',y);ln.style.display=ci.style.display='';
     tp.innerHTML=`${i===pts.length-1?'Aujourd’hui':plab(pts[i][0])} · <b>${eur(pts[i][1])}</b>`;tp.style.display='block';const er=el.getBoundingClientRect();tp.style.left=Math.max(60,Math.min(er.width-60,r.left-er.left+x/W*r.width))+'px';tp.style.top=(r.top-er.top+4)+'px'};
