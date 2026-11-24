@@ -77,7 +77,7 @@ dialog .hint{color:var(--mut);font-size:12px;margin:6px 0 0}
 .cd{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:0 0 12px;position:relative}
 .cd .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .cd h2{font-size:1rem;margin:0}
-.evr{display:flex;gap:2px;margin-top:10px;overflow-x:auto;scrollbar-width:none}.evr::-webkit-scrollbar{display:none}.evr button{all:unset;cursor:pointer;flex:1 0 auto;text-align:center;padding:7px 9px;border-radius:999px;font-size:12px;font-weight:600;color:var(--mut);white-space:nowrap}.evr button.on{background:var(--acc);color:#fff}
+.evr{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:10px}.evr button{all:unset;cursor:pointer;text-align:center;padding:7px 0;border-radius:999px;font-size:12px;font-weight:600;color:var(--mut)}.evr button.on{background:var(--acc);color:#fff}.evc{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;justify-content:center;font-size:12px;color:var(--mut)}.evc input{font:inherit;padding:4px 6px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--txt)}
 .rg{display:inline-flex;gap:4px;flex:none}.rg button{all:unset;cursor:pointer;padding:3px 10px;border-radius:999px;font-size:12px;color:var(--mut);border:1px solid var(--line)}.rg button.on{background:var(--acc);border-color:var(--acc);color:#fff}
 #rep .rw{display:flex;gap:22px;align-items:center;flex-wrap:wrap;margin-top:10px}
 #rep .dn-w{position:relative;width:200px;height:200px;flex:none;margin:0 auto}
@@ -336,24 +336,28 @@ function perfActifs(A,D,cf,m0){
   let c=0,w=0;F.forEach(([dt,v])=>{c+=v;w+=v*Math.max(0,Math.min(1,(T1-new Date(dt+'T12:00:00').getTime())/sp))});
   const den=v0+w;return den>1?(v1-v0-c)/den*100:null}
 function drawEvo(all,pf,ff){
-  const el=$('#evo'),N={'1m':1,'6m':6,'1a':12,'3a':36,'5a':60,'10a':120,all:0}[EVR],cy=String(new Date().getFullYear()),pts0=EVR==='ytd'?all.slice(Math.max(0,all.findIndex(q=>q[0].slice(0,4)===cy)-1)):N?all.slice(-(N+1)):all,rg=`<div class="evr">${[['1j','1 j'],['7j','7 j'],['1m','1 m'],['6m','6 m'],['ytd','YTD'],['1a','1 an'],['3a','3 ans'],['5a','5 ans'],['10a','10 ans'],['all','Tout']].map(([k,l])=>`<button data-r="${k}"${EVR===k?' class="on"':''}>${l}</button>`).join('')}</div>`;
-  let pts=pts0;{const iso=x=>new Date(x.getTime()-x.getTimezoneOffset()*6e4).toISOString().slice(0,10),ago=n=>{const x=new Date();x.setDate(x.getDate()-n);return iso(x)},FS={'1j':[ago(7),1],'7j':[ago(7),1],'1m':[ago(30),1],'6m':[ago(182),3],ytd:[(+cy-1)+'-12-31',3],'1a':[ago(365),5]}[EVR],fp=FS&&ff?ff(FS[0],FS[1]):null;if(fp&&fp.length>1)pts=fp}
-  const plab=d=>d.length>=10?(+d.slice(8,10))+' '+MOIS[+d.slice(5,7)-1]+(EVR==='1m'||EVR==='1j'||EVR==='7j'?'':' '+d.slice(2,4)):mlab(d);
-  if(pts.length<2){el.innerHTML=`<div class="hd"><h2>📈 Évolution du patrimoine</h2></div><div class="sub" style="margin-top:6px">Pas encore assez de données : ouvre le PEA et les CTO une fois (cours en ligne), l’historique se construit ensuite tout seul.</div>`;return}
+  const el=$('#evo'),N={'1m':1,'6m':6,'1a':12,'3a':36,'5a':60,'10a':120,all:0}[EVR],cy=String(new Date().getFullYear()),pts0=EVR==='ytd'?all.slice(Math.max(0,all.findIndex(q=>q[0].slice(0,4)===cy)-1)):N?all.slice(-(N+1)):all,rg=`<div class="evr">${[['1j','1 j'],['7j','7 j'],['1m','1 m'],['6m','6 m'],['ytd','YTD'],['1a','1 an'],['3a','3 ans'],['5a','5 ans'],['10a','10 ans'],['all','Tout'],['perso','Perso.']].map(([k,l])=>`<button data-r="${k}"${EVR===k?' class="on"':''}>${l}</button>`).join('')}</div>`;
+  const DAYMS=864e5,isoL=x=>new Date(x.getTime()-x.getTimezoneOffset()*6e4).toISOString().slice(0,10),ago=n=>{const x=new Date();x.setDate(x.getDate()-n);return isoL(x)},tdI=isoL(new Date());
+  let cA=ago(30),cB=tdI;{const c=LS.g('hub_evc');if(c&&c.a&&c.b){cA=c.a;cB=c.b}if(cA>cB){const t=cA;cA=cB;cB=t}if(cB>tdI)cB=tdI}
+  const cSpan=Math.max(0,Math.round((new Date(cB+'T12:00:00')-new Date(cA+'T12:00:00'))/DAYMS)),pEnd=EVR!=='perso'||cB>=tdI,
+  rc=EVR==='perso'?`<div class="evc"><label>Du <input type="date" id="evca" value="${cA}" max="${tdI}"></label><label>au <input type="date" id="evcb" value="${cB}" max="${tdI}"></label></div>`:'',
+  bind=()=>{el.onclick=e=>{const b=e.target.closest('[data-r]');if(b){EVR=b.dataset.r;LS.s('hub_evr',EVR);drawEvo(all,pf,ff)}};el.onchange=e=>{const t=e.target;if(t.id==='evca'||t.id==='evcb'){const a=$('#evca').value,b=$('#evcb').value;if(a&&b){LS.s('hub_evc',{a,b});drawEvo(all,pf,ff)}}}};
+  let pts=pts0;{let fp=null;if(ff){if(EVR==='1j')fp=ff.h(Date.now()-DAYMS,Date.now());else if(EVR==='7j')fp=ff.h(Date.now()-7*DAYMS,Date.now());else if(EVR==='ytd')fp=ff.d((+cy-1)+'-12-31',tdI);else if(EVR==='perso')fp=cSpan<=3?ff.h(new Date(cA+'T00:00:00').getTime(),cB>=tdI?Date.now():new Date(cB+'T23:59:00').getTime()):ff.d(cA,cB);else{const FS={'1m':[ago(30),1],'6m':[ago(182),3],'1a':[ago(365),5]}[EVR];fp=FS?ff(FS[0],FS[1]):null}}if(fp&&fp.length>1)pts=fp}
+  const shortY=['1m','1j','7j','ytd'].includes(EVR)||(EVR==='perso'&&cSpan<=200),plab=d=>d.length>10?(EVR==='1j'?d.slice(11,13)+' h':(+d.slice(8,10))+' '+MOIS[+d.slice(5,7)-1]+' '+d.slice(11,13)+' h'):d.length>=10?(+d.slice(8,10))+' '+MOIS[+d.slice(5,7)-1]+(shortY?'':' '+d.slice(2,4)):mlab(d);
+  if(pts.length<2){el.innerHTML=`<div class="hd"><h2>📈 Évolution du patrimoine</h2></div><div class="sub" style="margin-top:6px">Pas encore assez de données : ouvre le PEA et les CTO une fois (cours en ligne), l’historique se construit ensuite tout seul.</div>${rg}${rc}`;bind();return}
   const W=600,H=230,pl=50,pr=10,pt=12,pb=24,vs=pts.map(x=>x[1]);const mn=Math.min(...vs),mx=Math.max(...vs);let lo=mn,hi=mx;const sp0=(hi-lo)||Math.abs(hi)*.1||1,rs=sp0/4,mg=Math.pow(10,Math.floor(Math.log10(rs))),nr=rs/mg,stp=(nr<=1?1:nr<=2?2:nr<=2.5?2.5:nr<=5?5:10)*mg;lo=Math.floor(lo/stp)*stp;hi=Math.ceil(hi/stp)*stp;if(mn>=0&&lo<0)lo=0;if(hi===lo)hi=lo+stp;const TK=[];for(let v=lo;v<=hi+stp/1e3;v+=stp)TK.push(v);
   const X=i=>pl+i*(W-pl-pr)/(pts.length-1),Y=v=>pt+(hi-v)/(hi-lo)*(H-pt-pb),d=smooth(pts.map((q,i)=>[X(i),Y(q[1])])),
-    bi=EVR==='1j'?pts.length-2:0,d0=vs[bi],dl=vs[vs.length-1]-d0,dp=pf?pf(pts[bi][0]):(d0>0?dl/d0*100:null),col=dl>=0?'var(--up)':'var(--dn)',
+    d0=vs[0],dl=vs[vs.length-1]-d0,dp=pf&&pEnd?pf(pts[0][0].slice(0,10)):(d0>0?dl/d0*100:null),col=dl>=0?'var(--up)':'var(--dn)',
     gl=TK.map(v=>{const yy=Y(v);return`<line x1="${pl}" x2="${W-pr}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="var(--line)" stroke-dasharray="3 3"/><text x="${pl-6}" y="${(yy+4).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--mut)">${cmp(v)}</text>`}).join(''),
     xl=[0,Math.floor((pts.length-1)/2),pts.length-1].filter((v,i,a)=>a.indexOf(v)===i).map((i,k,a)=>`<text x="${X(i).toFixed(1)}" y="${H-6}" text-anchor="${i===0?'start':i===pts.length-1?'end':'middle'}" font-size="11" fill="var(--mut)">${plab(pts[i][0])}</text>`).join('');
-  el.innerHTML=`<div class="hd"><div><h2>📈 Évolution du patrimoine</h2><div class="sub"><b class="${dl>=0?'up':'dn'}">${dl<0?'−':'+'}${eur(Math.abs(dl))}${dp==null?'':' ('+(dp<0?'−':'+')+Math.abs(dp).toLocaleString('fr-FR',{maximumFractionDigits:1})+' %)'}</b> ${EVR==='1j'?'sur 1 jour (7 derniers jours affichés)':'sur la période'}</div></div></div>
+  el.innerHTML=`<div class="hd"><div><h2>📈 Évolution du patrimoine</h2><div class="sub"><b class="${dl>=0?'up':'dn'}">${dl<0?'−':'+'}${eur(Math.abs(dl))}${dp==null?'':' ('+(dp<0?'−':'+')+Math.abs(dp).toLocaleString('fr-FR',{maximumFractionDigits:1})+' %)'}</b> sur la période</div></div></div>
     <svg id="evs" viewBox="0 0 ${W} ${H}" role="img" aria-label="Évolution du patrimoine"><defs><linearGradient id="evg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" style="stop-color:${col};stop-opacity:.34"/><stop offset="1" style="stop-color:${col};stop-opacity:0"/></linearGradient></defs>${gl}${xl}
     <path d="${d}L${X(pts.length-1).toFixed(1)} ${H-pb}L${pl} ${H-pb}Z" fill="url(#evg)"/><path d="${d}" fill="none" stroke="${col}" stroke-width="7" opacity=".14" stroke-linejoin="round" stroke-linecap="round"/><path d="${d}" fill="none" stroke="${col}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${X(pts.length-1).toFixed(1)}" cy="${Y(vs[vs.length-1]).toFixed(1)}" r="9" fill="${col}" opacity=".18"/><circle cx="${X(pts.length-1).toFixed(1)}" cy="${Y(vs[vs.length-1]).toFixed(1)}" r="4.2" fill="${col}" stroke="var(--card)" stroke-width="2"/>
-    <line id="evl" y1="${pt}" y2="${H-pb}" stroke="var(--mut)" stroke-dasharray="3 3" style="display:none"/><circle id="evc" r="4.5" fill="${col}" stroke="var(--card)" stroke-width="2" style="display:none"/></svg><div id="evt"></div>${rg}`;
-  el.onclick=e=>{const b=e.target.closest('[data-r]');if(b){EVR=b.dataset.r;LS.s('hub_evr',EVR);drawEvo(all,pf,ff)}};
-  {const rr=el.querySelector('.evr'),on=rr&&rr.querySelector('.on');if(rr&&on)rr.scrollLeft=on.offsetLeft-rr.clientWidth/2+on.offsetWidth/2}
+    <line id="evl" y1="${pt}" y2="${H-pb}" stroke="var(--mut)" stroke-dasharray="3 3" style="display:none"/><circle id="evc" r="4.5" fill="${col}" stroke="var(--card)" stroke-width="2" style="display:none"/></svg><div id="evt"></div>${rg}${rc}`;
+  bind();
   const sv=$('#evs'),tp=$('#evt'),ln=$('#evl'),ci=$('#evc'),mv=e=>{const r=sv.getBoundingClientRect(),i=Math.max(0,Math.min(pts.length-1,Math.round(((e.clientX-r.left)/r.width*W-pl)/((W-pl-pr)/(pts.length-1)))));
     const x=X(i),y=Y(pts[i][1]);ln.setAttribute('x1',x);ln.setAttribute('x2',x);ci.setAttribute('cx',x);ci.setAttribute('cy',y);ln.style.display=ci.style.display='';
-    tp.innerHTML=`${i===pts.length-1?'Aujourd’hui':plab(pts[i][0])} · <b>${eur(pts[i][1])}</b>`;tp.style.display='block';const er=el.getBoundingClientRect();tp.style.left=Math.max(60,Math.min(er.width-60,r.left-er.left+x/W*r.width))+'px';tp.style.top=(r.top-er.top+4)+'px'};
+    tp.innerHTML=`${(i===pts.length-1&&pts[i][0].slice(0,10)>=tdI)?'Aujourd’hui':plab(pts[i][0])} · <b>${eur(pts[i][1])}</b>`;tp.style.display='block';const er=el.getBoundingClientRect();tp.style.left=Math.max(60,Math.min(er.width-60,r.left-er.left+x/W*r.width))+'px';tp.style.top=(r.top-er.top+4)+'px'};
   sv.onpointermove=mv;sv.onpointerdown=mv;sv.onpointerleave=()=>{tp.style.display='none';ln.style.display=ci.style.display='none'}}
 /* ---------- Répartition du patrimoine par actif ---------- */
 const RCOL=['#0ea5e9','#8b5cf6','#f59e0b','#10b981','#14b8a6','#ec4899','#64748b'];
@@ -393,6 +397,19 @@ const serH=(k,d)=>{const q=LS.g(k+'d');return q&&q.length&&d>=q[0][0]?serAt(q,d)
 function evoFine(net_,A,D,cf,cur,from,step){const out=[],t=todayI(),d=new Date(from+'T12:00:00');
   for(let g=0;g<900;g++){const e=d.toISOString().slice(0,10);if(e>=t)break;out.push([e,stateAt(e,A,D,cf,net_).total]);d.setDate(d.getDate()+step)}
   out.push([t,cur]);return out}
+function evoDays(net_,A,D,cf,cur,from,to){const t=todayI(),a=new Date(from+'T12:00:00'),sp=Math.max(1,Math.round((new Date(to+'T12:00:00')-a)/864e5)),st=Math.max(1,Math.ceil(sp/30)),out=[],d=new Date(a);
+  for(let g=0;g<400;g++){const e=d.toISOString().slice(0,10);if(e>=to)break;out.push([e,e>=t?cur:stateAt(e,A,D,cf,net_).total]);d.setDate(d.getDate()+st)}
+  out.push([to,to>=t?cur:stateAt(to,A,D,cf,net_).total]);return out}
+/* Série horaire : estimation de fin de journée (historique) + instantanés réels enregistrés à chaque ouverture (hub_snapi), reliés linéairement */
+function evoHours(net_,A,D,cf,cur,t0,t1){const DAY=864e5,H1=36e5,now=Date.now(),loc=ms=>new Date(ms-new Date(ms).getTimezoneOffset()*6e4).toISOString(),dk=ms=>loc(ms).slice(0,10),
+  tEnd=Math.min(t1,now),tStart=Math.min(t0,tEnd-H1),stp=Math.max(1,Math.ceil((tEnd-tStart)/H1/30)),tod=dk(now),P=[];
+  for(let ms=tStart-DAY;ms<=tEnd+DAY;ms+=DAY){const d=dk(ms);if(d>=tod)break;P.push([new Date(d+'T23:59:00').getTime(),stateAt(d,A,D,cf,net_).total])}
+  (LS.g('hub_snapi')||[]).forEach(x=>P.push([x[0],net_?x[2]:x[1]]));
+  if(tEnd>=now-6e4)P.push([now,cur]);
+  P.sort((x,y)=>x[0]-y[0]);
+  const val=t=>{if(!P.length)return cur;if(t<=P[0][0])return P[0][1];for(let i=1;i<P.length;i++){if(t<=P[i][0]){const x0=P[i-1][0],y0=P[i-1][1],x1=P[i][0],y1=P[i][1];return x1===x0?y1:y0+(y1-y0)*(t-x0)/(x1-x0)}}return P[P.length-1][1]},
+  out=[];let t=Math.floor(tEnd/H1)*H1;while(t>=tStart){out.unshift([loc(t).slice(0,16),val(t)]);t-=stp*H1}
+  if(tEnd>Math.floor(tEnd/H1)*H1)out.push([loc(tEnd).slice(0,16),val(tEnd)]);return out}
 function stateAt(ao,A,D,cf,net_){
   const pea=A.some(a=>a.type==='PEA')?serH('hub_pea_hist',ao):0,cto=A.filter(a=>a.type==='CTO').reduce((t,a)=>t+serH('hub_'+a.id+'_hist',ao),0),cry=A.some(a=>a.type==='Crypto')?serH('hub_crypto_hist',ao):0,
     pl=(D.interessement||[]).filter(s=>s.date&&s.date<=ao&&String(s.dest||'').startsWith('Placé')).reduce((t,s)=>t+(s.montant||0),0),rt=(D.retraits_epargne||[]).filter(r=>r.date&&r.date<=ao).reduce((t,r)=>t+(r.montant||0),0),
@@ -436,7 +453,8 @@ function renderHome(){
   /* instantané du jour (points réels du graphique) */
   if(p&&ct&&brut>0){const td=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10),sn=LS.g('hub_snap')||{},o=sn[td],b=Math.round(brut),n=Math.round(net);
     if(!o||o.b!==b||o.n!==n){sn[td]={b,n};const ks=Object.keys(sn).sort();while(ks.length>900)delete sn[ks.shift()];LS.s('hub_snap',sn)}}
-  const EP=evoPoints(net_,A,D,cf,net_?net:brut);drawEvo(EP,m=>perfActifs(A,D,cf,m),(f,st)=>evoFine(net_,A,D,cf,net_?net:brut,f,st));drawTab(EP);
+  {const ni=Date.now(),si=LS.g('hub_snapi')||[],l=si[si.length-1],b=Math.round(brut),n=Math.round(net);if(brut>0&&(!l||ni-l[0]>=20*6e4||((l[1]!==b||l[2]!==n)&&ni-l[0]>=3*6e4))){si.push([ni,b,n]);const cut=ni-30*864e5;while(si.length&&(si[0][0]<cut||si.length>1500))si.shift();LS.s('hub_snapi',si)}}
+  const EP=evoPoints(net_,A,D,cf,net_?net:brut);const ff=(f,st)=>evoFine(net_,A,D,cf,net_?net:brut,f,st);ff.h=(a,b)=>evoHours(net_,A,D,cf,net_?net:brut,a,b);ff.d=(f,t)=>evoDays(net_,A,D,cf,net_?net:brut,f,t);drawEvo(EP,m=>perfActifs(A,D,cf,m),ff);drawTab(EP);
   const tI=todayI(),ai=$('#asof');if(!ai.value||ai.value>tI)ai.value=tI;const ao=ai.value,past=ao<tI;document.body.classList.toggle('past',past);
   let items=[['PEA','📈',p?p.total:0],['CTO','🏦',ct?ct.total:0],['Crypto','₿',cr?cr.total:0],['Épargne salariale','🎁',de.cur],['Comptes bancaires','🏧',sb],['Livrets','🐖',sl],['Immobilier','🏡',net_?immoNet:immoBrut,net_&&iv>0?'Bien estimé à '+eur(iv):'']];
   const asb=$('#asb');
@@ -569,7 +587,7 @@ $('#cfok').onclick=()=>{cfgSaveAll(true);dlg.close()};
 
 /* ---------- Sauvegarde complète (export / import JSON de toutes les données) ---------- */
 const OKEY=k=>/^(raw|csv|cfg|url|depenses_.*|hub_cfg|hub_acc|wl_list|wl_groups|cto\d*_(raw|csv|cfg))$/.test(k),bkst=t=>$('#bkst').textContent=t;
-$('#bkx').onclick=()=>{const d={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(OKEY(k)||/^hub_(pea|cto\d*|crypto)_hist$|^hub_snap$/.test(k))d[k]=localStorage.getItem(k)}
+$('#bkx').onclick=()=>{const d={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(OKEY(k)||/^hub_(pea|cto\d*|crypto)_hist$|^hub_snap$|^hub_snapi$/.test(k))d[k]=localStorage.getItem(k)}
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({app:'patrimoine',version:1,date:new Date().toISOString(),data:d})],{type:'application/json'}));
   a.download='patrimoine_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
   bkst(Object.keys(d).length+' éléments exportés.')};
