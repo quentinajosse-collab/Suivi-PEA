@@ -529,7 +529,7 @@ addEventListener('resize',()=>{if($('#cdlg').open)draw()});
 /* ---------- Carnet d'ordres (sous le graphique) ----------
    Crypto : carnet réel (20 meilleures limites, niveau 2) chez Coinbase, direct depuis le navigateur.
    Actions : seulement le meilleur achat / la meilleure vente (niveau 1) via le script Google (?b=). Pas de carnet multi-niveaux gratuit. */
-let OBT=0,OBN=0;
+let OBT=0,OBN=0,OBB=false;
 function obMsg(t){$('#obk').innerHTML=`<div class="ob"><div class="oh"><b>Carnet d’ordres</b></div><div class="on">${t}</div></div>`}
 function obHtml(B,A,src,note){
   const bb=B[0][0],ba=A[0][0],sp=ba-bb,mid=(ba+bb)/2,spp=mid?sp/mid*100:0,
@@ -545,15 +545,17 @@ function obHtml(B,A,src,note){
     ${n>1&&imb!=null?`<div class="oi"><i style="width:${imb.toFixed(1)}%;background:var(--up)"></i><i style="width:${(100-imb).toFixed(1)}%;background:var(--dn)"></i></div><div class="ol"><span>Achat ${fq(sB)}</span><span>Vente ${fq(sA)}</span></div>`:''}
     <div class="og"><div class="oc"><span>Quantité</span><span>Achat</span></div><div class="oc"><span>Vente</span><span>Quantité</span></div>${rows}</div>
     <div class="on">${note}</div></div>`}
-async function loadBook(){const c=CUR;if(!c)return;const tk=c.tk,my=++OBT;
+async function loadBook(){const c=CUR;if(!c)return;const tk=c.tk;
+  if(isCrypto(tk)&&OBB)return; /* une requête est déjà en cours : on n'empile pas */
+  const my=++OBT;
   if(/^\^/.test(tk)){$('#obk').innerHTML='';return}
   const live=()=>my===OBT&&CUR&&CUR.tk===tk&&$('#cdlg').open;
   try{
     if(isCrypto(tk)){
-      const j=await(await fetch('https://api.exchange.coinbase.com/products/'+encodeURIComponent(tk)+'/book?level=2')).json();if(!live())return;
+      OBB=true;let j;try{j=await(await fetch('https://api.exchange.coinbase.com/products/'+encodeURIComponent(tk)+'/book?level=2')).json()}finally{OBB=false}if(!live())return;
       if(!j||!Array.isArray(j.bids)||!j.bids.length||!Array.isArray(j.asks)||!j.asks.length)throw new Error('carnet vide');
       const m=a=>a.slice(0,10).map(x=>[+x[0],+x[1]]);
-      $('#obk').innerHTML=obHtml(m(j.bids),m(j.asks),'Coinbase · niveau 2 · en direct','10 meilleures limites de chaque côté, quantités cumulées en fond coloré. Mise à jour toutes les 5 s.')}
+      $('#obk').innerHTML=obHtml(m(j.bids),m(j.asks),'Coinbase · niveau 2 · en direct','10 meilleures limites de chaque côté, quantités cumulées en fond coloré. Mise à jour toutes les 0,5 s.')}
     else{
       if(!URL_()){obMsg('Renseigne l’adresse du script Google dans le hub (⚙️ Réglages) pour afficher le meilleur achat / la meilleure vente.');return}
       const j=await(await fetch(qs('b='+encodeURIComponent(tk)))).json();if(!live())return;
@@ -561,8 +563,8 @@ async function loadBook(){const c=CUR;if(!c)return;const tk=c.tk,my=++OBT;
       if(!j||!(j.bid>0&&j.ask>0)){obMsg(j&&('bid' in j)?'Pas de meilleur achat / meilleure vente pour l’instant (marché fermé ou donnée non fournie par Yahoo).':'Le script Google ne renvoie pas le carnet : colle la dernière version de « script_google_complet.gs » puis redéploie-le (Déployer > Gérer les déploiements > crayon > Nouvelle version).');return}
       $('#obk').innerHTML=obHtml([[+j.bid,j.bs!=null?+j.bs:null]],[[+j.ask,j.as!=null?+j.as:null]],'Yahoo · niveau 1'+(isDelayed(tk)?' · différé 15 min':''),'Seul le meilleur prix acheteur / vendeur est disponible gratuitement : un carnet multi-niveaux sur les actions est une donnée payante. Tailles telles que fournies par Yahoo (souvent en lots de 100 aux États-Unis).')}
   }catch(e){if(live())obMsg('Carnet indisponible : '+esc(e&&e.message||e))}}
-/* Rafraîchissement : crypto toutes les 5 s, actions US toutes les 15 s, valeurs différées toutes les 60 s */
-setInterval(()=>{if(document.hidden||!CUR||!$('#cdlg').open)return;OBN++;const tk=CUR.tk;if(isCrypto(tk)||(isUS(tk)&&OBN%3===0)||(isDelayed(tk)&&OBN%12===0))loadBook()},5000);
+/* Rafraîchissement : crypto toutes les 0,5 s, actions US toutes les 15 s, valeurs différées toutes les 60 s */
+setInterval(()=>{if(document.hidden||!CUR||!$('#cdlg').open)return;OBN++;const tk=CUR.tk;if(isCrypto(tk)||(isUS(tk)&&OBN%30===0)||(isDelayed(tk)&&OBN%120===0))loadBook()},500);
 
 /* ---------- Ajout / modification ---------- */
 let EDIT=null,ESEL=new Set();
