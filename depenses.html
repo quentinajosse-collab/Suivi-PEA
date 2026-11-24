@@ -384,7 +384,7 @@ const fPx=v=>v==null||!isFinite(v)?'–':nfr(Math.abs(v)<1?3:2,Math.abs(v)<1?4:2
 const SG=v=>v>0?'+':v<0?'−':'';
 const fVar=(d,p,f=fPx)=>d==null?'–':`${SG(d)}${f(Math.abs(d))} (${SG(p)}${nf(2).format(Math.abs(p))} %)`;
 const cls=v=>v>0.00001?'up':v<-0.00001?'dn':'fl';
-const arrow=v=>v>0.00001?'▲':v<-0.00001?'▼':'▬';
+const arrow=v=>v>0.00001?'▲':v<-0.00001?'▼':'–';
 const URL_=()=>LS.g('url')||'';
 /* Types de valeurs : crypto (direct via Coinbase), hors US (suffixe de Bourse : Euronext, Xetra…, différé 15 min chez Yahoo), US (direct chez Yahoo) */
 const isCrypto=t=>/^[A-Z0-9]{2,10}-(EUR|USD|GBP)$/.test(t);
@@ -2203,7 +2203,7 @@ const partNote=P=>{const L=P.rows.filter(r=>r.part),E=P.rows.filter(r=>r.est);re
 const OARU='<svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg>',OARD='<svg viewBox="0 0 24 24"><path fill="currentColor" d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z"/></svg>';
 const fN=(v,d=2)=>Number(v).toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d}).replace(/[\u202f\u00a0]/g," ").replace("−","-"),
  oGE=v=>isFinite(v)&&v!=null?fN(v)+" €":"N/A",oDE=g=>(g<0?"-":"+")+fN(Math.abs(g))+" €",oDP=g=>(g<0?"-":"+")+fN(Math.abs(g))+"%",oPT=v=>isFinite(v)&&v!=null?(v>0?"+":"")+fN(v)+"%":"N/A",
- pEA=v=>v==null||isNaN(v)?"N/A":v>.005?"▲ +"+fN(v)+" €":v<-.005?"▼ "+fN(v)+" €":"▬ 0,00 €",pPf=v=>v==null||isNaN(v)?"N/A":(v>0?"▲ +":v<0?"▼ ":"▬ ")+fN(v)+"%",
+ pEA=v=>v==null||isNaN(v)?"N/A":v>.005?"▲ +"+fN(v)+" €":v<-.005?"▼ "+fN(v)+" €":"– 0,00 €",pPf=v=>v==null||isNaN(v)?"N/A":(v>0?"▲ +":v<0?"▼ ":"▬ ")+fN(v)+"%",
  pPx=v=>{if(v==null||isNaN(v))return"N/A";const t=v.toFixed(4);return fN(v,t.endsWith("00")?2:t.endsWith("0")?3:4)+" €"},pQ=q=>q%1===0?fN(q,0):fN(q,4).replace(/0+$/,"").replace(/,$/,""),
  perfAnn=(p,j)=>{if(p==null||isNaN(p)||j==null||j<30)return NaN;const g=1+p/100;return g<=0?-100:(Math.pow(g,365/j)-1)*100},
  perfCell=v=>{const t=String(v);return t.startsWith("▲")?"color:#16a34a;font-weight:700;":t.startsWith("▼")?"color:#dc2626;font-weight:700;":"color:var(--mut);font-weight:700;"};
