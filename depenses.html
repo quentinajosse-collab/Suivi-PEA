@@ -419,7 +419,7 @@ async function refresh(sub){if(busy||!W.length)return;
 const rowsOf=()=>W.map(it=>{const q=PX[it.ticker]||{},p=q.p!=null?q.p:null,pc=q.pc!=null?q.pc:null,d=p!=null&&pc?p-pc:null,pct=d!=null?d/pc*100:null;
   return{...it,p,d,pct}});
 function render(){const y=scrollY,tw=document.querySelector('.tw'),sl=tw?tw.scrollLeft:0;render0();if(scrollY!==y)scrollTo(0,y);const t2=document.querySelector('.tw');if(t2&&sl)t2.scrollLeft=sl}
-function setSub(){const at=LS.g('wl_pxAt');$('#sub').textContent=W.length+' valeur'+(W.length>1?'s':'')+(at?' · cours de '+new Date(at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'')+' · crypto et US en direct · ⏱ = différé 15 min'}
+function setSub(){const at=LS.g('wl_pxAt');$('#sub').textContent=W.length+' valeur'+(W.length>1?'s':'')+(at?' · cours de '+new Date(at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'')+' · crypto en temps réel · US toutes les 2 s · ⏱ = différé 15 min'}
 const priceCell=r=>`<b>${r.p!=null?fPx(r.p)+' €':'–'}</b>${r.pct!=null?` <span class="${cls(r.pct)}" style="font-weight:700">(${arrow(r.pct)} ${SG(r.pct)}${nf(2).format(Math.abs(r.pct))} %)</span>`:''}`;
 /* Mise à jour des prix sur place : aucune ligne n'est reconstruite, l'affichage ne bouge pas (l'ordre ne change qu'à une action de ta part) */
 function patch(){const R=rowsOf(),m=new Map(R.map(r=>[r.ticker,r])),rows=document.querySelectorAll('#tb tr[data-tk]');
@@ -563,8 +563,8 @@ async function loadBook(){const c=CUR;if(!c)return;const tk=c.tk;
       if(!j||!(j.bid>0&&j.ask>0)){obMsg(j&&('bid' in j)?'Pas de meilleur achat / meilleure vente pour l’instant (marché fermé ou donnée non fournie par Yahoo).':'Le script Google ne renvoie pas le carnet : colle la dernière version de « script_google_complet.gs » puis redéploie-le (Déployer > Gérer les déploiements > crayon > Nouvelle version).');return}
       $('#obk').innerHTML=obHtml([[+j.bid,j.bs!=null?+j.bs:null]],[[+j.ask,j.as!=null?+j.as:null]],'Yahoo · niveau 1'+(isDelayed(tk)?' · différé 15 min':''),'Seul le meilleur prix acheteur / vendeur est disponible gratuitement : un carnet multi-niveaux sur les actions est une donnée payante. Tailles telles que fournies par Yahoo (souvent en lots de 100 aux États-Unis).')}
   }catch(e){if(live())obMsg('Carnet indisponible : '+esc(e&&e.message||e))}}
-/* Rafraîchissement : crypto toutes les 0,5 s, actions US toutes les 15 s, valeurs différées toutes les 60 s */
-setInterval(()=>{if(document.hidden||!CUR||!$('#cdlg').open)return;OBN++;const tk=CUR.tk;if(isCrypto(tk)||(isUS(tk)&&OBN%30===0)||(isDelayed(tk)&&OBN%120===0))loadBook()},500);
+/* Rafraîchissement : crypto toutes les 0,5 s, actions US toutes les 2 s, valeurs différées toutes les 60 s */
+setInterval(()=>{if(document.hidden||!CUR||!$('#cdlg').open)return;OBN++;const tk=CUR.tk;if(isCrypto(tk)||(isUS(tk)&&OBN%4===0)||(isDelayed(tk)&&OBN%120===0))loadBook()},500);
 
 /* ---------- Ajout / modification ---------- */
 let EDIT=null,ESEL=new Set();
@@ -608,9 +608,24 @@ $('#gdel').onclick=async()=>{if(!GE||!confirm('Supprimer le groupe « '+GE+' » 
 addEventListener('storage',e=>{if(e.key==='url')refresh();if(e.key==='sb')pull();if(e.key==='wl_list'){W=norm(LS.g('wl_list'));render()}if(e.key==='wl_groups'){G=(LS.g('wl_groups')||[]).filter(Boolean);render()}});
 addEventListener('message',e=>{if(e.source===parent&&e.data&&e.data.hubHome){document.querySelectorAll('dialog[open]').forEach(d=>{try{d.close()}catch(_){}});scrollTo(0,0)}});
 setInterval(()=>{if(!document.hidden)refresh()},6e4);
-/* Valeurs US : toutes les 15 s (peu de requêtes, quota Apps Script préservé) ; crypto : toutes les 5 s directement chez Coinbase */
-setInterval(()=>{if(document.hidden||!URL_())return;const us=W.filter(x=>isUS(x.ticker));if(us.length)refresh(us)},15e3);
-setInterval(async()=>{if(document.hidden)return;if(await liveCrypto())patch()},5e3);
+/* Valeurs US : toutes les 2 s tant que la page est visible (refresh() n'empile pas : il attend la réponse précédente) ; crypto : WebSocket Coinbase */
+setInterval(()=>{if(document.hidden||!URL_())return;const us=W.filter(x=>isUS(x.ticker));if(us.length)refresh(us)},2e3);
+/* Crypto en temps réel : WebSocket public Coinbase (canal « ticker »), chaque prix est poussé dès qu'il change ; l'affichage est mis à jour 2 fois par seconde.
+   Si le flux ne répond pas (réseau, blocage), on retombe sur l'interrogation toutes les 5 s. */
+let WS=null,WSK='',WSD=false,WSOK=0;
+function wsSync(){const L=W.filter(x=>isCrypto(x.ticker)).map(x=>x.ticker).sort(),k=L.join(',');
+  if(!L.length){if(WS){try{WS.onclose=null;WS.close()}catch(e){}WS=null;WSK=''}return}
+  if(WS&&WSK===k&&WS.readyState<=1)return;
+  if(WS){try{WS.onclose=null;WS.close()}catch(e){}WS=null}
+  WSK=k;
+  try{const w=new WebSocket('wss://ws-feed.exchange.coinbase.com');WS=w;
+    w.onopen=()=>w.send(JSON.stringify({type:'subscribe',product_ids:L,channels:['ticker']}));
+    w.onmessage=ev=>{try{const m=JSON.parse(ev.data);if(m.type==='ticker'&&m.product_id&&+m.price>0){const q=PX[m.product_id]||{};PX[m.product_id]={...q,p:+m.price,live:1};WSOK=Date.now();WSD=true}}catch(e){}};
+    w.onclose=()=>{if(WS===w){WS=null;WSK=''}};
+    w.onerror=()=>{try{w.close()}catch(e){}}}
+  catch(e){WS=null;WSK=''}}
+setInterval(()=>{if(document.hidden)return;wsSync();if(WSD){WSD=false;patch()}},500);
+setInterval(async()=>{if(document.hidden)return;if(Date.now()-WSOK<10000){LS.s('wl_px',PX);LS.s('wl_pxAt',Date.now());return}if(await liveCrypto())patch()},5e3);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
 addEventListener('online',pull);render();refresh();pull();
 try{const o=JSON.parse(sessionStorage.getItem('wl_open')||'null');if(o&&W.some(x=>x.ticker===o.tk))openChart(o.tk,o.rg)}catch(e){}
