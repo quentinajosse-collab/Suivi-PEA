@@ -555,7 +555,7 @@ async function refreshPrices(){
   const at0=LS.g('pricesAt'),ban=$('#pxban');
   if(at0&&Object.keys(S.prices).length&&ban){const d=new Date(at0);ban.textContent=`🔄 Actualisation des cours en cours… Les chiffres affichés reposent pour l'instant sur les derniers cours connus (${pad(d.getDate())}/${pad(d.getMonth()+1)} à ${pad(d.getHours())}:${pad(d.getMinutes())}) ; la page se mettra à jour toute seule dans quelques secondes.`;ban.hidden=false}
   try{const r=await fetch(S.url+(S.url.includes('?')?'&':'?')+'t='+encodeURIComponent(tks.join(',')));
-    const j=await r.json();S.prices=j;LS.s('prices',j);LS.s('pricesAt',Date.now());R=compute(S.tx,S.prices);draw()}
+    const j=await r.json();S.prices=j;LS.s('prices',j);LS.s('pricesAt',Date.now());rebuild();draw()}
   catch(e){$('#sub').textContent='Cours indisponibles (script Google injoignable)'}
   if(ban)ban.hidden=true;
 }
@@ -852,7 +852,7 @@ function ovX(v){
   const num=(id,lab,val,step,min,max)=>`<div><label>${lab}</label><div class="nin"><input type="number" inputmode="decimal" data-cfg="${id}" value="${val}" step="${step}" min="${min}"${max!=null?` max="${max}"`:''}><button type="button" data-step="-${step}" aria-label="Diminuer">−</button><button type="button" data-step="${step}" aria-label="Augmenter">+</button></div></div>`;
   v.innerHTML=`<details class="exp" open><summary>📊 Vue d'ensemble du Portefeuille</summary><div class="in"><div class="dcard">
     <p class="dst">💰 Capital & Investissement</p>
-    <div class="mcols mc4">${omt('Valeur Actuelle',oGE(tot),null,'cap')}${omt('Montant Investi',oGE(inv),null,'cap')}${omt('Cash Disponible',oGE(R.cash),null,'cap')}${omt('Apports nets',oGE(S.tx.filter(t=>!t.virt).reduce((s,t)=>s+(t.type=='APPORT'?t.q:t.type=='RETRAIT'?-t.q:0),0)),null,'cap')}</div>
+    <div class="mcols mc4">${omt('Valeur Actuelle',oGE(tot),null,'cap')}${omt('Montant Investi',oGE(inv),null,'cap')}${omt('Cash Disponible',oGE(R.cash),null,'cap')}${omt('Apports',oGE(S.tx.filter(t=>!t.virt&&t.type=='APPORT').reduce((s,t)=>s+t.q,0)),null,'cap')}</div>
     <p class="dst" style="margin-top:16px">📈 Performances</p>
     <div class="mcols mc2">${omt('Performance Globale',oPT(pg),oDE(tg),'perf')}${pm(yv,'Performance YTD')}</div>
     <div class="mcols mc2">${pm(mv,'Performance du Mois')}${pm(jv,'Performance du Jour')}</div>
@@ -2424,6 +2424,8 @@ document.addEventListener('toggle',e=>{if(e.target.id=='imp_d'&&S.imp)S.imp.open
 /* ---------- Pop-up de premier lancement (reprise de _dialog_premier_lancement) ---------- */
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',draw);
 load();draw();refreshPrices();pull();cfgLoad();
+setInterval(()=>{if(!document.hidden&&navigator.onLine)refreshPrices()},12e4);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&navigator.onLine&&Date.now()-(LS.g('pricesAt')||0)>6e4)refreshPrices()});
 </script>
 </body>
 </html>

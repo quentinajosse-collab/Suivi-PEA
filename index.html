@@ -147,7 +147,7 @@ dialog .hint{color:var(--mut);font-size:12px;margin:6px 0 0}
     <div class="bar"><button type="button" id="bkx">📤 Tout exporter</button><button type="button" id="bki">📥 Tout importer</button><input type="file" id="bkf" accept="application/json,.json" style="display:none"></div>
     <p class="hint" id="bkst"></p>
     <p class="hint" id="cfst"></p>
-    <div class="bar" style="justify-content:flex-end"><button type="button" id="cfap">Appliquer</button><button type="button" id="cfok" style="background:var(--acc);color:#fff;border-color:var(--acc)">OK</button></div>
+    <div class="bar" style="justify-content:flex-end"><button type="button" id="cfcn">Annuler</button><button type="button" id="cfap">Appliquer</button><button type="button" id="cfok" style="background:var(--acc);color:#fff;border-color:var(--acc)">OK</button></div>
   </form>
 </dialog>
 <script>
@@ -230,7 +230,7 @@ navSet(!!LS.g('hub_nc'));
 nav.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.id==='gear')openCfg();else if(b.dataset.id)go(b.dataset.id,undefined,true)};
 function go(id,sub,reset){
   if(/^cto\d+$/.test(id)&&MODS.some(m=>m.id==='cto')){sub=sub||id;id='cto'}
-  document.querySelectorAll('iframe').forEach(f=>{const m=MODS.find(x=>x.id===f.dataset.id);if(!m||m.src!==f.dataset.base||(/^ctos?\.html/.test(m.src)&&f.dataset.cry!==cryAcc()))f.remove()});
+  document.querySelectorAll('iframe').forEach(f=>{if(f.dataset.pre)return;const m=MODS.find(x=>x.id===f.dataset.id);if(!m||m.src!==f.dataset.base||(/^ctos?\.html/.test(m.src)&&f.dataset.cry!==cryAcc()))f.remove()});
   if(!MODS.some(m=>m.id===id))id='home';
   cur=id;if(location.hash!=='#'+id)history.replaceState(null,'','#'+id);
   const m=MODS.find(x=>x.id===id);
@@ -293,6 +293,8 @@ function livAcc(D,a){const T=tdy(),y=T.slice(0,4),
   cr=L.filter(l=>l.type==='cred'&&l.date<=T).pop(),ce=cr?vd(cr.date):'',c0=cr&&dAdd(ce,1)>y+'-01-01'?dAdd(ce,1):y+'-01-01',
   rel=L.filter(l=>l.type==='rel'&&l.date<=T&&l.date>=c0).pop(),taux=tx(T),f0=rel?rel.date:c0,Y=dAdd(T,-1),kn=livNetI(a)?1:1-PFU_LIV/100;
   return{taux,acc:taux==null?0:(rel?rel.v:0)+(f0<=Y?kn*per(f0,Y):0)}}
+/* Épargne salariale par courtier : dernier relevé de chaque courtier (Amundi, Natixis…) */
+function epCourt(D){const f={};(D.releves_epargne||[]).forEach(r=>{if(!r.date)return;const n=r.gest||(String(r.ref||'').startsWith('NX|')?'Natixis':'Amundi');if(!f[n]||r.date>=f[n].date)f[n]=r});return Object.entries(f).map(([n,r])=>[n,+r.total||0]).sort((a,b)=>a[0].localeCompare(b[0],'fr'))}
 /* ---------- Évolution du patrimoine ---------- */
 const MOIS=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'],mlab=d=>MOIS[+d.slice(5,7)-1]+' '+d.slice(2,4);
 const serAt=(s,d)=>{let v=0;if(s)for(const x of s){if(x[0]<=d)v=x[1];else break}return v};
@@ -438,6 +440,17 @@ function renderHome(){
   const pct=v=>v==null||!isFinite(v)?'':`<div class="m"><b class="${cl(v)}">${v>0?'▲':v<0?'▼':'■'} ${v<0?'−':'+'}${Math.abs(v).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} %</b></div>`,
     acct=c=>c?`<div class="v">${eur2(c.total)}</div>`+pct(c.apports>0?c.gain/c.apports*100:null):'<div class="m">Pas encore de données</div>',
     cashOut=ia+di.paid+di.ip+di.ass,imR=iv>0&&cashOut>0?(iv-di.crd-cashOut)/cashOut*100:null;
+  const legacyImmo=['immo','🏡',im.nom?esc(im.nom):'Immobilier',(di.n||iv||ia)?`<div class="v">${eur2(iv||immoBrut)}</div>`+(im.type?`<div class="m">${esc(im.type)}${+im.loyer>0?' · loyers '+eur2(+im.loyer)+'/mois':''}</div>`:'')+(imR==null?(iv?'':'<div class="m">Valeur estimée à saisir</div>'):pct(imR)):'<div class="m">Aucun bien ni prêt saisi</div>'];
+  const immoTiles=()=>{const BX=Array.isArray(D.biens)?D.biens:[],PR=D.prets||[];if(!BX.length)return[legacyImmo];
+    const crdL=L=>crdPrets({...D,prets:L}),out=[];
+    BX.forEach(b=>{const L=PR.filter(p=>p.bien===b.id),d=crdL(L),pt=+b.part>0&&+b.part<=100?+b.part:100,k=pt/100,val=(+b.valeur||0)*k,ap=+b.apport||0,co=ap+d.paid+d.ip+d.ass,r=val>0&&co>0?(val-d.crd-co)/co*100:null,
+      lo=(+b.loyer||0)*k,nmB=b.nom||b.type||'Bien immobilier';
+      out.push(['immo','🏡',esc(nmB)+(pt<100?' · '+pt.toLocaleString('fr-FR')+' %':''),
+        `<div class="v">${eur2(val)}</div>`+(b.type&&b.nom?`<div class="m">${esc(b.type)}</div>`:'')+(lo>0?`<div class="m">Loyers perçus : <b class="up">${eur2(lo)}</b>/mois</div>`:'')+(val>0?pct(r):'<div class="m">Valeur estimée à saisir</div>')+
+        L.map(p=>{const x=crdL([p]);return`<div class="m">🏦 ${esc(p.nom||'Crédit')} : restant dû <b>${eur2(x.crd)}</b></div>`}).join('')+(L.length>1?`<div class="m">Total restant dû : <b>${eur2(d.crd)}</b></div>`:'')]);});
+    const O=PR.filter(p=>!BX.some(b=>b.id===p.bien));
+    if(O.length){const d=crdL(O);out.push(['immo','🏦','Crédits non associés',`<div class="v">${eur2(d.crd)}</div><div class="m">restant dû · à rattacher à un bien (module Immobilier)</div>`])}
+    return out};
   const ctoTile=(a,c)=>['cto@'+a.id,'🏦',esc(nm(a)),acct(c)];
   const cry=AB('Crypto'),cryCto=cry&&cry.inCto&&ctos.find(a=>a.id===cry.inCto);
   const T=[
@@ -448,14 +461,14 @@ function renderHome(){
    ['crypto','₿','Crypto',acct(cr)],
    ...(bkA.length?[['depenses','🏧','Comptes bancaires',`<div class="v">${eur2(sb)}</div>`+bkA.map(a=>`<div class="m">${esc(nm(a))}${brokerOf(a,A)?' · '+esc(brokerOf(a,A)):''} : <b>${eur2(bal(a))}</b></div>`).join('')]]:[]),
    ...(lvAll.length?[['livrets','🐖','Livrets',`<div class="v">${eur2(sl)}</div>`+(()=>{const li=lvA.map(a=>livAcc(D,a)),ok=li.some(x=>x.taux!=null),ti=li.reduce((t,x)=>t+x.acc,0);return ok?`<div class="m">Intérêts en cours : <b class="up">+${ti.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €</b></div>`:''})()+lvA.map(a=>`<div class="m">${esc(nm(a))}${brokerOf(a,A)?' · '+esc(brokerOf(a,A)):''} : <b>${eur2(bal(a))}</b></div>`).join('')+(lvC?`<div class="m">${lvC} livret${lvC>1?'s':''} clôturé${lvC>1?'s':''} (solde à 0)</div>`:'')]]:[]),
-   ['epargne','🎁','Épargne salariale',de.n?`<div class="v">${eur2(de.cur)}</div>`+((de.plans.PEE||de.plans.PERCO||de.plans.PEG)?`<div class="m">${['PEE','PERCO','PEG'].filter(k=>k!=='PEG'||de.plans.PEG!=null).map(k=>k+' '+eur2(de.plans[k]||0)).join(' · ')}</div>`:'')+pct(de.has&&de.tp>0?(de.cur+de.tr-de.tp)/de.tp*100:null):'<div class="m">Aucun versement saisi</div>'],
-   ['immo','🏡',im.nom?esc(im.nom):'Immobilier',(di.n||iv||ia)?`<div class="v">${eur2(iv||immoBrut)}</div>`+(im.type?`<div class="m">${esc(im.type)}${+im.loyer>0?' · loyers '+eur2(+im.loyer)+'/mois':''}</div>`:'')+(imR==null?(iv?'':'<div class="m">Valeur estimée à saisir</div>'):pct(imR)):'<div class="m">Aucun bien ni prêt saisi</div>'],
+   ['epargne','🎁','Épargne salariale',de.n?`<div class="v">${eur2(de.cur)}</div>`+((de.plans.PEE||de.plans.PERCO||de.plans.PEG)?`<div class="m">${['PEE','PERCO','PEG'].filter(k=>k!=='PEG'||de.plans.PEG!=null).map(k=>k+' '+eur2(de.plans[k]||0)).join(' · ')}</div>`:'')+(epCourt(D).length>1?epCourt(D).map(([n,v])=>`<div class="m">🏛️ ${esc(n)} : <b>${eur2(v)}</b></div>`).join(''):'')+pct(de.has&&de.tp>0?(de.cur+de.tr-de.tp)/de.tp*100:null):'<div class="m">Aucun versement saisi</div>'],
+   ...immoTiles(),
    ];
   $('#tiles').innerHTML=T.map(([id,ic,t,b])=>`<button class="t${b.includes('À venir')?' soon':''}" data-go="${id}"><h3>${ic} ${t}</h3>${b}</button>`).join('');
   /* instantané du jour (points réels du graphique) */
   if(p&&ct&&brut>0){const td=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10),sn=LS.g('hub_snap')||{},o=sn[td],b=Math.round(brut),n=Math.round(net);
     if(!o||o.b!==b||o.n!==n){sn[td]={b,n};const ks=Object.keys(sn).sort();while(ks.length>900)delete sn[ks.shift()];LS.s('hub_snap',sn)}}
-  {const ni=Date.now(),si=LS.g('hub_snapi')||[],l=si[si.length-1],b=Math.round(brut),n=Math.round(net);if(brut>0&&(!l||ni-l[0]>=20*6e4||((l[1]!==b||l[2]!==n)&&ni-l[0]>=3*6e4))){si.push([ni,b,n]);const cut=ni-30*864e5;while(si.length&&(si[0][0]<cut||si.length>1500))si.shift();LS.s('hub_snapi',si)}}
+  {const ni=Date.now(),si=LS.g('hub_snapi')||[],l=si[si.length-1],b=Math.round(brut*100)/100,n=Math.round(net*100)/100;if(brut>0&&(!l||ni-l[0]>=20*6e4||((l[1]!==b||l[2]!==n)&&ni-l[0]>=3*6e4))){si.push([ni,b,n]);const cut=ni-30*864e5;while(si.length&&(si[0][0]<cut||si.length>1500))si.shift();LS.s('hub_snapi',si)}}
   const EP=evoPoints(net_,A,D,cf,net_?net:brut);const ff=(f,st)=>evoFine(net_,A,D,cf,net_?net:brut,f,st);ff.h=(a,b)=>evoHours(net_,A,D,cf,net_?net:brut,a,b);ff.d=(f,t)=>evoDays(net_,A,D,cf,net_?net:brut,f,t);drawEvo(EP,m=>perfActifs(A,D,cf,m),ff);drawTab(EP);
   const tI=todayI(),ai=$('#asof');if(!ai.value||ai.value>tI)ai.value=tI;const ao=ai.value,past=ao<tI;document.body.classList.toggle('past',past);
   let items=[['PEA','📈',p?p.total:0],['CTO','🏦',ct?ct.total:0],['Crypto','₿',cr?cr.total:0],['Épargne salariale','🎁',de.cur],['Comptes bancaires','🏧',sb],['Livrets','🐖',sl],['Immobilier','🏡',net_?immoNet:immoBrut,net_&&iv>0?'Bien estimé à '+eur(iv):'']];
@@ -466,8 +479,8 @@ function renderHome(){
   else asb.hidden=true;
   drawRep(items,net_);
   /* par courtier */
-  const G={};A.forEach(a=>{const b=brokerOf(a,A).trim();(G[b]=G[b]||[]).push(a)});
-  const val=a=>isBk(a)?bal(a):a.type==='PEA'?(p?p.total:null):a.type==='CTO'?(LS.g('hub_'+a.id)||{}).total:a.type==='Épargne salariale'?(de.n?de.cur:null):a.type==='Crypto'?(cr?cr.total:null):null;
+  const G={},EC=epCourt(D);A.forEach(a=>{if(a.type==='Épargne salariale'&&EC.length>1){EC.forEach(([n,v])=>(G[n]=G[n]||[]).push({id:'ep-'+n,type:'Épargne salariale',label:'Épargne salariale',broker:n,_v:v}));return}const b=brokerOf(a,A).trim();(G[b]=G[b]||[]).push(a)});
+  const val=a=>a._v!=null?a._v:isBk(a)?bal(a):a.type==='PEA'?(p?p.total:null):a.type==='CTO'?(LS.g('hub_'+a.id)||{}).total:a.type==='Épargne salariale'?(de.n?de.cur:null):a.type==='Crypto'?(cr?cr.total:null):null;
   const ks=Object.keys(G).sort((x,y)=>!x?1:!y?-1:x.localeCompare(y,'fr'));
   $('#acc').innerHTML='<h2>🏛️ Mes comptes par courtier</h2>'+ks.map(k=>{const L=G[k],tot=L.reduce((s,a)=>s+(val(a)||0),0);
     return `<div class="bc"><div class="bh"><span>${k?esc(k):'Courtier non renseigné'}</span><span>${eur2(tot)}</span></div>`+L.map(a=>{const v=val(a);
@@ -540,11 +553,12 @@ const later=(ms=1500)=>{clearTimeout(timer);timer=setTimeout(syncAll,ms)};
 addEventListener('storage',e=>{
   if(e.key===DK){M.t=Date.now();LS.s('hub_dep',M);later();if(cur==='home')renderHome()}
   if(e.key==='hub_acc'){AM={...AM,t:Date.now()};LS.s('hub_acc_m',AM);buildMods();renderNav();if(cur==='home')renderHome();later()}
-  if(/^hub_(pea|cto\d*|crypto)$/.test(e.key||'')&&cur==='home')renderHome()});
+  if(/^hub_(pea|cto\d*|crypto)$/.test(e.key||''))renderHome()});
 addEventListener('online',()=>{dot('','Reconnecté');later(500)});
 addEventListener('offline',()=>dot('off','Hors connexion'));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)later(500)});
 setInterval(()=>{if(!document.hidden)syncAll()},60000);
+setInterval(()=>{if(!document.hidden)renderHome()},120000); /* un point de courbe même si aucun module n'est ouvert */
 
 /* ---------- Réglages (Supabase par code e-mail + script Google des cours) ---------- */
 const dlg=$('#dlg'),gv=id=>$(id).value,sbst=t=>$('#sbst').textContent=t;
@@ -584,6 +598,7 @@ function cfgSaveAll(apply){
   if(su.url!==(s.url||'')||su.key!==(s.key||'')||su.email!==(s.email||''))LS.s('sb',{...s,...su});
   accSave(DR.map(a=>({...a})),apply);
   $('#cfst').textContent=apply?'':'✓ Réglages enregistrés (appliqués en cliquant sur OK).'}
+$('#cfcn').onclick=()=>dlg.close();
 $('#cfap').onclick=()=>cfgSaveAll(false);
 $('#cfok').onclick=()=>{cfgSaveAll(true);dlg.close()};
 
@@ -614,6 +629,11 @@ if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWork
 go(location.hash.slice(1)||'home'); /* au rafraîchissement on reste sur la page ouverte (#module) ; sans module dans l'adresse : page générale */
 if(!navigator.onLine)dot('off','Hors connexion');
 later(800);
+/* Modules cotés (PEA, CTO, Crypto) chargés en arrière-plan : leurs cours se mettent à jour même si tu n'ouvres pas leur page, donc le graphique 1 j évolue pendant la séance */
+function preload(){if(!navigator.onLine||!LS.g('url'))return;const A=accs(),mk=(did,src,pre)=>{if(document.querySelector(`iframe[data-id="${did}"]`))return;const f=document.createElement('iframe');f.dataset.id=did;f.dataset.base=src;f.dataset.cry=cryAcc();if(pre)f.dataset.pre=1;f.src=src;f.setAttribute('aria-hidden','true');f.tabIndex=-1;$('#stage').appendChild(f)};
+  MODS.filter(m=>['pea','cto','crypto'].includes(m.id)).forEach(m=>mk(m.id,m.src,0));
+  A.filter(a=>a.type==='CTO'&&a.id!=='cto').forEach(a=>mk('pre-'+a.id,ctoSrc(a.id),1))}
+setTimeout(preload,2500);
 </script>
 </body>
 </html>
