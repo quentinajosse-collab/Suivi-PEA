@@ -337,6 +337,7 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
 .nr{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:center}@media(max-width:620px){.nr{grid-template-columns:1fr}}.rd{text-align:center}.sth{font-size:1.2rem;margin:20px 0 0}
 .tw2{overflow-x:auto}.nt th{position:static;cursor:default;white-space:normal;text-transform:none;font-size:12.5px;text-align:right}.nt td{text-align:right}.nt th:first-child,.nt td:first-child{text-align:left;position:static;max-width:none}
 #tb td{padding-top:8px;padding-bottom:8px}.vw{display:flex;gap:6px;margin:8px 0}.vw button{flex:1;padding:6px 4px;border-radius:999px;font-size:13px}.vw button.on{background:var(--acc);border-color:var(--acc);color:#fff}.rkall{width:100%;margin-top:10px;font-size:13px}.rkh{margin:10px 0 2px;font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.fi{position:relative;overflow:hidden}.fi img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;padding:6px}
 </style>
 </head>
 <body>
@@ -767,7 +768,7 @@ async function anHist(tk){const from='1990-01-01',enc=encodeURIComponent;
 async function anFund(tk){try{const F=await cached(tk+'|f',216e5,async()=>{const r=await fetch(qs('fx='+encodeURIComponent(tk))),tx=await r.text();let j;try{j=JSON.parse(tx)}catch(_){return null}
     const o=j&&(j[tk]||j);if(!o||typeof o!=='object'||o.error)return null;
     const dv=Array.isArray(o.divs)?o.divs.filter(x=>Array.isArray(x)&&+x[1]>0).map(x=>[String(x[0]).slice(0,10),+x[1]]):[],
-      F={per:+o.per>0?+o.per:null,pe:+o.pe>0?+o.pe:null,target:+o.target>0?+o.target:null,divs:dv,qt:o.qt||null,v2:!!o.v2,fin:o.fin||null,pfcf:+o.pfcf>0?+o.pfcf:null,sector:o.sector||null,industry:o.industry||null};
+      F={per:+o.per>0?+o.per:null,pe:+o.pe>0?+o.pe:null,target:+o.target>0?+o.target:null,divs:dv,qt:o.qt||null,v2:!!o.v2,web:o.web||null,fin:o.fin||null,pfcf:+o.pfcf>0?+o.pfcf:null,sector:o.sector||null,industry:o.industry||null};
     return F.per||F.pe||F.target||dv.length||F.sector?F:null});
     if(!F)delete MEM[tk+'|f'];return F}catch(e){return null}}
 const anBench=tk=>/\.PA$/.test(tk)?['^FCHI','CAC 40']:/\.DE$/.test(tk)?['^GDAXI','DAX']:/\.L$/.test(tk)?['^FTSE','FTSE 100']:['^GSPC','S&P 500'];
@@ -793,7 +794,7 @@ async function anFetch(tk){ /* réseau : historique + fondamentaux, enregistrés
 async function anBase(tk,force){
   if(!URL_())throw new Error('Renseigne l’adresse du script Google dans le hub (⚙️ Réglages) pour charger l’historique.');
   const c=await idbGet(tk),ok=c&&c.H&&c.H.D.t.length>=25&&Date.now()-c.at<12096e5;
-  if(ok&&!force&&(((!c.F||c.F.v2)&&c.bm!==undefined)||Date.now()-c.at<36e5)){if(Date.now()-c.at>72e6&&!anBusy[tk]){anBusy[tk]=1;anFetch(tk).catch(()=>{}).finally(()=>{delete anBusy[tk]})}return anMk(tk,c.H,c.F,c.bm)}
+  if(ok&&!force&&(((!c.F||c.F.web!==undefined)&&c.bm!==undefined)||Date.now()-c.at<36e5)){if(Date.now()-c.at>72e6&&!anBusy[tk]){anBusy[tk]=1;anFetch(tk).catch(()=>{}).finally(()=>{delete anBusy[tk]})}return anMk(tk,c.H,c.F,c.bm)}
   try{return await anFetch(tk)}catch(e){if(ok)return anMk(tk,c.H,c.F,c.bm);throw e}}
 /* série journalière + dernier cours en direct */
 function anLive(D,tk){const q=PX[tk],n=D.t.length;if(!(q&&q.p>0)||!n)return D;const now=Date.now(),today=dstr(new Date(now)),last=dstr(new Date(D.t[n-1])),
@@ -929,6 +930,9 @@ const tone=(r)=>r>=.6?'up':r>=.4?'am':'dn',zcls=v=>v>=70?'up':v>=45?'am':'dn';
 const ANX=['mm','sr','mkt'],ANST=['paliers','traj','dd','div','note'];
 const ANTABS=[['paliers','Cours et paliers'],['mm','Moyennes mobiles & gaps'],['sr','Supports / résistances'],['traj','Trajectoire'],['dd','Baisse depuis le sommet'],['mkt','Face au marché'],['note','Historique (cours seul)'],['div','Dividendes']];
 const anW=()=>Math.max(300,Math.round(($('#ana').clientWidth||340)-34));
+/* logo : icône du site officiel de l'entreprise ; si elle manque, les initiales restent visibles */
+function logoImg(F){let d='';try{d=F&&F.web?new URL(F.web).hostname:''}catch(e){}
+  return d?`<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(d)}&sz=128" alt="" onload="if(this.naturalWidth<32)this.remove()" onerror="this.remove()">`:''}
 function renderAna(){const A=ANA;if(!A)return;const S=A.S,N=A.NS,p=A.p;
   const tot=Math.round(N.total),zl=tot>=70?'Fenêtre favorable':tot>=45?'Fenêtre neutre':'Fenêtre peu favorable';
   const rows=N.parts.map((x,k)=>`${!k||N.parts[k-1].sh!==x.sh?`<h4 class="h4">${x.sh}</h4>`:''}<div class="ar"><div class="al"><span>${x.lb} <i>· ${esc(x.tx)}</i></span><b>${x.pts.toFixed(x.max<=5?1:0).replace('.',',')} / ${x.max}</b></div><div class="ab"><u class="${tone(x.pts/x.max)}" style="width:${(x.pts/x.max*100).toFixed(0)}%"></u></div></div>`).join('');
@@ -955,7 +959,7 @@ function renderAna(){const A=ANA;if(!A)return;const S=A.S,N=A.NS,p=A.p;
     radar=`<svg viewBox="0 0 240 212" width="100%" style="max-width:300px">${[.33,.66,1].map(f=>`<polygon points="${poly(f)}" fill="none" stroke="var(--line)"/>`).join('')}${N.groups.map((_,i)=>{const[x,y]=PT(i,1);return`<line x1="${rcx}" y1="${rcy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)"/>`}).join('')}<polygon points="${N.groups.map((x,i)=>PT(i,Math.max(.03,x.pts/x.max)).map(v=>v.toFixed(1)).join(',')).join(' ')}" fill="color-mix(in srgb,var(--amb) 35%,transparent)" stroke="var(--amb)" stroke-width="1.6"/>${N.groups.map((x,i)=>{const[tx,ty]=PT(i,1.2),c=Math.cos(-Math.PI/2+i*2*Math.PI/NA);return`<text x="${tx.toFixed(1)}" y="${(ty+3).toFixed(1)}" font-size="9.5" fill="var(--mute)" text-anchor="${c>.3?'start':c<-.3?'end':'middle'}">${x.sh||x.k}</text>`}).join('')}</svg>`,
     secL=SEC[A.tk]?`<div class="sub2" style="margin:2px 0 0">🏭 ${esc(SEC[A.tk])}${A.F&&A.F.industry?' · '+esc(A.F.industry):''}</div>`:'';
   const stDiv=A.F&&A.F.divs&&A.F.divs.length;
-  $('#ana').innerHTML=`<div class="fh"><div class="fi">${esc(ini)}</div><div class="fx"><div class="fk">${esc(mY(A.t[A.i]))}</div><h2>${esc(nomA)}</h2><div class="fpx"><b>${fe(p)}</b> <small>cours au ${dFr(A.t[A.i])}</small></div>${secL}</div><div class="fr">${ring}<div class="fz2" style="color:${zc}"><small>FENÊTRE D’ENTRÉE</small><br>${zl}</div></div></div>
+  $('#ana').innerHTML=`<div class="fh"><div class="fi">${esc(ini)}${logoImg(A.F)}</div><div class="fx"><div class="fk">${esc(mY(A.t[A.i]))}</div><h2>${esc(nomA)}</h2><div class="fpx"><b>${fe(p)}</b> <small>cours au ${dFr(A.t[A.i])}</small></div>${secL}</div><div class="fr">${ring}<div class="fz2" style="color:${zc}"><small>FENÊTRE D’ENTRÉE</small><br>${zl}</div></div></div>
   <div class="chips ap" id="apers">${APER.map(([k,l])=>`<button data-p="${k}" class="${k===ANP?'on':''}">${l}</button>`).join('')}</div>${anPerCard(A)}${A.days<366?'<div class="sub2">Prix juste et lecture rapide : calculés sur 1 an minimum de recul.</div>':''}
   <div class="ac"><h3>Valorisation</h3><div class="gr">${g1}${g2}</div>${!g1&&!g2?'<div class="sub">Données de valorisation indisponibles.</div>':''}
     ${A.fair?`<div class="pjh"><h3 style="margin:0">Prix juste estimé</h3>${bdg}</div>${fb}<div class="sub2" style="margin-top:6px">Valeur du milieu de ${A.meth.length>1?A.meth.length+' méthodes':'la méthode disponible'}${mtl?' : '+mtl:''}.</div>`:'<div class="sub" style="margin-top:8px">Pas assez de données pour estimer un prix juste.</div>'}
