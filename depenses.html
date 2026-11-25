@@ -659,7 +659,7 @@ function anDivMethod(divs,t,c,i){if(!divs||!divs.length)return null;
 
 /* ---------- Données ---------- */
 const ANC={};let ANT=0,ANA=null,ANTAB='paliers';
-const APER=[['1s','1 sem.',7],['1m','1 mois',31],['3m','3 mois',92],['6m','6 mois',183],['1a','1 an',366],['3a','3 ans',1096],['5a','5 ans',1827],['10a','10 ans',3653],['20a','20 ans',7305]];
+const APER=[['1s','1 sem.',7],['1m','1 mois',31],['3m','3 mois',92],['6m','6 mois',183],['1a','1 an',366],['3a','3 ans',1096],['5a','5 ans',1827],['10a','10 ans',3653],['20a','20 ans',7305],['max','Depuis le début',40000]];
 let ANP=(()=>{const v=LS.g('wl_anp');return APER.some(x=>x[0]===v)?v:'20a'})();
 async function anHist(tk){const from='1990-01-01',enc=encodeURIComponent;
   const j=await cached(tk+'|hl|'+from,18e5,async()=>(await fetch(qs('h='+enc(tk)+'&from='+from+'&hl=1'))).json()),h=j&&(j[tk]||Object.values(j)[0]);
@@ -675,7 +675,7 @@ async function anFund(tk){try{const F=await cached(tk+'|f',216e5,async()=>{const
     return F.per||F.pe||F.target||dv.length||F.sector?F:null});
     if(!F)delete MEM[tk+'|f'];return F}catch(e){return null}}
 const anBench=tk=>/\.PA$/.test(tk)?['^FCHI','CAC 40']:/\.DE$/.test(tk)?['^GDAXI','DAX']:/\.L$/.test(tk)?['^FTSE','FTSE 100']:['^GSPC','S&P 500'];
-function anTrim(w,tk){const q=PX[tk],lim=Date.now()-20*YRMS;let a=w.filter(x=>x[0]>=lim);
+function anTrim(w,tk,all){const q=PX[tk],lim=all?0:Date.now()-20*YRMS;let a=w.filter(x=>x[0]>=lim);
   if(q&&q.p>0){const now=Date.now(),l=a[a.length-1];if(l&&Math.floor((l[0]/864e5+3)/7)===Math.floor((now/864e5+3)/7))a[a.length-1]=[l[0],q.p];else a.push([now,q.p])}
   return a}
 /* ---------- Période d'analyse, moyennes mobiles, gaps, supports / résistances, résultats ---------- */
@@ -715,7 +715,7 @@ function anPeriod(D,days){const lim=Date.now()-days*864e5,n=D.t.length;let a=0;w
   const b=a>0?a-1:a,c0=D.c[b],c1=D.c[n-1];let hi=-Infinity,lo=Infinity;for(let q=a;q<n;q++){if(D.hi[q]>hi)hi=D.hi[q];if(D.lo[q]<lo)lo=D.lo[q]}
   const r=[];for(let q=b+1;q<n;q++)r.push(Math.log(D.c[q]/D.c[q-1]));const mu=r.reduce((s,x)=>s+x,0)/(r.length||1);
   return{perf:c1/c0-1,hi,lo,vol:r.length>5?Math.sqrt(r.reduce((s,x)=>s+(x-mu)*(x-mu),0)/(r.length-1))*Math.sqrt(252):null}}
-function anCompute(B,pid){const tk=B.tk,per=APER.find(x=>x[0]===pid)||APER[8],days=per[2],now=Date.now(),Dl=anLive(B.H.D,tk),wk=anTrim(B.H.wk,tk);
+function anCompute(B,pid){const tk=B.tk,per=APER.find(x=>x[0]===pid)||APER[8],days=per[2],now=Date.now(),Dl=anLive(B.H.D,tk),wk=anTrim(B.H.wk,tk,pid==='max');
   let lg=days>366,w;
   if(lg){w=wk.filter(x=>x[0]>=now-days*864e5);if(w.length<30)lg=false}
   if(!lg){const lim=now-366*864e5;w=[];Dl.t.forEach((x,k)=>{if(x>=lim)w.push([x,Dl.c[k]])});if(w.length<30){w=[];Dl.t.forEach((x,k)=>w.push([x,Dl.c[k]]))}}
@@ -973,7 +973,7 @@ function secNote(tk,F){if(F&&F.sector){const s=SFR[F.sector]||F.sector;if(SEC[tk
 /* ---------- Classement par « Fenêtre d'entrée » (PEA = valeurs européennes, Crypto, US) ---------- */
 const SC=LS.g('wl_sc')||{};let RKC=LS.g('wl_rkc')||'PEA',RKB=false,RKD=0,RKT=0;
 const rkCat=tk=>isCrypto(tk)?'Crypto':/^\^/.test(tk)?'':isUS(tk)?'US':'PEA';
-const rkOk=tk=>SC[tk]&&Date.now()-SC[tk][1]<216e5;
+const rkOk=tk=>SC[tk]&&Date.now()-SC[tk][1]<864e5; /* une note est refaite au plus une fois par jour */
 function rkRender(){const box=$('#rk');if(!box)return;if(!W.length){box.innerHTML='';return}
   const op=LS.g('wl_rko')!==0,cats=['PEA','Crypto','US'],byC=c=>W.filter(x=>rkCat(x.ticker)===c&&SC[x.ticker]&&SC[x.ticker][0]!=null).map(x=>({tk:x.ticker,nom:x.nom,s:SC[x.ticker][0]})).sort((a,b)=>b.s-a.s),
     L=byC(RKC),top=L.slice(0,5),low=L.slice(Math.max(5,L.length-5)).reverse(),row=x=>`<div class="rr" data-tk="${esc(x.tk)}"><span>${esc(x.nom)}</span><b class="${zcls(x.s)}">${x.s}</b></div>`,
@@ -984,8 +984,8 @@ document.addEventListener('toggle',e=>{if(e.target.closest&&e.target.closest('#r
 async function rkRun(){if(RKB||!URL_()||!W.length)return;const todo=W.filter(x=>rkCat(x.ticker)&&!rkOk(x.ticker)).map(x=>x.ticker);if(!todo.length){rkRender();return}
   RKB=true;RKD=0;RKT=todo.length;let sec=false;rkRender();
   const wk=async()=>{while(todo.length){const tk=todo.shift();
-    try{let B=ANC[tk];if(!(B&&Date.now()-B.at<6e5)){B=await anBase(tk);ANC[tk]=B}if(secNote(tk,B.F))sec=true;SC[tk]=[Math.round(anCompute(B,ANP).S.total),Date.now()]}
-    catch(e){SC[tk]=[null,Date.now()-216e5+3e5]}
+    try{let B=ANC[tk];if(!(B&&Date.now()-B.at<6e5)){B=await anBase(tk);ANC[tk]=B}if(secNote(tk,B.F))sec=true;SC[tk]=[Math.round(anCompute(B,'20a').S.total),Date.now()]}
+    catch(e){SC[tk]=[null,Date.now()-864e5+3e5]}
     RKD++;if(RKD%4===0)LS.s('wl_sc',SC);rkRender()}};
   await Promise.all([wk(),wk()]);LS.s('wl_sc',SC);RKB=false;rkRender();if(sec)render()}
 setTimeout(rkRun,2500);setInterval(()=>{if(!document.hidden)rkRun()},18e5);

@@ -481,6 +481,7 @@ function renderHome(){
   /* par courtier */
   const G={},EC=epCourt(D);A.forEach(a=>{if(a.type==='Épargne salariale'&&EC.length>1){EC.forEach(([n,v])=>(G[n]=G[n]||[]).push({id:'ep-'+n,type:'Épargne salariale',label:'Épargne salariale',broker:n,_v:v}));return}const b=brokerOf(a,A).trim();(G[b]=G[b]||[]).push(a)});
   const val=a=>a._v!=null?a._v:isBk(a)?bal(a):a.type==='PEA'?(p?p.total:null):a.type==='CTO'?(LS.g('hub_'+a.id)||{}).total:a.type==='Épargne salariale'?(de.n?de.cur:null):a.type==='Crypto'?(cr?cr.total:null):null;
+  Object.keys(G).forEach(k=>{G[k]=G[k].filter(a=>{const v=val(a);return!(v!=null&&Math.abs(v)<.005)});if(!G[k].length)delete G[k]}); /* comptes à 0 € : masqués */
   const ks=Object.keys(G).sort((x,y)=>!x?1:!y?-1:x.localeCompare(y,'fr'));
   $('#acc').innerHTML='<h2>🏛️ Mes comptes par courtier</h2>'+ks.map(k=>{const L=G[k],tot=L.reduce((s,a)=>s+(val(a)||0),0);
     return `<div class="bc"><div class="bh"><span>${k?esc(k):'Courtier non renseigné'}</span><span>${eur2(tot)}</span></div>`+L.map(a=>{const v=val(a);
@@ -631,7 +632,7 @@ if(!navigator.onLine)dot('off','Hors connexion');
 later(800);
 /* Modules cotés (PEA, CTO, Crypto) chargés en arrière-plan : leurs cours se mettent à jour même si tu n'ouvres pas leur page, donc le graphique 1 j évolue pendant la séance */
 function preload(){if(!navigator.onLine||!LS.g('url'))return;const A=accs(),mk=(did,src,pre)=>{if(document.querySelector(`iframe[data-id="${did}"]`))return;const f=document.createElement('iframe');f.dataset.id=did;f.dataset.base=src;f.dataset.cry=cryAcc();if(pre)f.dataset.pre=1;f.src=src;f.setAttribute('aria-hidden','true');f.tabIndex=-1;$('#stage').appendChild(f)};
-  MODS.filter(m=>['pea','cto','crypto'].includes(m.id)).forEach(m=>mk(m.id,m.src,0));
+  MODS.filter(m=>['pea','cto','crypto','watchlist'].includes(m.id)).forEach(m=>mk(m.id,m.src,0));
   A.filter(a=>a.type==='CTO'&&a.id!=='cto').forEach(a=>mk('pre-'+a.id,ctoSrc(a.id),1))}
 setTimeout(preload,2500);
 </script>
