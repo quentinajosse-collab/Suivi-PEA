@@ -448,7 +448,7 @@ function msg(t){$('#msg').innerHTML=t?`<div class="msg">${t}</div>`:''}
 async function refresh(sub){if(busy||!W.length)return;
   if(!URL_()){msg('Renseigne l’adresse du script Google dans le hub (⚙️ Réglages) pour afficher les cours.');return}
   busy=true;
-  try{const tl=(sub||W).map(x=>x.ticker),ch=[];for(let i=0;i<tl.length;i+=10)ch.push(tl.slice(i,i+10));
+  try{const tl=(sub||W).map(x=>x.ticker),ch=[];for(let i=0;i<tl.length;i+=30)ch.push(tl.slice(i,i+30));
     const js=await Promise.all(ch.map(c=>fetch(qs('t='+encodeURIComponent(c.join(',')))).then(r=>r.json()).catch(()=>null)));if(js.every(x=>!x))throw new Error('x');
     js.forEach(j=>{if(j)for(const k in j)if(j[k]&&j[k].p!=null)PX[k]=j[k]});await liveCrypto();LS.s('wl_px',PX);LS.s('wl_pxAt',Date.now());msg('')}
   catch(e){msg('Cours indisponibles (script Google injoignable) : derniers cours connus affichés.')}
@@ -666,7 +666,7 @@ const APER=[['1s','1 sem.',7],['1m','1 mois',31],['3m','3 mois',92],['6m','6 moi
 let ANP=(()=>{const v=LS.g('wl_anp');return APER.some(x=>x[0]===v)?v:'20a'})();
 async function anHist(tk){const from='1990-01-01',enc=encodeURIComponent;
   const j=await cached(tk+'|hl|'+from,216e5,async()=>(await fetch(qs('h='+enc(tk)+'&from='+from+'&hl=1'))).json()),h=j&&(j[tk]||Object.values(j)[0]);
-  if(!h||!Array.isArray(h.d)||!h.d.length)return null;
+  if(!h||!Array.isArray(h.d)||!h.d.length){delete MEM[tk+'|hl|'+from];return null}
   const hl=Array.isArray(h.hi)&&Array.isArray(h.lo),hv=Array.isArray(h.v),D={t:[],c:[],hi:[],lo:[],v:[],hl};
   for(let i=0;i<h.d.length;i++){const c=h.c[i];if(c==null||!(c>0))continue;let hi=hl&&h.hi[i]>0?+h.hi[i]:+c,lo=hl&&h.lo[i]>0?+h.lo[i]:+c;
     D.t.push(Date.parse(h.d[i]+'T12:00:00'));D.c.push(+c);D.hi.push(Math.max(hi,+c));D.lo.push(Math.min(lo,+c));D.v.push(hv&&h.v[i]>0?+h.v[i]:0)}
@@ -690,8 +690,9 @@ const idbSet=(k,v)=>IDBP.then(d=>{if(d)try{d.transaction('b','readwrite').object
 async function anBase(tk){
   if(!URL_())throw new Error('Renseigne l’adresse du script Google dans le hub (⚙️ Réglages) pour charger l’historique.');
   const c=await idbGet(tk);if(c&&c.H&&Date.now()-c.at<432e5&&c.H.D.t.length>=25)return{tk,H:c.H,F:c.F,at:Date.now(),E:undefined,Eb:0,hist:null,bench:null,benchErr:null,wf:null};
-  const[H,F]=await Promise.all([anHist(tk),anFund(tk)]);
-  if(!H||H.D.t.length<25)throw new Error('Historique trop court pour une analyse (il faut au moins quelques semaines de cours).');
+  let[H,F]=await Promise.all([anHist(tk),anFund(tk)]);
+  if(!H){await new Promise(r=>setTimeout(r,1500));H=await anHist(tk)}
+  if(!H||H.D.t.length<25)throw new Error(H?'Historique trop court pour une analyse (moins de quelques semaines de cours).':'Aucun historique reçu pour ce ticker : valeur radiée, ticker à vérifier, ou script Google momentanément surchargé (réessaie dans une minute).');
   idbSet(tk,{at:Date.now(),H,F});
   return{tk,H,F,at:Date.now(),E:undefined,Eb:0,hist:null,bench:null,benchErr:null,wf:null}}
 /* série journalière + dernier cours en direct */
@@ -990,17 +991,18 @@ function rkRender(){const box=$('#rk');if(!box)return;if(!W.length){box.innerHTM
   box.innerHTML=`<details${op?' open':''}><summary>🏁 Classement · Fenêtre d’entrée <small>${RKB?'· analyse '+RKD+'/'+RKT+'…':pend?'· '+pend+' à analyser':''}</small></summary><div class="rkc">${cats.map(c=>`<button data-c="${c}" class="${c===RKC?'on':''}">${c} <small>${byC(c).length}</small></button>`).join('')}</div>`+(L.length?`<div class="rkg"><div><h4>Indicateur le plus élevé</h4>${top.map(row).join('')}</div><div><h4>Indicateur le plus bas</h4>${low.length?low.map(row).join(''):'<div class="sub2">–</div>'}</div></div>`:`<div class="sub2">${RKB?'Analyse en cours…':'Aucune note disponible pour cette catégorie.'}</div>`)+'</details>'}
 document.addEventListener('click',e=>{const b=e.target.closest('#rk .rkc button');if(b){RKC=b.dataset.c;LS.s('wl_rkc',RKC);rkRender();return}const r=e.target.closest('#rk .rr');if(r)openChart(r.dataset.tk)});
 document.addEventListener('toggle',e=>{if(e.target.closest&&e.target.closest('#rk'))LS.s('wl_rko',e.target.open?1:0)},true);
+const bgSleep=ms=>new Promise(r=>setTimeout(r,ms)),bgWait=async()=>{while(document.hidden||($('#cdlg')&&$('#cdlg').open))await bgSleep(2000)};
 async function secRun(){if(!URL_())return;const L=W.filter(x=>rkCat(x.ticker)&&rkCat(x.ticker)!=='Crypto'&&!SEC[x.ticker]&&!(SCK[x.ticker]&&Date.now()-SCK[x.ticker]<6048e5)).map(x=>x.ticker);if(!L.length)return;let ch=false;
-  const wk=async()=>{while(L.length){const tk=L.shift();try{const F=await anFund(tk);if(secNote(tk,F))ch=true;if(F)SCK[tk]=Date.now()}catch(e){}}};
-  await Promise.all([wk(),wk(),wk()]);LS.s('wl_sectc',SCK);if(ch)render()}
+  const wk=async()=>{while(L.length){await bgWait();const tk=L.shift();try{const F=await anFund(tk);if(secNote(tk,F))ch=true;if(F)SCK[tk]=Date.now()}catch(e){}await bgSleep(700)}};
+  await wk();LS.s('wl_sectc',SCK);if(ch)render()}
 async function rkRun(){secRun();if(RKB||!URL_()||!W.length)return;const todo=W.filter(x=>rkCat(x.ticker)&&!rkOk(x.ticker)).map(x=>x.ticker);if(!todo.length){rkRender();return}
   RKB=true;RKD=0;RKT=todo.length;let sec=false;rkRender();
-  const wk=async()=>{while(todo.length){const tk=todo.shift();
+  const wk=async()=>{while(todo.length){await bgWait();const tk=todo.shift();
     try{let B=ANC[tk];if(!(B&&Date.now()-B.at<216e5)){B=await anBase(tk);ANC[tk]=B}if(secNote(tk,B.F))sec=true;SC[tk]=[Math.round(anCompute(B,'20a').S.total),Date.now()]}
-    catch(e){SC[tk]=[null,Date.now()-864e5+3e5]}
-    RKD++;if(RKD%4===0)LS.s('wl_sc',SC);rkRender()}};
-  await Promise.all([wk(),wk()]);LS.s('wl_sc',SC);RKB=false;rkRender();if(sec)render()}
-setTimeout(rkRun,2500);setInterval(()=>{if(!document.hidden)rkRun()},18e5);
+    catch(e){SC[tk]=[null,Date.now()-864e5+108e5]}
+    RKD++;if(RKD%4===0)LS.s('wl_sc',SC);rkRender();await bgSleep(600)}};
+  await wk();LS.s('wl_sc',SC);RKB=false;rkRender();if(sec)render()}
+setTimeout(rkRun,6000);setInterval(()=>{if(!document.hidden)rkRun()},18e5);
 /* ---------- Démarrage ---------- */
 addEventListener('storage',e=>{if(e.key==='url')refresh();if(e.key==='sb')pull();if(e.key==='wl_list'){W=norm(LS.g('wl_list'));render()}if(e.key==='wl_groups'){G=(LS.g('wl_groups')||[]).filter(Boolean);render()}});
 addEventListener('message',e=>{if(e.source===parent&&e.data&&e.data.hubHome){document.querySelectorAll('dialog[open]').forEach(d=>{try{d.close()}catch(_){}});scrollTo(0,0)}});
