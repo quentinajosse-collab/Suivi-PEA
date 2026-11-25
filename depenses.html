@@ -328,7 +328,7 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
 .cw{position:relative}.cw svg{touch-action:pan-y}.ctip{position:absolute;top:2px;left:0;pointer-events:none;display:none;background:#0f172a;color:#fff;border-radius:8px;padding:6px 10px;font-size:12px;line-height:1.5;white-space:nowrap;z-index:6;box-shadow:0 6px 18px rgba(15,23,42,.3)}.ctip i{font-style:normal}
 .ap{margin:10px 0 4px}.ap button{padding:5px 10px}.lgd{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.5px;color:var(--mute);margin-top:6px}.lgd i{font-style:normal;font-weight:700}
 .nt td.up{color:var(--up)}.nt td.dn{color:var(--dn)}.nt td.am{color:var(--amb)}.sub2{color:var(--mute);font-size:12.5px;margin:8px 0 4px}.h4{font-weight:700;margin:14px 0 4px;font-size:.95rem}
-.sct{color:var(--mute);font-size:11px;font-weight:400;margin-top:1px}.rk{margin:10px 0}.rk details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}.rk summary{cursor:pointer;font-weight:700;list-style:none}.rk summary small{color:var(--mute);font-weight:400}.rkc{display:flex;gap:6px;margin:10px 0 8px}.rkc button{flex:1;padding:7px 4px;border-radius:999px;border:1px solid var(--line);background:var(--alt);color:var(--ink);font-weight:600;font-size:13px}.rkc button.on{background:var(--acc);border-color:var(--acc);color:#fff}.rkg{display:grid;grid-template-columns:1fr 1fr;gap:10px}.rkg h4{margin:0 0 4px;font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}.rr{display:flex;justify-content:space-between;gap:6px;padding:7px 0;border-top:1px solid var(--line);font-size:13px;cursor:pointer}.rr span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rr b{flex:none}.rr b.up{color:var(--up)}.rr b.am{color:var(--amb)}.rr b.dn{color:var(--dn)}.tw2{overflow-x:auto}.nt th{position:static;cursor:default;white-space:normal;text-transform:none;font-size:12.5px;text-align:right}.nt td{text-align:right}.nt th:first-child,.nt td:first-child{text-align:left;position:static;max-width:none}
+.cl{color:var(--mute);font-size:11.5px;font-weight:600;background:var(--alt);border:1px solid var(--line);border-radius:999px;padding:1px 7px;white-space:nowrap}.sct{color:var(--mute);font-size:11px;font-weight:400;margin-top:1px}.rk{margin:10px 0}.rk details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}.rk summary{cursor:pointer;font-weight:700;list-style:none}.rk summary small{color:var(--mute);font-weight:400}.rkc{display:flex;gap:6px;margin:10px 0 8px}.rkc button{flex:1;padding:7px 4px;border-radius:999px;border:1px solid var(--line);background:var(--alt);color:var(--ink);font-weight:600;font-size:13px}.rkc button.on{background:var(--acc);border-color:var(--acc);color:#fff}.rkg{display:grid;grid-template-columns:1fr 1fr;gap:10px}.rkg h4{margin:0 0 4px;font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}.rr{display:flex;justify-content:space-between;gap:6px;padding:7px 0;border-top:1px solid var(--line);font-size:13px;cursor:pointer}.rr span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rr b{flex:none}.rr b.up{color:var(--up)}.rr b.am{color:var(--amb)}.rr b.dn{color:var(--dn)}.tw2{overflow-x:auto}.nt th{position:static;cursor:default;white-space:normal;text-transform:none;font-size:12.5px;text-align:right}.nt td{text-align:right}.nt th:first-child,.nt td:first-child{text-align:left;position:static;max-width:none}
 </style>
 </head>
 <body>
@@ -448,15 +448,18 @@ function msg(t){$('#msg').innerHTML=t?`<div class="msg">${t}</div>`:''}
 async function refresh(sub){if(busy||!W.length)return;
   if(!URL_()){msg('Renseigne l’adresse du script Google dans le hub (⚙️ Réglages) pour afficher les cours.');return}
   busy=true;
-  try{const j=await(await fetch(qs('t='+encodeURIComponent((sub||W).map(x=>x.ticker).join(','))))).json();
-    for(const k in j)if(j[k]&&j[k].p!=null)PX[k]=j[k];await liveCrypto();LS.s('wl_px',PX);LS.s('wl_pxAt',Date.now());msg('')}
+  try{const tl=(sub||W).map(x=>x.ticker),ch=[];for(let i=0;i<tl.length;i+=10)ch.push(tl.slice(i,i+10));
+    const js=await Promise.all(ch.map(c=>fetch(qs('t='+encodeURIComponent(c.join(',')))).then(r=>r.json()).catch(()=>null)));if(js.every(x=>!x))throw new Error('x');
+    js.forEach(j=>{if(j)for(const k in j)if(j[k]&&j[k].p!=null)PX[k]=j[k]});await liveCrypto();LS.s('wl_px',PX);LS.s('wl_pxAt',Date.now());msg('')}
   catch(e){msg('Cours indisponibles (script Google injoignable) : derniers cours connus affichés.')}
   busy=false;patch()}
+/* Marché ouvert ? crypto : toujours ; sinon séance en cours (ps/pe du script) ou, à défaut, dernier échange récent */
+function isOpen(tk){if(isCrypto(tk))return true;const q=PX[tk];if(!q)return true;const n=Date.now()/1e3;if(q.ps&&q.pe)return n>=q.ps&&n<=q.pe+(isDelayed(tk)?0:0);if(q.t)return n-q.t<1800;return true}
 const rowsOf=()=>W.map(it=>{const q=PX[it.ticker]||{},p=q.p!=null?q.p:null,pc=q.pc!=null?q.pc:null,d=p!=null&&pc?p-pc:null,pct=d!=null?d/pc*100:null;
   return{...it,p,d,pct}});
 function render(){const y=scrollY,tw=document.querySelector('.tw'),sl=tw?tw.scrollLeft:0;render0();if(scrollY!==y)scrollTo(0,y);const t2=document.querySelector('.tw');if(t2&&sl)t2.scrollLeft=sl}
 function setSub(){const at=LS.g('wl_pxAt');$('#sub').textContent=W.length+' valeur'+(W.length>1?'s':'')+(at?' · cours de '+new Date(at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'')+' · crypto en temps réel · US toutes les 2 s · ⏱ = différé 15 min'}
-const priceCell=r=>`<b>${r.p!=null?fPx(r.p)+sfx(r.ticker):'–'}</b>${r.pct!=null?` <span class="${cls(r.pct)}" style="font-weight:700">(${arrow(r.pct)} ${SGP(r.pct)}${nf(2).format(Math.abs(r.pct))} %)</span>`:''}`;
+const priceCell=r=>`<b>${r.p!=null?fPx(r.p)+sfx(r.ticker):'–'}</b>${r.pct!=null&&!isOpen(r.ticker)?` <span class="cl">Marché fermé</span>`:r.pct!=null?` <span class="${cls(r.pct)}" style="font-weight:700">(${arrow(r.pct)} ${SGP(r.pct)}${nf(2).format(Math.abs(r.pct))} %)</span>`:''}`;
 /* Mise à jour des prix sur place : aucune ligne n'est reconstruite, l'affichage ne bouge pas (l'ordre ne change qu'à une action de ta part) */
 function patch(){const R=rowsOf(),m=new Map(R.map(r=>[r.ticker,r])),rows=document.querySelectorAll('#tb tr[data-tk]');
   if(!rows.length&&R.length&&!Q){render();return}
@@ -471,7 +474,7 @@ function render0(){
   R.sort((a,b)=>{const x=key(a),y=key(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return-1;return(x<y?-1:x>y?1:0)*SORT.d});
   if(!R0.length&&!G.length){$('#tb').innerHTML=`<tr><td colspan="2" class="empty">Ta watchlist est vide. Ajoute une première valeur.</td></tr>`;return}
   if(Q&&!R.length){$('#tb').innerHTML=`<tr><td colspan="2" class="empty">Aucune valeur ne correspond à « ${esc($('#q').value.trim())} ».</td></tr>`;return}
-  const line=r=>`<tr data-tk="${esc(r.ticker)}"><td><b>${esc(r.nom)}</b>${isDelayed(r.ticker)?' <span title="Cours différé de 15 min" style="color:var(--mute);font-size:11px">⏱</span>':''}${SEC[r.ticker]?`<div class="sct">${esc(SEC[r.ticker])}</div>`:''}</td><td>${priceCell(r)}</td></tr>`;
+  const line=r=>`<tr data-tk="${esc(r.ticker)}"><td><b>${esc(r.nom)}</b>${isDelayed(r.ticker)?' <span title="Cours différé de 15 min" style="color:var(--mute);font-size:11px">⏱</span>':''}${secOf(r.ticker)?`<div class="sct">${esc(secOf(r.ticker))}</div>`:''}</td><td>${priceCell(r)}</td></tr>`;
   const names=[...allG(),...(R.some(r=>!(r.groupes||[]).length)?['']:[])],groups=names.map(g=>[g,R.filter(r=>g===''?!(r.groupes||[]).length:(r.groupes||[]).includes(g))]).filter(x=>!Q||x[1].length);
   if(groups.length===1&&groups[0][0]===''){$('#tb').innerHTML=R.map(line).join('');return}
   $('#tb').innerHTML=groups.map(([g,L])=>{const c=Q?false:!!COLL[g||'_'];return`<tr class="gh" data-g="${esc(g||'_')}"><td colspan="2"><span class="gt">${c?'▸':'▾'}</span>${esc(g||'Sans groupe')} <small>· ${L.length}</small>${g?'<span class="gm" title="Gérer le groupe">⚙</span>':''}</td></tr>`+(c?'':L.map(line).join(''))}).join('')}
@@ -514,7 +517,7 @@ function fTime(ts,R,rg,long){const d=new Date(ts);
   if(long)return `${JS[d.getDay()]} ${d.getDate()} ${MS[d.getMonth()]} ${d.getFullYear()}`;
   return span>500?`${MS[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`:`${pad(d.getDate())}/${pad(d.getMonth()+1)}`}
 function dayPct(tk){const q=PX[tk];return q&&q.p!=null&&q.pc?(q.p-q.pc)/q.pc*100:null}
-function dayVarHtml(tk){const q=PX[tk],p=dayPct(tk);return p==null?'':`<span class="${cls(p)}">${arrow(p)} ${fVar(q.p-q.pc,p)}</span> <span class="sub" style="font-weight:400">sur la journée</span>`}
+function dayVarHtml(tk){const q=PX[tk],p=dayPct(tk);return p==null?'':!isOpen(tk)?'<span class="sub" style="font-weight:600">Marché fermé</span>':`<span class="${cls(p)}">${arrow(p)} ${fVar(q.p-q.pc,p)}</span> <span class="sub" style="font-weight:400">sur la journée</span>`}
 function openChart(tk,rg){const it=W.find(x=>x.ticker===tk);if(!it)return;CUR={tk,it,rg:rg&&RG.some(x=>x[0]===rg&&rg!=='custom')?rg:'1j'};
   const t=new Date(),m=new Date(t.getTime()-30*864e5);$('#d1').value=dstr(m);$('#d2').value=dstr(t);
   $('#ct').textContent=it.nom;$('#cs').textContent=tk+(isDelayed(tk)?' · cours différé de 15 min':isCrypto(tk)?' · crypto en direct':' · US en direct');
@@ -662,7 +665,7 @@ const ANC={};let ANT=0,ANA=null,ANTAB='paliers';
 const APER=[['1s','1 sem.',7],['1m','1 mois',31],['3m','3 mois',92],['6m','6 mois',183],['1a','1 an',366],['3a','3 ans',1096],['5a','5 ans',1827],['10a','10 ans',3653],['20a','20 ans',7305],['max','Depuis le début',40000]];
 let ANP=(()=>{const v=LS.g('wl_anp');return APER.some(x=>x[0]===v)?v:'20a'})();
 async function anHist(tk){const from='1990-01-01',enc=encodeURIComponent;
-  const j=await cached(tk+'|hl|'+from,18e5,async()=>(await fetch(qs('h='+enc(tk)+'&from='+from+'&hl=1'))).json()),h=j&&(j[tk]||Object.values(j)[0]);
+  const j=await cached(tk+'|hl|'+from,216e5,async()=>(await fetch(qs('h='+enc(tk)+'&from='+from+'&hl=1'))).json()),h=j&&(j[tk]||Object.values(j)[0]);
   if(!h||!Array.isArray(h.d)||!h.d.length)return null;
   const hl=Array.isArray(h.hi)&&Array.isArray(h.lo),hv=Array.isArray(h.v),D={t:[],c:[],hi:[],lo:[],v:[],hl};
   for(let i=0;i<h.d.length;i++){const c=h.c[i];if(c==null||!(c>0))continue;let hi=hl&&h.hi[i]>0?+h.hi[i]:+c,lo=hl&&h.lo[i]>0?+h.lo[i]:+c;
@@ -671,7 +674,7 @@ async function anHist(tk){const from='1990-01-01',enc=encodeURIComponent;
 async function anFund(tk){try{const F=await cached(tk+'|f',216e5,async()=>{const r=await fetch(qs('fx='+encodeURIComponent(tk))),tx=await r.text();let j;try{j=JSON.parse(tx)}catch(_){return null}
     const o=j&&(j[tk]||j);if(!o||typeof o!=='object'||o.error)return null;
     const dv=Array.isArray(o.divs)?o.divs.filter(x=>Array.isArray(x)&&+x[1]>0).map(x=>[String(x[0]).slice(0,10),+x[1]]):[],
-      F={per:+o.per>0?+o.per:null,pe:+o.pe>0?+o.pe:null,target:+o.target>0?+o.target:null,divs:dv,sector:o.sector||null,industry:o.industry||null};
+      F={per:+o.per>0?+o.per:null,pe:+o.pe>0?+o.pe:null,target:+o.target>0?+o.target:null,divs:dv,qt:o.qt||null,sector:o.sector||null,industry:o.industry||null};
     return F.per||F.pe||F.target||dv.length||F.sector?F:null});
     if(!F)delete MEM[tk+'|f'];return F}catch(e){return null}}
 const anBench=tk=>/\.PA$/.test(tk)?['^FCHI','CAC 40']:/\.DE$/.test(tk)?['^GDAXI','DAX']:/\.L$/.test(tk)?['^FTSE','FTSE 100']:['^GSPC','S&P 500'];
@@ -680,10 +683,16 @@ function anTrim(w,tk,all){const q=PX[tk],lim=all?0:Date.now()-20*YRMS;let a=w.fi
   return a}
 /* ---------- Période d'analyse, moyennes mobiles, gaps, supports / résistances, résultats ---------- */
 const CH={};let CHN=0;
+/* Cache disque (IndexedDB) de l'historique : la 2e ouverture d'une valeur, même après rechargement, est instantanée (12 h) */
+const IDBP=new Promise(ok=>{try{const r=indexedDB.open('wl_an',1);r.onupgradeneeded=()=>r.result.createObjectStore('b');r.onsuccess=()=>ok(r.result);r.onerror=()=>ok(null)}catch(e){ok(null)}});
+const idbGet=k=>IDBP.then(d=>d?new Promise(ok=>{try{const q=d.transaction('b').objectStore('b').get(k);q.onsuccess=()=>ok(q.result||null);q.onerror=()=>ok(null)}catch(e){ok(null)}}):null);
+const idbSet=(k,v)=>IDBP.then(d=>{if(d)try{d.transaction('b','readwrite').objectStore('b').put(v,k)}catch(e){}});
 async function anBase(tk){
   if(!URL_())throw new Error('Renseigne l’adresse du script Google dans le hub (⚙️ Réglages) pour charger l’historique.');
+  const c=await idbGet(tk);if(c&&c.H&&Date.now()-c.at<432e5&&c.H.D.t.length>=25)return{tk,H:c.H,F:c.F,at:Date.now(),E:undefined,Eb:0,hist:null,bench:null,benchErr:null,wf:null};
   const[H,F]=await Promise.all([anHist(tk),anFund(tk)]);
   if(!H||H.D.t.length<25)throw new Error('Historique trop court pour une analyse (il faut au moins quelques semaines de cours).');
+  idbSet(tk,{at:Date.now(),H,F});
   return{tk,H,F,at:Date.now(),E:undefined,Eb:0,hist:null,bench:null,benchErr:null,wf:null}}
 /* série journalière + dernier cours en direct */
 function anLive(D,tk){const q=PX[tk],n=D.t.length;if(!(q&&q.p>0)||!n)return D;const now=Date.now(),today=dstr(new Date(now)),last=dstr(new Date(D.t[n-1])),
@@ -757,7 +766,7 @@ function renderEarn(){const A=ANA,box=$('#aern');if(!A||!box)return;const E=A.E;
 function anDone(tk){const B=ANC[tk];if(secNote(tk,B.F))render();ANA=anCompute(B,ANP);renderAna();
   if(B.E===undefined&&!B.Eb){B.Eb=1;anEarn(tk).then(E=>{B.Eb=0;B.E=E;if(ANA&&ANA.B===B){ANA.E=E;renderEarn();renderLec()}})}}
 async function loadAnalysis(){const c=CUR;if(!c)return;const tk=c.tk,my=++ANT;
-  try{let B=ANC[tk];if(!(B&&Date.now()-B.at<6e5)){$('#ana').innerHTML='<div class="cmsg" style="height:140px">Analyse en cours…</div>';B=await anBase(tk);if(my!==ANT||!CUR||CUR.tk!==tk)return;ANC[tk]=B}
+  try{let B=ANC[tk];if(!(B&&Date.now()-B.at<216e5)){$('#ana').innerHTML='<div class="cmsg" style="height:140px">Analyse en cours…</div>';B=await anBase(tk);if(my!==ANT||!CUR||CUR.tk!==tk)return;ANC[tk]=B}
     anDone(tk)}
   catch(e){if(my!==ANT)return;$('#ana').innerHTML=`<div class="cmsg" style="height:140px">${esc(e&&e.message||e)}</div>`}}
 /* info-bulle sur les graphiques de l'analyse (survol à la souris, doigt posé ou glissé sur mobile) */
@@ -968,8 +977,8 @@ $('#gdel').onclick=async()=>{if(!GE||!confirm('Supprimer le groupe « '+GE+' » 
 
 /* ---------- Secteur d'activité ---------- */
 const SFR={Technology:'Technologie',Healthcare:'Santé','Financial Services':'Services financiers','Consumer Cyclical':'Consommation cyclique','Consumer Defensive':'Consommation défensive',Industrials:'Industrie',Energy:'Énergie',Utilities:'Services publics','Basic Materials':'Matériaux de base','Real Estate':'Immobilier','Communication Services':'Communication'};
-let SEC=LS.g('wl_sect')||{};
-function secNote(tk,F){if(F&&F.sector){const s=SFR[F.sector]||F.sector;if(SEC[tk]!==s){SEC[tk]=s;LS.s('wl_sect',SEC);return true}}return false}
+let SEC=LS.g('wl_sect')||{};const SCK=LS.g('wl_sectc')||{},secOf=tk=>SEC[tk]||(isCrypto(tk)?'Crypto':'');
+function secNote(tk,F){if(F&&(F.sector||F.qt==='ETF'||F.qt==='MUTUALFUND')){const s=F.sector?(SFR[F.sector]||F.sector):F.qt==='ETF'?'ETF':'Fonds';if(SEC[tk]!==s){SEC[tk]=s;LS.s('wl_sect',SEC);return true}}return false}
 /* ---------- Classement par « Fenêtre d'entrée » (PEA = valeurs européennes, Crypto, US) ---------- */
 const SC=LS.g('wl_sc')||{};let RKC=LS.g('wl_rkc')||'PEA',RKB=false,RKD=0,RKT=0;
 const rkCat=tk=>isCrypto(tk)?'Crypto':/^\^/.test(tk)?'':isUS(tk)?'US':'PEA';
@@ -981,10 +990,13 @@ function rkRender(){const box=$('#rk');if(!box)return;if(!W.length){box.innerHTM
   box.innerHTML=`<details${op?' open':''}><summary>🏁 Classement · Fenêtre d’entrée <small>${RKB?'· analyse '+RKD+'/'+RKT+'…':pend?'· '+pend+' à analyser':''}</small></summary><div class="rkc">${cats.map(c=>`<button data-c="${c}" class="${c===RKC?'on':''}">${c} <small>${byC(c).length}</small></button>`).join('')}</div>`+(L.length?`<div class="rkg"><div><h4>Indicateur le plus élevé</h4>${top.map(row).join('')}</div><div><h4>Indicateur le plus bas</h4>${low.length?low.map(row).join(''):'<div class="sub2">–</div>'}</div></div>`:`<div class="sub2">${RKB?'Analyse en cours…':'Aucune note disponible pour cette catégorie.'}</div>`)+'</details>'}
 document.addEventListener('click',e=>{const b=e.target.closest('#rk .rkc button');if(b){RKC=b.dataset.c;LS.s('wl_rkc',RKC);rkRender();return}const r=e.target.closest('#rk .rr');if(r)openChart(r.dataset.tk)});
 document.addEventListener('toggle',e=>{if(e.target.closest&&e.target.closest('#rk'))LS.s('wl_rko',e.target.open?1:0)},true);
-async function rkRun(){if(RKB||!URL_()||!W.length)return;const todo=W.filter(x=>rkCat(x.ticker)&&!rkOk(x.ticker)).map(x=>x.ticker);if(!todo.length){rkRender();return}
+async function secRun(){if(!URL_())return;const L=W.filter(x=>rkCat(x.ticker)&&rkCat(x.ticker)!=='Crypto'&&!SEC[x.ticker]&&!(SCK[x.ticker]&&Date.now()-SCK[x.ticker]<6048e5)).map(x=>x.ticker);if(!L.length)return;let ch=false;
+  const wk=async()=>{while(L.length){const tk=L.shift();try{const F=await anFund(tk);if(secNote(tk,F))ch=true;if(F)SCK[tk]=Date.now()}catch(e){}}};
+  await Promise.all([wk(),wk(),wk()]);LS.s('wl_sectc',SCK);if(ch)render()}
+async function rkRun(){secRun();if(RKB||!URL_()||!W.length)return;const todo=W.filter(x=>rkCat(x.ticker)&&!rkOk(x.ticker)).map(x=>x.ticker);if(!todo.length){rkRender();return}
   RKB=true;RKD=0;RKT=todo.length;let sec=false;rkRender();
   const wk=async()=>{while(todo.length){const tk=todo.shift();
-    try{let B=ANC[tk];if(!(B&&Date.now()-B.at<6e5)){B=await anBase(tk);ANC[tk]=B}if(secNote(tk,B.F))sec=true;SC[tk]=[Math.round(anCompute(B,'20a').S.total),Date.now()]}
+    try{let B=ANC[tk];if(!(B&&Date.now()-B.at<216e5)){B=await anBase(tk);ANC[tk]=B}if(secNote(tk,B.F))sec=true;SC[tk]=[Math.round(anCompute(B,'20a').S.total),Date.now()]}
     catch(e){SC[tk]=[null,Date.now()-864e5+3e5]}
     RKD++;if(RKD%4===0)LS.s('wl_sc',SC);rkRender()}};
   await Promise.all([wk(),wk()]);LS.s('wl_sc',SC);RKB=false;rkRender();if(sec)render()}
