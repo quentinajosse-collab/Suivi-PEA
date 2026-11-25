@@ -336,6 +336,7 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
 .pj{position:relative;padding:36px 0 22px}.pjb{position:relative;display:flex;height:16px;border-radius:8px;overflow:visible}.pjb u{display:block;text-decoration:none}.pjb u:first-child{border-radius:8px 0 0 8px}.pjb u:last-of-type{border-radius:0 8px 8px 0}.pjb i{position:absolute;top:-4px;width:3px;height:24px;border-radius:2px;transform:translateX(-50%)}.pjl{position:absolute;top:0;transform:translateX(-50%);font-size:12px;text-align:center;color:var(--mute);line-height:1.25}.pjl b{color:var(--ink);font-size:1.05rem}.pjc{position:absolute;bottom:0;transform:translateX(-50%);font-size:12px;color:var(--acc);white-space:nowrap}
 .nr{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:center}@media(max-width:620px){.nr{grid-template-columns:1fr}}.rd{text-align:center}.sth{font-size:1.2rem;margin:20px 0 0}
 .tw2{overflow-x:auto}.nt th{position:static;cursor:default;white-space:normal;text-transform:none;font-size:12.5px;text-align:right}.nt td{text-align:right}.nt th:first-child,.nt td:first-child{text-align:left;position:static;max-width:none}
+#tb td{padding-top:8px;padding-bottom:8px}.vw{display:flex;gap:6px;margin:8px 0}.vw button{flex:1;padding:6px 4px;border-radius:999px;font-size:13px}.vw button.on{background:var(--acc);border-color:var(--acc);color:#fff}.rkall{width:100%;margin-top:10px;font-size:13px}.rkh{margin:10px 0 2px;font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
 </style>
 </head>
 <body>
@@ -345,6 +346,7 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
   <div class="rk" id="rk"></div>
   <div class="sbar"><input id="q" type="search" placeholder="🔎 Rechercher une valeur…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"></div>
   <div class="bar"><button class="pri" id="add">➕ Ajouter une valeur</button><button id="addg">📁 Créer un groupe</button></div>
+  <div class="vw" id="vw"></div>
   <div id="msg"></div>
   <div class="tw"><table><thead id="th"></thead><tbody id="tb"></tbody></table></div>
 </main>
@@ -471,7 +473,13 @@ const priceCell=r=>`<b>${r.p!=null?fPx(r.p)+sfx(r.ticker):'–'}</b>${r.pct!=nul
 function patch(){const R=rowsOf(),m=new Map(R.map(r=>[r.ticker,r])),rows=document.querySelectorAll('#tb tr[data-tk]');
   if(!rows.length&&R.length&&!Q){render();return}
   rows.forEach(tr=>{const r=m.get(tr.dataset.tk);if(r&&tr.cells[1])tr.cells[1].innerHTML=priceCell(r)});setSub()}
+/* zone d'après la place de cotation (suffixe du ticker Yahoo) */
+const zoneOf=tk=>isCrypto(tk)?'Crypto':/^\^/.test(tk)?'Indices':/\.(PA|DE|F|AS|MI|MC|BR|L|SW|CO|ST|OL|HE|LS|VI|IR|WA|AT|PR)$/.test(tk)?'Europe':/\.(HK|T|KS|KQ|SS|SZ|TW|NS|BO|AX|SI)$/.test(tk)?'Asie-Pacifique':tk.includes('.')||tk.includes('=')?'Autres':'États-Unis';
+let VIEW=LS.g('wl_view')||'grp';
+function vwRender(){$('#vw').innerHTML=[['grp','Mes groupes'],['sec','Secteur'],['zone','Zone']].map(([k,l])=>`<button data-v="${k}" class="${k===VIEW?'on':''}">${l}</button>`).join('')}
+$('#vw').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;VIEW=b.dataset.v;LS.s('wl_view',VIEW);render()};
 function render0(){
+  vwRender();
   const R0=rowsOf(),COLL=LS.g('wl_coll')||{};
   const R=Q?R0.filter(r=>qn(r.nom).includes(Q)||qn(r.ticker).includes(Q)):R0;
   setSub();
@@ -481,13 +489,15 @@ function render0(){
   R.sort((a,b)=>{const x=key(a),y=key(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return-1;return(x<y?-1:x>y?1:0)*SORT.d});
   if(!R0.length&&!G.length){$('#tb').innerHTML=`<tr><td colspan="2" class="empty">Ta watchlist est vide. Ajoute une première valeur.</td></tr>`;return}
   if(Q&&!R.length){$('#tb').innerHTML=`<tr><td colspan="2" class="empty">Aucune valeur ne correspond à « ${esc($('#q').value.trim())} ».</td></tr>`;return}
-  const line=r=>`<tr data-tk="${esc(r.ticker)}"><td><b>${esc(r.nom)}</b>${isDelayed(r.ticker)?' <span title="Cours différé de 15 min" style="color:var(--mute);font-size:11px">⏱</span>':''}${secOf(r.ticker)?`<div class="sct">${esc(secOf(r.ticker))}</div>`:''}</td><td>${priceCell(r)}</td></tr>`;
+  const line=r=>`<tr data-tk="${esc(r.ticker)}"><td><b>${esc(r.nom)}</b>${isDelayed(r.ticker)?' <span title="Cours différé de 15 min" style="color:var(--mute);font-size:11px">⏱</span>':''}</td><td>${priceCell(r)}</td></tr>`;
+  if(VIEW!=='grp'){const f=r=>VIEW==='sec'?(secOf(r.ticker)||'Secteur inconnu'):zoneOf(r.ticker),K=[...new Set(R.map(f))].sort((a,b)=>a.localeCompare(b,'fr'));
+    $('#tb').innerHTML=K.map(g=>{const L=R.filter(r=>f(r)===g),k=VIEW+':'+g,c=Q?false:!!COLL[k];return`<tr class="gh" data-g="${esc(k)}"><td colspan="2"><span class="gt">${c?'▸':'▾'}</span>${esc(g)} <small>· ${L.length}</small></td></tr>`+(c?'':L.map(line).join(''))}).join('');return}
   const names=[...allG(),...(R.some(r=>!(r.groupes||[]).length)?['']:[])],groups=names.map(g=>[g,R.filter(r=>g===''?!(r.groupes||[]).length:(r.groupes||[]).includes(g))]).filter(x=>!Q||x[1].length);
   if(groups.length===1&&groups[0][0]===''){$('#tb').innerHTML=R.map(line).join('');return}
   $('#tb').innerHTML=groups.map(([g,L])=>{const c=Q?false:!!COLL[g||'_'];return`<tr class="gh" data-g="${esc(g||'_')}"><td colspan="2"><span class="gt">${c?'▸':'▾'}</span>${esc(g||'Sans groupe')} <small>· ${L.length}</small>${g?'<span class="gm" title="Gérer le groupe">⚙</span>':''}</td></tr>`+(c?'':L.map(line).join(''))}).join('')}
 $('#q').oninput=e=>{Q=qn(e.target.value);render()};
 $('#th').onclick=e=>{const th=e.target.closest('th');if(!th)return;const k=th.dataset.s;SORT=SORT.k===k?{k,d:-SORT.d}:{k,d:k==='nom'?1:-1};render()};
-$('#tb').onclick=e=>{const gh=e.target.closest('tr.gh');if(gh){const k=gh.dataset.g;if(k!=='_'&&!e.target.closest('.gt')){openGroup(k);return}const C=LS.g('wl_coll')||{};C[k]=!C[k];LS.s('wl_coll',C);render();return}const tr=e.target.closest('tr[data-tk]');if(tr)openChart(tr.dataset.tk)};
+$('#tb').onclick=e=>{const gh=e.target.closest('tr.gh');if(gh){const k=gh.dataset.g;if(VIEW==='grp'&&k!=='_'&&!e.target.closest('.gt')){openGroup(k);return}const C=LS.g('wl_coll')||{};C[k]=!C[k];LS.s('wl_coll',C);render();return}const tr=e.target.closest('tr[data-tk]');if(tr)openChart(tr.dataset.tk)};
 
 /* ---------- Séries de prix ---------- */
 const RG=[['1h','1 h'],['1j','Jour'],['7j','7 j'],['1m','1 mois'],['3m','3 mois'],['6m','6 mois'],['1a','1 an'],['5a','5 ans'],['10a','10 ans'],['max','Depuis le début'],['custom','Période…']];
@@ -946,9 +956,7 @@ function renderAna(){const A=ANA;if(!A)return;const S=A.S,N=A.NS,p=A.p;
     secL=SEC[A.tk]?`<div class="sub2" style="margin:2px 0 0">🏭 ${esc(SEC[A.tk])}${A.F&&A.F.industry?' · '+esc(A.F.industry):''}</div>`:'';
   const stDiv=A.F&&A.F.divs&&A.F.divs.length;
   $('#ana').innerHTML=`<div class="fh"><div class="fi">${esc(ini)}</div><div class="fx"><div class="fk">${esc(mY(A.t[A.i]))}</div><h2>${esc(nomA)}</h2><div class="fpx"><b>${fe(p)}</b> <small>cours au ${dFr(A.t[A.i])}</small></div>${secL}</div><div class="fr">${ring}<div class="fz2" style="color:${zc}"><small>FENÊTRE D’ENTRÉE</small><br>${zl}</div></div></div>
-  <div id="adesc" class="sub2"></div>
   <div class="chips ap" id="apers">${APER.map(([k,l])=>`<button data-p="${k}" class="${k===ANP?'on':''}">${l}</button>`).join('')}</div>${anPerCard(A)}${A.days<366?'<div class="sub2">Prix juste et lecture rapide : calculés sur 1 an minimum de recul.</div>':''}
-  <div class="ac" id="afiche"></div>
   <div class="ac"><h3>Valorisation</h3><div class="gr">${g1}${g2}</div>${!g1&&!g2?'<div class="sub">Données de valorisation indisponibles.</div>':''}
     ${A.fair?`<div class="pjh"><h3 style="margin:0">Prix juste estimé</h3>${bdg}</div>${fb}<div class="sub2" style="margin-top:6px">Valeur du milieu de ${A.meth.length>1?A.meth.length+' méthodes':'la méthode disponible'}${mtl?' : '+mtl:''}.</div>`:'<div class="sub" style="margin-top:8px">Pas assez de données pour estimer un prix juste.</div>'}
     <div class="sub2">Estimation mécanique, ni prévision ni conseil.</div>${noF}</div>
@@ -964,27 +972,10 @@ function renderAna(){const A=ANA;if(!A)return;const S=A.S,N=A.NS,p=A.p;
   <div class="tabs2" id="atabs">${ANTABS.filter(x=>ANX.includes(x[0])).map(([k,l])=>`<button data-k="${k}" class="${k===ANTAB?'on':''}">${l}</button>`).join('')}</div>
   <div class="ac" id="atab"></div>
   <div class="ac" id="alec"></div>`;
-  renderFiche();fillDesc(A);renderLec();renderEarn();renderStack(A)}
+  renderLec();renderEarn();renderStack(A)}
 async function renderStack(A){for(const q in CH)delete CH[q];
   for(const k of ANST){if(ANA!==A)return;const bx=document.querySelector('#ana [data-st="'+k+'"]');if(bx)await renderTab(k,bx)}
   if(ANA===A)renderTab()}
-/* ---------- Ma fiche (raisons, risques, horizon) : enregistrée sur cet appareil ---------- */
-const FI=LS.g('wl_fiche')||{},HOR=['Moins de 1 an','1 à 3 ans','3 à 5 ans','Plus de 5 ans'];let FED=null;
-function renderFiche(){const A=ANA,box=$('#afiche');if(!A||!box)return;const tk=A.tk,f=FI[tk]||{},ls=t=>String(t||'').split('\n').map(x=>x.replace(/^[-•\s]+/,'').trim()).filter(Boolean),ul=t=>ls(t).map(x=>`<div class="fli">– ${esc(x)}</div>`).join('');
-  if(FED===tk){box.innerHTML=`<h3>Ma fiche</h3><label>Pourquoi j’achète (une raison par ligne)</label><textarea id="fbuy" rows="4">${esc(f.buy||'')}</textarea><label>Les risques que j’accepte</label><textarea id="frisk" rows="3">${esc(f.risk||'')}</textarea><label>Je reviendrai si…</label><textarea id="fback" rows="3">${esc(f.back||'')}</textarea><label>Horizon</label><select id="fhor">${HOR.map(h=>`<option${h===f.hor?' selected':''}>${h}</option>`).join('')}</select><div class="dbar" style="margin-top:10px"><button id="fcan">Annuler</button><button class="pri" id="fsave">Enregistrer</button></div>`;return}
-  if(!(f.buy||f.risk||f.back)){box.innerHTML='<h3>Mes raisons</h3><div class="sub">Note pourquoi tu achètes ou suis cette valeur, les risques que tu acceptes et ce qui te ferait revenir.</div><button class="pri" id="fedit" style="margin-top:8px">✎ Créer ma fiche</button>';return}
-  box.innerHTML=`<div class="fcols"><div><h3>Mes raisons</h3>${f.buy?`<div class="fh3 up">Pourquoi j’achète</div>${ul(f.buy)}`:''}${f.risk?`<div class="fh3 dn">Les risques que j’accepte</div>${ul(f.risk)}`:''}${f.back?`<div class="fh3 am">Je reviendrai si</div>${ul(f.back)}`:''}</div><div><h3>Mon plan</h3><div class="fpl"><div><span>Horizon</span><b>${esc(f.hor||'–')}</b></div><div><span>Fiche créée le</span><b>${esc(f.date||'–')}</b></div></div></div></div><button id="fedit" style="margin-top:8px">✎ Modifier</button>`}
-document.addEventListener('click',e=>{const A=ANA;if(!A)return;const id=e.target.id;
-  if(id==='fedit'){FED=A.tk;renderFiche()}else if(id==='fcan'){FED=null;renderFiche()}
-  else if(id==='fsave'){const f=FI[A.tk]||{};FI[A.tk]={buy:$('#fbuy').value.trim(),risk:$('#frisk').value.trim(),back:$('#fback').value.trim(),hor:$('#fhor').value,date:f.date||new Date().toLocaleDateString('fr-FR')};LS.s('wl_fiche',FI);FED=null;renderFiche()}});
-/* ---------- Présentation de l'entreprise (Wikipédia en français), gardée 30 jours ---------- */
-const DESC=LS.g('wl_desc')||{};
-async function fillDesc(A){const tk=A.tk;if(isCrypto(tk)||/^\^/.test(tk)||SEC[tk]==='ETF'||SEC[tk]==='Fonds'||(A.F&&A.F.qt&&A.F.qt!=='EQUITY'))return;
-  const show=t=>{const b=$('#adesc');if(b&&ANA&&ANA.tk===tk&&t)b.innerHTML=esc(t)+' <small>· Wikipédia</small>'},c=DESC[tk],nom=(W.find(x=>x.ticker===tk)||{}).nom||tk;
-  if(c&&Date.now()-c[1]<(c[0]?2592e6:6048e5)){show(c[0]);return}
-  try{const j=await(await fetch('https://fr.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch='+encodeURIComponent(nom+' entreprise')+'&gsrlimit=1&prop=extracts&exintro=1&explaintext=1&exsentences=3&format=json&origin=*')).json(),pg=j&&j.query&&Object.values(j.query.pages)[0];
-    let tx='';if(pg&&pg.extract){const a=qn(pg.title),b=qn(nom).split(' ')[0];if(b.length>=3&&a.includes(b))tx=pg.extract.replace(/\s+/g,' ').trim()}
-    DESC[tk]=[tx,Date.now()];LS.s('wl_desc',DESC);show(tx)}catch(e){}}
 function renderLec(){const A=ANA,S=A.S,p=A.p,it=[];
   const tr=S.parts[0].pts/35,tl=tr>=.6?'solide':tr>=.4?'neutre':'fragilisée';
   it.push([tl[0].toUpperCase()+tl.slice(1),tone(tr),'Tendance de fond',`Le cours est ${S.r1<0?'en dessous':'au-dessus'} de sa moyenne des ${S.w2} ${A.u==='j'?'derniers jours':'dernières semaines'} (${sg0(S.r1*100)}). La tendance de fond est ${tl}.`]);
@@ -1117,12 +1108,17 @@ function secNote(tk,F){if(F&&(F.sector||F.qt==='ETF'||F.qt==='MUTUALFUND')){cons
 const SC=LS.g('wl_sc4')||{};let RKC=LS.g('wl_rkc')||'PEA',RKB=false,RKD=0,RKT=0;
 const rkCat=tk=>isCrypto(tk)?'Crypto':/^\^/.test(tk)?'':isUS(tk)?'US':'PEA';
 const rkOk=tk=>SC[tk]&&Date.now()-SC[tk][1]<864e5; /* une note est refaite au plus une fois par jour */
+let RKA=false,RKS=LS.g('wl_rks')||'note';
+function rkAll(cat,row){const L=W.filter(x=>rkCat(x.ticker)===cat).map(x=>({tk:x.ticker,nom:x.nom,s:SC[x.ticker]&&SC[x.ticker][0]!=null?SC[x.ticker][0]:null})).sort((a,b)=>(b.s??-1)-(a.s??-1));
+  const chips=`<div class="rkc">${[['note','Par note'],['sec','Par secteur']].map(([k,l])=>`<button data-s="${k}" class="${k===RKS?'on':''}">${l}</button>`).join('')}</div>`;
+  if(RKS!=='sec')return chips+L.map(row).join('');
+  const f=x=>secOf(x.tk)||'Secteur inconnu';return chips+[...new Set(L.map(f))].sort((a,b)=>a.localeCompare(b,'fr')).map(g=>{const l=L.filter(x=>f(x)===g);return`<div class="rkh">${esc(g)} · ${l.length}</div>`+l.map(row).join('')}).join('')}
 function rkRender(){const box=$('#rk');if(!box)return;if(!W.length){box.innerHTML='';return}
   const op=LS.g('wl_rko')!==0,cats=['PEA','Crypto','US'],byC=c=>W.filter(x=>rkCat(x.ticker)===c&&SC[x.ticker]&&SC[x.ticker][0]!=null).map(x=>({tk:x.ticker,nom:x.nom,s:SC[x.ticker][0]})).sort((a,b)=>b.s-a.s),
-    L=byC(RKC),top=L.slice(0,5),low=L.slice(Math.max(5,L.length-5)).reverse(),row=x=>`<div class="rr" data-tk="${esc(x.tk)}"><span>${esc(x.nom)}</span><b class="${zcls(x.s)}">${x.s}</b></div>`,
+    L=byC(RKC),top=L.slice(0,5),low=L.slice(Math.max(5,L.length-5)).reverse(),row=x=>`<div class="rr" data-tk="${esc(x.tk)}"><span>${esc(x.nom)}</span><b class="${x.s==null?'':zcls(x.s)}">${x.s??'–'}</b></div>`,
     pend=W.filter(x=>rkCat(x.ticker)&&!rkOk(x.ticker)).length;
-  box.innerHTML=`<details${op?' open':''}><summary>🏁 Classement · Fenêtre d’entrée <small>${RKB?'· analyse '+RKD+'/'+RKT+'…':pend?'· '+pend+' à analyser':''}</small></summary><div class="rkc">${cats.map(c=>`<button data-c="${c}" class="${c===RKC?'on':''}">${c} <small>${byC(c).length}</small></button>`).join('')}</div>`+(L.length?`<div class="rkg"><div><h4>Indicateur le plus élevé</h4>${top.map(row).join('')}</div><div><h4>Indicateur le plus bas</h4>${low.length?low.map(row).join(''):'<div class="sub2">–</div>'}</div></div>`:`<div class="sub2">${RKB?'Analyse en cours…':'Aucune note disponible pour cette catégorie.'}</div>`)+'</details>'}
-document.addEventListener('click',e=>{const b=e.target.closest('#rk .rkc button');if(b){RKC=b.dataset.c;LS.s('wl_rkc',RKC);rkRender();return}const r=e.target.closest('#rk .rr');if(r)openChart(r.dataset.tk)});
+  box.innerHTML=`<details${op?' open':''}><summary>🏁 Classement · Fenêtre d’entrée <small>${RKB?'· analyse '+RKD+'/'+RKT+'…':pend?'· '+pend+' à analyser':''}</small></summary><div class="rkc">${cats.map(c=>`<button data-c="${c}" class="${c===RKC?'on':''}">${c} <small>${byC(c).length}</small></button>`).join('')}</div>`+(RKA?rkAll(RKC,row):L.length?`<div class="rkg"><div><h4>Indicateur le plus élevé</h4>${top.map(row).join('')}</div><div><h4>Indicateur le plus bas</h4>${low.length?low.map(row).join(''):'<div class="sub2">–</div>'}</div></div>`:`<div class="sub2">${RKB?'Analyse en cours…':'Aucune note disponible pour cette catégorie.'}</div>`)+`<button class="rkall">${RKA?'Réduire le classement':'Voir toutes les valeurs ('+W.filter(x=>rkCat(x.ticker)===RKC).length+')'}</button></details>`}
+document.addEventListener('click',e=>{if(e.target.closest('#rk .rkall')){RKA=!RKA;rkRender();return}const s=e.target.closest('#rk [data-s]');if(s){RKS=s.dataset.s;LS.s('wl_rks',RKS);rkRender();return}const b=e.target.closest('#rk .rkc button[data-c]');if(b){RKC=b.dataset.c;LS.s('wl_rkc',RKC);rkRender();return}const r=e.target.closest('#rk .rr');if(r)openChart(r.dataset.tk)});
 document.addEventListener('toggle',e=>{if(e.target.closest&&e.target.closest('#rk'))LS.s('wl_rko',e.target.open?1:0)},true);
 const bgSleep=ms=>new Promise(r=>setTimeout(r,ms)),bgWait=async()=>{while(document.hidden||($('#cdlg')&&$('#cdlg').open))await bgSleep(2000)};
 async function secRun(){if(!URL_())return;const L=W.filter(x=>rkCat(x.ticker)&&rkCat(x.ticker)!=='Crypto'&&!SEC[x.ticker]&&!(SCK[x.ticker]&&Date.now()-SCK[x.ticker]<6048e5)).map(x=>x.ticker);if(!L.length)return;let ch=false;
