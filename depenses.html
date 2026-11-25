@@ -311,7 +311,7 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
 #pane2,#pane3{display:none}#cdlg.mA #pane1,#cdlg.mF #pane1,#cdlg.mF #pane2{display:none}#cdlg.mA #pane2,#cdlg.mF #pane3{display:block}
 .mode button{font-size:13px;white-space:nowrap}
 .fk2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 4px}.fk2>div{background:var(--alt);border:1px solid var(--line);border-radius:12px;padding:8px 11px;min-width:0}.fk2 span{display:block;color:var(--mute);font-size:11.5px}.fk2 b{display:block;font-size:1.02rem;overflow-wrap:anywhere}.fk2 b.up{color:var(--up)}.fk2 b.dn{color:var(--dn)}
-.zm{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 2px}.zm button{padding:4px 11px;border-radius:999px;font-size:13px;min-width:34px}.zm button.on{background:var(--acc);border-color:var(--acc);color:#fff}.zm input[type=range]{flex:1 1 100%;margin:6px 0 0;accent-color:var(--acc)}
+.zm{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 2px}.zm button{padding:4px 11px;border-radius:999px;font-size:13px;min-width:34px}.zm button.on{background:var(--acc);border-color:var(--acc);color:#fff}.zm#nzm{gap:4px}.zm#nzm button{padding:4px 9px}.nv{position:relative;height:46px;margin:8px 8px 4px;background:var(--alt);border:1px solid var(--line);border-radius:8px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}.nv svg{position:absolute;inset:2px 0;width:100%;height:calc(100% - 4px);opacity:.75;pointer-events:none}.nvs{position:absolute;top:0;bottom:0;background:var(--card);opacity:.65}.nvw{position:absolute;top:-1px;bottom:-1px;border:2px solid var(--acc);border-radius:6px;box-sizing:border-box;cursor:grab}.nvw i{position:absolute;top:0;bottom:0;width:28px;cursor:ew-resize}.nvw i[data-h=a]{left:-15px}.nvw i[data-h=b]{right:-15px}.nvw i:after{content:'';position:absolute;left:9px;top:10px;bottom:10px;width:10px;border-radius:5px;background:var(--acc)}
 .rcb{display:flex;height:14px;border-radius:7px;overflow:hidden;margin:8px 0 4px}.rcb u{display:block;text-decoration:none}.fdesc{font-size:13.5px;line-height:1.5;margin:8px 0 0}
 .ac{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px}.ac h3{margin:0 0 8px;font-size:1.05rem}
 .chips2{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.chips2 span{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--mute)}
@@ -669,12 +669,26 @@ function anScore(t,c,pk,i,per){
   if(per>0)parts.push({k:'per',max:15,pts:15*clp((30-per)/21)});
   const tot=parts.reduce((s,x)=>s+x.pts,0)/parts.reduce((s,x)=>s+x.max,0)*100;
   return{parts,total:tot,p,m50,m200,w1,w2,tr,dev,dd,rsi,sup,sd,r1,r2,lv}}
-/* relevé toutes les 4 semaines (sans le PER, dont l'historique n'est pas disponible) puis ce que le cours a fait un an plus tard */
-function anNoteHist(t,c,pk){const N=c.length,pts=[];
-  for(let i=N-1;i>=199;i-=4){const s=anScore(t,c,pk,i);pts.push({i,t:t[i],note:s.total,fut:i+52<=N-1?c[i+52]/c[i]-1:null})}
-  pts.reverse();
-  const cat=(lb,f)=>{const L=pts.filter(x=>x.fut!=null&&f(x.note));return{lb,n:L.length,avg:L.length?L.reduce((s,x)=>s+x.fut,0)/L.length:null,up:L.length?L.filter(x=>x.fut>0).length/L.length:null}};
-  return{pts,rows:[cat('fav',v=>v>=70),cat('neu',v=>v>=45&&v<70),cat('bad',v=>v<45)]}}
+/* Historique de la note sur 100 : la même fonction anNote que le cercle, rejouée chaque semaine avec les seules données connues à cette date.
+   Comptes : exercices clos depuis au moins 90 jours (délai de publication). PER prévisionnel et objectif des analystes : aucun historique, donc retirés. */
+function anFinAt(F,years,t){
+  const num=v=>typeof v==='number'&&isFinite(v),K=years.filter(y=>Date.parse(y.y)+90*864e5<=t),L=K[K.length-1],P=K[K.length-2],f=F&&F.fin||{},fin={years:K};
+  if(L){const gr=k=>P&&P[k]>0&&num(L[k])?L[k]/P[k]-1:null,v=k=>num(L[k])?L[k]:null;
+    Object.assign(fin,{rg:gr('rev'),eg:gr('net'),m:L.rev>0&&num(L.net)?L.net/L.rev:null,roe:L.eq>0&&num(L.net)?L.net/L.eq:null,
+      debt:v('debt'),cash:v('cash'),ebitda:v('ebitda'),fcf:v('fcf'),shares:num(L.cash)?v('shs'):null,cur:f.cur,pcur:f.pcur})}
+  return{qt:F&&F.qt,sector:F&&F.sector,per:null,target:null,fin}}
+const anHasFin=N=>N.parts.some(x=>x.sh!=='Tendance'&&x.sh!=='Entrée');
+/* point de la semaine w : null s'il n'y a pas encore un an de séances */
+function anNoteAt(w,D,F,years,crypto,bm,cur){
+  let lo=0,hi=D.t.length-1;const lim=w[0]+432e5;while(lo<hi){const md=(lo+hi+1)>>1;if(D.t[md]<=lim)lo=md;else hi=md-1}
+  const j=lo;if(j<252||D.t[j]>lim)return null;
+  const a=Math.max(0,j-899),cut=x=>x.slice(a,j+1),d={t:cut(D.t),c:cut(D.c),hi:cut(D.hi),lo:cut(D.lo),v:cut(D.v),hl:D.hl};
+  let b=null;if(bm){let k=bm.t.length-1;while(k>0&&bm.t[k]>D.t[j])k--;const s=Math.max(0,k-599);b={t:bm.t.slice(s,k+1),c:bm.c.slice(s,k+1),name:bm.name}}
+  const N=anNote(d.t,d.c,F?anFinAt(F,years,w[0]):null,crypto,d,b);
+  return{t:w[0],c:w[1],note:N.total,fin:anHasFin(N)}}
+function anNoteStats(pts){const L=[];for(let i=pts.length-1;i>=0;i-=4)L.push({note:pts[i].note,fut:i+52<=pts.length-1?pts[i+52].c/pts[i].c-1:null});
+  const cat=(lb,f)=>{const R=L.filter(x=>x.fut!=null&&f(x.note));return{lb,n:R.length,avg:R.length?R.reduce((s,x)=>s+x.fut,0)/R.length:null,up:R.length?R.filter(x=>x.fut>0).length/R.length:null}};
+  return[cat('fav',v=>v>=70),cat('neu',v=>v>=45&&v<70),cat('bad',v=>v<45)]}
 /* prix juste : milieu entre la plus basse et la plus haute des méthodes disponibles */
 function anDivMethod(divs,t,c,i){if(!divs||!divs.length)return null;
   const Y=new Date(t[i]).getFullYear(),by={};divs.forEach(([d,a])=>{const y=+d.slice(0,4);by[y]=(by[y]||0)+a});
@@ -814,7 +828,7 @@ const IDBP=new Promise(ok=>{try{const r=indexedDB.open('wl_an',1);r.onupgradenee
 const idbGet=k=>IDBP.then(d=>d?new Promise(ok=>{try{const q=d.transaction('b').objectStore('b').get(k);q.onsuccess=()=>ok(q.result||null);q.onerror=()=>ok(null)}catch(e){ok(null)}}):null);
 const idbSet=(k,v)=>IDBP.then(d=>{if(d)try{d.transaction('b','readwrite').objectStore('b').put(v,k)}catch(e){}});
 const HC=LS.g('wl_hc')||{},anBusy={};
-const anMk=(tk,H,F,bm)=>({tk,H,F,bm,at:Date.now(),E:undefined,Eb:0,hist:null,bench:null,benchErr:null,wf:null});
+const anMk=(tk,H,F,bm)=>({tk,H,F,bm,at:Date.now(),E:undefined,Eb:0,nh:null,bench:null,benchErr:null,wf:null});
 async function anFetch(tk){ /* réseau : historique + fondamentaux, enregistrés sur l'appareil */
   let[H,F]=await Promise.all([anHist(tk),anFund(tk)]);
   if(!H){await new Promise(r=>setTimeout(r,1500));H=await anHist(tk)}
@@ -961,7 +975,7 @@ const fp=v=>v==null||!isFinite(v)?'–':Math.abs(v)>=10?nfr(1,1).format(v):fPx(v
 const sg0=v=>(v<0?'−':'+')+nf(0).format(Math.abs(v))+' %',sg1=v=>(v<0?'−':'+')+nf(1).format(Math.abs(v))+' %';
 const tone=(r)=>r>=.6?'up':r>=.4?'am':'dn',zcls=v=>v>=70?'up':v>=45?'am':'dn';
 const ANX=['mm','sr','mkt'],ANST=['paliers','traj','dd','note'];
-const ANTABS=[['paliers','Cours et paliers'],['mm','Moyennes mobiles & gaps'],['sr','Supports / résistances'],['traj','Trajectoire'],['dd','Baisse depuis le sommet'],['mkt','Face au marché'],['note','Historique (cours seul)'],['div','Dividendes']];
+const ANTABS=[['paliers','Cours et paliers'],['mm','Moyennes mobiles & gaps'],['sr','Supports / résistances'],['traj','Trajectoire'],['dd','Baisse depuis le sommet'],['mkt','Face au marché'],['note','Évolution de la note'],['div','Dividendes']];
 const anW=()=>{const e=$('#cdlg').classList.contains('mF')?$('#fon'):$('#ana');return Math.max(300,Math.round((e.clientWidth||340)-34))};
 /* logo : icône du site officiel de l'entreprise ; si elle manque, les initiales restent visibles */
 function logoImg(F){let d='';try{d=F&&F.web?new URL(F.web).hostname:''}catch(e){}
@@ -1084,22 +1098,11 @@ async function renderTab(kk,bx){const A=ANA,box=bx||$('#atab');if(!A||!box)retur
       pa=sa[sa.length-1][1]/100-1,pb=sb[sb.length-1][1]/100-1,ya=yr>=1?Math.pow(1+pa,1/yr)-1:null,yb_=yr>=1?Math.pow(1+pb,1/yr)-1:null,py=v=>v==null?'–':sg1(v*100);
     box.innerHTML=H('Face au marché',`Base 100 il y a ${yr>=1?nf(1).format(yr)+' ans':Math.max(1,Math.round(yr*365))+' jours'} · ${esc(B.bench.nm)} en gris`)+svgChart({W:Wd,H:250,log:A.lg,tf:v=>nf(1).format(v),S:[{n:B.bench.nm,p:sb,c:'var(--mute)',w:1.4},{n:'Cette valeur',p:sa,c:'var(--acc)',w:1.7}],hl:[{v:sa[sa.length-1][1],c:'var(--acc)',l:nf(0).format(sa[sa.length-1][1])},{v:sb[sb.length-1][1],c:'var(--mute)',l:nf(0).format(sb[sb.length-1][1])}]})
       +`<div class="stats" style="margin-top:8px"><div><span>Cette valeur</span><b class="${cls(pa)}">${sg0(pa*100)}</b></div><div><span>Par an</span><b class="${cls(ya)}">${py(ya)}</b></div><div><span>${esc(B.bench.nm)}</span><b class="${cls(pb)}">${sg0(pb*100)}</b></div><div><span>Par an</span><b class="${cls(yb_)}">${py(yb_)}</b></div></div>`}
-  else if(k==='note'){const WF=A.wf,B=A.B;if(!B.hist)B.hist=anNoteHist(WF.t,WF.c,WF.pk);const h=B.hist,pts=h.pts;
-    if(pts.length<5){box.innerHTML=H('Historique (cours seul)','Historique trop court (il faut plus de 4 ans de cours).');return}
-    const cur=pts[pts.length-1],R=h.rows,lb={fav:['Favorable (70 et plus)','up'],neu:['Neutre (45 à 69)','am'],bad:['Peu favorable (moins de 45)','dn']},
-      few=R[0].n<10||R[2].n<10,verdict=few?'Trop peu de relevés en zone favorable ou peu favorable pour dire si la note a été utile sur cette action.':(R[0].avg>R[2].avg?'Sur cette action, la note a plutôt été utile : les cours montaient davantage après une note favorable.':'Sur cette action, la note n’a pas été utile : les cours ne montaient pas davantage après une note favorable.');
-    const T0=pts[0].t,T1=cur.t,span=T1-T0,yrs0=span/YRMS;if(NZ.tk!==A.tk)NZ={tk:A.tk,y:0,pos:1};NZ.span=span;
-    NZF=()=>{const z=NZ,Wn=z.y>0?Math.min(span,z.y*YRMS):span,zm=Wn<span-864e5,e1=zm?T0+Wn+(span-Wn)*z.pos:T1,e0=zm?e1-Wn:T0,inW=a=>a.filter(x=>x[0]>=e0&&x[0]<=e1),
-      cp=inW(WF.t.slice(pts[0].i).map((t,q)=>[t,WF.c[pts[0].i+q]])),ip=inW(pts.map(x=>[x.t,x.note])),end=e1>=T1-864e5;
-      if(NZID)delete CH[NZID];
-      const html=svgChart({W:Wd,H:240,lo:0,hi:100,ticks:[0,45,70,100],fy:v=>nf(0).format(v),tf:v=>nf(0).format(v)+' / 100',zones:[{a:0,b:45,c:'color-mix(in srgb,var(--dn) 10%,transparent)'},{a:45,b:70,c:'color-mix(in srgb,#b45309 9%,transparent)'},{a:70,b:100,c:'color-mix(in srgb,var(--up) 10%,transparent)'}],fyl:v=>nf(v<10?2:0).format(v),S:[{n:'Cours',p:cp,c:'var(--acc)',w:1.6,left:true,tf:fe},{n:'Indicateur',p:ip,c:'var(--ink)',w:1.2}],marks:end?[{t:cur.t,v:cur.note,c:'var(--ink)'}]:[],hl:end?[{v:cur.note,c:'var(--mute)',l:nf(0).format(cur.note)}]:[]})||'<div class="sub">Pas assez de points sur cette période : dézoome.</div>';const m=html.match(/data-ch="(c\d+)"/);NZID=m?m[1]:null;
-      return{html,range:dFr(e0)+' → '+dFr(e1),zm}};
-    const NZR=NZF(),nzCtl=()=>{const z=NZ,ch=[1,3,5,10].filter(y=>y<yrs0-.3);return'<button data-z="out" title="Dézoomer">−</button><button data-z="in" title="Zoomer">＋</button>'+ch.map(y=>`<button data-zy="${y}" class="${NZR.zm&&Math.abs(z.y-y)<.01?'on':''}">${y} an${y>1?'s':''}</button>`).join('')+`<button data-zy="0" class="${NZR.zm?'':'on'}">Tout</button>`+(NZR.zm?'<input type="range" id="nzp" min="0" max="1000" value="'+Math.round(z.pos*1000)+'" aria-label="Déplacer la période affichée">':'')};
-    box.innerHTML=H('Indicateur « cours seul » au fil du temps (différent de la note sur 100)',`${dFr(WF.t[WF.t.length-1])} · note <b>${Math.round(cur.note)}</b> · cours <b>${fe(p)}</b> · suite pas encore connue`)
-      +'<div class="zm" id="nzm">'+nzCtl()+'</div><div class="sub2" id="nzr" style="margin:2px 0 4px">'+NZR.range+'</div><div id="nzch">'+NZR.html+'</div>'
-      +`<div class="sub2"><b style="color:var(--acc)">━ Cours (échelle de gauche)</b> &nbsp; <b>━ Indicateur sur 100 (échelle de droite)</b></div><p style="font-weight:700;margin:10px 0">${verdict}</p><div class="tw2"><table class="nt"><thead><tr><th>Quand la note était…</th><th>Relevés</th><th>Cours un an plus tard (moyenne)</th><th>En hausse un an plus tard</th></tr></thead><tbody>`
-      +R.map(r=>`<tr><td class="${lb[r.lb][1]}">${lb[r.lb][0]}</td><td>${r.n}</td><td>${r.avg==null?'–':sg0(r.avg*100)}</td><td>${r.up==null?'–':nf(0).format(r.up*100)+' % des fois'}</td></tr>`).join('')
-      +`</tbody></table></div><div class="sub" style="margin-top:8px">Toujours calculé sur tout l’historique, quelle que soit la période choisie. Un relevé toutes les 4 semaines, calculé sans le PER (son historique n’est pas disponible). Les périodes d’un an se chevauchent et le passé ne garantit rien : c’est une indication, pas une preuve.</div>`}
+  else if(k==='note'){const T='Évolution de la note sur 100';
+    if(!A.B.nhv){box.innerHTML=H(T,'Calcul de la note semaine par semaine…');
+      anNoteSeries(A.B).then(()=>{if(ANA&&ANA.B===A.B){const bx=document.querySelector('#ana [data-st="note"]');if(bx)renderTab('note',bx)}})
+        .catch(()=>{A.B.nh=null;box.innerHTML=H(T,'Calcul impossible pour l’instant : rouvre l’analyse pour réessayer.')});return}
+    nzShow(A,box,T)}
   
   else if(k==='div'){const F=A.F,dv=F&&F.divs||[];
     if(!dv.length){box.innerHTML=H('Dividendes','')+`<div class="sub">${F?'Aucun dividende trouvé pour cette valeur.':'Donnée indisponible : le script Google ne fournit pas les dividendes (redéploie le script Google).'}</div>`;return}
@@ -1113,12 +1116,62 @@ async function renderTab(kk,bx){const A=ANA,box=bx||$('#atab');if(!A||!box)retur
     const dst=`<div class="stats" style="margin:4px 0 8px"><div><span>Rendement</span><b>${ttm>0?nf(1).format(ttm/p*100)+' %':'–'}</b></div><div><span>Habituel</span><b>${hab!=null?nf(1).format(hab)+' %':'–'}</b></div><div><span>Progression</span><b class="${prog>0?'up':prog<0?'dn':''}">${prog!=null?sg1(prog)+'/an':'–'}</b></div><div><span>Sans baisse</span><b>${nb} an${nb>1?'s':''}</b></div></div>`;
     box.innerHTML=H('Dividende (≈ estimé)',`Dividende versé par action et par année${ttm>0?' · sur 12 mois : <b>'+fd(ttm)+CU()+'</b>':''} · l’année en cours est estimée (barre claire)`)+dst
       +`<div class="cw"><svg viewBox="0 0 ${Wd} ${Hh+26}" width="100%" height="${Hh+26}" style="display:block">`+ys.map((y,k)=>{const h=Math.max(1,by[y]/mx*(Hh-26)),x=10+k*bw;return`<rect x="${(x+bw*.15).toFixed(1)}" y="${(Hh-h).toFixed(1)}" width="${(bw*.7).toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="var(--up)" opacity="${y>=Yn?.35:.8}"/><text x="${(x+bw/2).toFixed(1)}" y="${(Hh-h-4).toFixed(1)}" font-size="9.5" text-anchor="middle" fill="var(--mute)">${fd(by[y])}</text><text x="${(x+bw/2).toFixed(1)}" y="${Hh+14}" font-size="10" text-anchor="middle" fill="var(--mute)">${String(y).slice(2)}</text><rect x="${x.toFixed(1)}" y="0" width="${bw.toFixed(1)}" height="${Hh+26}" fill="transparent" data-tip="${y} : ${fd(by[y])}${CU()} par action"/>`}).join('')+'</svg><div class="ctip"></div></div>'}}
-let NZ={tk:'',y:0,pos:1},NZF=null,NZID=null;
-document.addEventListener('input',e=>{if(e.target&&e.target.id==='nzp'&&ANA&&NZF){NZ.pos=+e.target.value/1000;const r=NZF();$('#nzch').innerHTML=r.html;$('#nzr').textContent=r.range}});
-document.addEventListener('click',e=>{const zb=e.target.closest('#nzm button');if(zb&&ANA){const z=NZ,sp=z.span,yrs=sp/YRMS,cur=z.y>0?Math.min(yrs,z.y):yrs,W0=cur*YRMS,rel=(w,p)=>w<sp?w+(sp-w)*p:sp,c=rel(W0,z.pos)-W0/2;let ny;
-    if(zb.dataset.zy!=null)ny=+zb.dataset.zy;else{ny=zb.dataset.z==='in'?Math.max(1,cur/1.6):Math.min(yrs,cur*1.6);if(ny>=yrs-.05)ny=0}
-    const W1=(ny>0?Math.min(ny,yrs):yrs)*YRMS,e1=Math.max(W1,Math.min(sp,c+W1/2));z.y=ny;z.pos=sp>W1?(e1-W1)/(sp-W1):1;
-    const bx=document.querySelector('#ana [data-st="note"]');if(bx)renderTab('note',bx);return}
+/* ---------- Évolution de la note : calcul, graphique et choix de la période ---------- */
+function anNoteSeries(B){return B.nh||(B.nh=(async()=>{
+  const tk=B.tk,crypto=isCrypto(tk),F=B.F,stock=!crypto&&!/^\^/.test(tk)&&!(F&&['ETF','MUTUALFUND','CRYPTOCURRENCY','INDEX'].includes(F.qt));
+  let years=[],bm=B.bm;
+  if(stock){const FD=B.FD&&B.FD.ok?B.FD:await anFd(tk);years=((FD.ok&&FD.years&&FD.years.length?FD.years:F&&F.fin&&F.fin.years)||[]).filter(x=>x&&x.y).slice().sort((a,b)=>a.y<b.y?-1:1)}
+  if(bm){const h=await anHist(anBench(tk)[0]).catch(()=>null);if(h)bm={t:h.D.t,c:h.D.c,name:bm.name}}
+  const wk=anTrim(B.H.wk,tk),D=anLive(B.H.D,tk),pts=[];
+  for(let i=0;i<wk.length;i++){if(i%60===59)await new Promise(r=>setTimeout(r));const q=anNoteAt(wk[i],D,F,years,crypto,bm);if(q)pts.push(q)}
+  B.nhv={pts,stock,years,cash:years.some(x=>typeof x.cash==='number')};return B.nhv})())}
+let NZ={tk:'',a:null,b:null},NZC=null,NZD=null,NZR=0;
+const NZMIN=90*864e5;
+function nzWin(){const{T0,T1}=NZC;let a=NZ.a==null?T0:NZ.a,b=NZ.b==null?T1:NZ.b;a=Math.max(T0,Math.min(a,T1-NZMIN));b=Math.min(T1,Math.max(b,a+NZMIN));return[a,b]}
+function nzSet(a,b){const{T0,T1}=NZC;NZ.a=a<=T0+864e5?null:a;NZ.b=b>=T1-864e5?null:b;if(!NZR)NZR=requestAnimationFrame(()=>{NZR=0;nzDraw()})}
+function nzDraw(){const C=NZC,el=$('#nzch');if(!C||!el)return;const[a,b]=nzWin(),{T0,T1,pts}=C,V=pts.filter(x=>x.t>=a&&x.t<=b),end=b>=T1-864e5,last=pts[pts.length-1];
+  /* partie sans comptes (technique seule) en gris, partie avec les comptes en couleur pleine */
+  const iF=C.stock?pts.findIndex(x=>x.fin):0,tF=iF<0?Infinity:pts[iF].t,ser=f=>V.filter(f).map(x=>[x.t,x.note]),S=[{n:'Cours',p:V.map(x=>[x.t,x.c]),c:'var(--acc)',w:1.3,left:true,tf:fe}];
+  if(C.stock){S.push({n:'Note (technique seule)',p:ser(x=>x.t<=tF),c:'var(--mute)',w:1.4});S.push({n:'Note',p:ser(x=>x.t>=tF),c:'var(--ink)',w:2})}else S.push({n:'Note',p:ser(()=>true),c:'var(--ink)',w:1.7});
+  for(const q of Object.keys(CH))if(q===C.id)delete CH[q];
+  const html=svgChart({W:C.W,H:250,lo:0,hi:100,ticks:[0,45,70,100],fy:v=>nf(0).format(v),tf:v=>nf(0).format(v)+' / 100',fyl:v=>nf(v<10?2:0).format(v),
+    zones:[{a:0,b:45,c:'color-mix(in srgb,var(--dn) 10%,transparent)'},{a:45,b:70,c:'color-mix(in srgb,#b45309 9%,transparent)'},{a:70,b:100,c:'color-mix(in srgb,var(--up) 10%,transparent)'}],
+    S,marks:end?[{t:last.t,v:last.note,c:'var(--ink)'}]:[],hl:end?[{v:last.note,c:'var(--mute)',l:nf(0).format(Math.round(last.note))}]:[]});
+  const m=html.match(/data-ch="(c\d+)"/);C.id=m?m[1]:null;el.innerHTML=html||'<div class="sub">Pas assez de points sur cette période : élargis-la.</div>';
+  $('#nzr').textContent=dFr(a)+' → '+dFr(b);
+  const x=t=>(t-T0)/(T1-T0)*100,w=$('#nvw');w.style.left=x(a)+'%';w.style.width=(x(b)-x(a))+'%';$('#nvl').style.width=x(a)+'%';$('#nvr').style.width=(100-x(b))+'%';
+  document.querySelectorAll('#nzm button').forEach(z=>{const y=+z.dataset.zy;z.classList.toggle('on',y?end&&Math.abs((b-a)-y*YRMS)<864e5:NZ.a==null&&NZ.b==null)})}
+function nzShow(A,box,T){const R=A.B.nhv,pts=R.pts.slice(),p=A.p,N=A.NS,Wd=anW();
+  /* dernier point = exactement la note du cercle */
+  if(pts.length){const l=pts[pts.length-1];pts[pts.length-1]={t:l.t,c:p,note:N.total,fin:anHasFin(N)}}
+  if(pts.length<5){box.innerHTML=`<h3>${T}</h3><div class="sub">Historique trop court (il faut plus d’un an de cours).</div>`;return}
+  const T0=pts[0].t,T1=pts[pts.length-1].t,yrs=(T1-T0)/YRMS;if(NZ.tk!==A.tk)NZ={tk:A.tk,a:null,b:null};NZC={pts,T0,T1,W:Wd,stock:R.stock,id:null};
+  const lc=pts.map(x=>Math.log(x.c)),mn=Math.min(...lc),mx=Math.max(...lc),mini=pts.map((x,i)=>(i?'L':'M')+((x.t-T0)/(T1-T0||1)*1000).toFixed(1)+' '+(37-(lc[i]-mn)/(mx-mn||1)*34).toFixed(1)).join('');
+  const rows=anNoteStats(pts),lb={fav:['Favorable (70 et plus)','up'],neu:['Neutre (45 à 69)','am'],bad:['Peu favorable (moins de 45)','dn']},
+    verdict=rows[0].n<10||rows[2].n<10?'Trop peu de relevés en zone favorable ou peu favorable pour dire si la note a été utile sur cette valeur.':(rows[0].avg>rows[2].avg?'Sur cette valeur, la note a plutôt été utile : le cours montait davantage après une note favorable.':'Sur cette valeur, la note n’a pas été utile : le cours ne montait pas davantage après une note favorable.'),
+    f1=R.stock&&pts.find(x=>x.fin);
+  const how=!R.stock?'Chaque point reprend le même calcul que la note du cercle (tendance et point d’entrée), avec les seuls cours connus à cette date.'
+    :(f1?`Chaque point reprend le calcul de la note du cercle avec les données connues à cette date. Les comptes de l’entreprise comptent à partir de ${mY(f1.t)} ; avant (courbe grise), seuls la tendance et le point d’entrée sont notés.`:'Les comptes passés de l’entreprise sont indisponibles : seuls la tendance et le point d’entrée sont notés dans le passé (courbe grise).')
+      +' Le PER prévisionnel et l’objectif des analystes n’ont pas d’historique : ils ne comptent que dans le dernier point, qui peut donc faire un saut.'
+      +(f1&&!R.cash?' La trésorerie passée n’est pas fournie : la valeur DCF est absente du passé et la dette est comptée sans la déduire (redéploie la dernière version du script Google pour corriger).':'');
+  box.innerHTML=`<h3>${T}</h3><div class="sub2">Aujourd’hui : <b class="${zcls(Math.round(N.total))}">${Math.round(N.total)} / 100</b> · cours <b>${fe(p)}</b></div>`
+    +'<div class="zm" id="nzm">'+[1,3,5,10].filter(y=>y<yrs-.3).map(y=>`<button data-zy="${y}">${y} an${y>1?'s':''}</button>`).join('')+'<button data-zy="0">Tout</button></div>'
+    +'<div class="sub2" id="nzr" style="margin:6px 0 4px"></div><div id="nzch"></div>'
+    +`<div class="nv" id="nv" aria-label="Période affichée"><svg viewBox="0 0 1000 40" preserveAspectRatio="none"><path d="${mini}" fill="none" stroke="var(--acc)" stroke-width="1.2" vector-effect="non-scaling-stroke"/></svg><div class="nvs" id="nvl" style="left:0"></div><div class="nvs" id="nvr" style="right:0"></div><div class="nvw" id="nvw"><i data-h="a"></i><i data-h="b"></i></div></div>`
+    +'<div class="sub2">Fais glisser le cadre pour te déplacer, ou ses poignées pour élargir et resserrer la période.</div>'
+    +`<div class="sub2"><b style="color:var(--acc)">━ Cours (échelle de gauche)</b> &nbsp; <b style="color:var(--ink)">━ Note sur 100 (échelle de droite)</b>${R.stock?' &nbsp; <b>━ Technique seule</b>':''}</div><p style="font-weight:700;margin:10px 0">${verdict}</p><div class="tw2"><table class="nt"><thead><tr><th>Quand la note était…</th><th>Relevés</th><th>Cours un an plus tard (moyenne)</th><th>En hausse un an plus tard</th></tr></thead><tbody>`
+    +rows.map(r=>`<tr><td class="${lb[r.lb][1]}">${lb[r.lb][0]}</td><td>${r.n}</td><td>${r.avg==null?'–':sg0(r.avg*100)}</td><td>${r.up==null?'–':nf(0).format(r.up*100)+' % des fois'}</td></tr>`).join('')
+    +`</tbody></table></div><div class="sub" style="margin-top:8px">${how} Un point par semaine, 20 ans au maximum ; le tableau prend un relevé toutes les 4 semaines. Les périodes d’un an se chevauchent et le passé ne garantit rien.</div>`;
+  nzDraw()}
+document.addEventListener('pointerdown',e=>{const nv=e.target.closest&&e.target.closest('#nv');if(!nv||!NZC)return;e.preventDefault();
+  const r=nv.getBoundingClientRect(),{T0,T1}=NZC,at=x=>T0+(x-r.left)/r.width*(T1-T0),h=e.target.dataset.h;let[a,b]=nzWin();
+  if(!h&&!e.target.closest('#nvw')){const w=b-a;a=Math.max(T0,Math.min(T1-w,at(e.clientX)-w/2));b=a+w;nzSet(a,b)}
+  NZD={h,a,b,t:at(e.clientX),at,id:e.pointerId};try{nv.setPointerCapture(e.pointerId)}catch(_){}});
+document.addEventListener('pointermove',e=>{if(!NZD||e.pointerId!==NZD.id||!NZC)return;const{T0,T1}=NZC,d=NZD.at(e.clientX)-NZD.t;let{a,b,h}=NZD;
+  if(h==='a')a=Math.max(T0,Math.min(b-NZMIN,a+d));else if(h==='b')b=Math.min(T1,Math.max(a+NZMIN,b+d));else{const w=b-a;a=Math.max(T0,Math.min(T1-w,a+d));b=a+w}
+  nzSet(a,b)});
+['pointerup','pointercancel'].forEach(n=>document.addEventListener(n,()=>{NZD=null}));
+document.addEventListener('click',e=>{const zb=e.target.closest('#nzm button');if(zb&&NZC){const y=+zb.dataset.zy,{T0,T1}=NZC;nzSet(y?Math.max(T0,T1-y*YRMS):T0,T1);return}
   const b=e.target.closest('#atabs button');if(b){ANTAB=b.dataset.k;renderTab();return}
   const pb=e.target.closest('#apers button');if(pb&&CUR&&ANC[CUR.tk]){ANP=pb.dataset.p;LS.s('wl_anp',ANP);const dl=$('#cdlg'),st=dl.scrollTop;ANA=anCompute(ANC[CUR.tk],ANP);renderAna();dl.scrollTop=st}});
 function setMode(m){const d=$('#cdlg');d.classList.toggle('mA',m==='a');d.classList.toggle('mF',m==='f');document.querySelectorAll('#mode button').forEach(x=>x.classList.toggle('on',x.dataset.m===m));if(m==='a')loadAnalysis();else if(m==='f')loadFond();else if(CUR&&CUR.R)draw()}
