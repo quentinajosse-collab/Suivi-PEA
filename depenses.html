@@ -910,8 +910,8 @@ function chMove(e){const root=$('#ana');if(!root)return;const el=e.target&&e.tar
   if(x<m.pl-2||x>m.Wd-m.pr+2){chHide(cur);return}
   const t=m.t0+Math.max(0,Math.min(1,(x-m.pl)/((m.Wd-m.pl-m.pr)||1)))*(m.t1-m.t0),tol=(m.t1-m.t0)*.02,dots=sv.querySelectorAll('.xd');let rows='',dt=null;
   m.S.forEach((s,k)=>{const p=s.p;if(t<p[0][0]-tol||t>p[p.length-1][0]+tol){dots[k].style.display='none';return}
-    const q=p[nearIdx(p,t)];if(dt==null)dt=q[0];dots[k].setAttribute('cx',m.X(q[0]).toFixed(1));dots[k].setAttribute('cy',m.Y(q[1]).toFixed(1));dots[k].style.display='';
-    rows+=`<div><i style="color:${s.c.indexOf('var(--ink)')===0?'#e5edf8':s.c}">●</i> ${s.n?esc(s.n)+' : ':''}<b>${esc(m.tf(q[1]))}</b></div>`});
+    const q=p[nearIdx(p,t)];if(dt==null)dt=q[0];dots[k].setAttribute('cx',m.X(q[0]).toFixed(1));dots[k].setAttribute('cy',(s.Y||m.Y)(q[1]).toFixed(1));dots[k].style.display='';
+    rows+=`<div><i style="color:${s.c.indexOf('var(--ink)')===0?'#e5edf8':s.c}">●</i> ${s.n?esc(s.n)+' : ':''}<b>${esc((s.tf||m.tf)(q[1]))}</b></div>`});
   if(dt==null){chHide(cur);return}
   const xh=sv.querySelector('.xh'),xx=m.X(dt);xh.setAttribute('x1',xx);xh.setAttribute('x2',xx);xh.style.display='';
   chPut(cur,tip,`<b>${esc(m.td(dt))}</b>${rows}`,xx/m.Wd*r.width)}
@@ -920,9 +920,9 @@ function chMove(e){const root=$('#ana');if(!root)return;const el=e.target&&e.tar
 /* ---------- Dessin ---------- */
 function niceTicks(a,b,n){n=n||5;const s=(b-a)/n,m=Math.pow(10,Math.floor(Math.log10(s))),f=s/m,st=(f<1.5?1:f<3?2:f<7?5:10)*m,r=[];for(let v=Math.ceil(a/st)*st;v<=b+1e-9;v+=st)r.push(+v.toFixed(10));return r}
 function logTicks(a,b){const r=[];for(let e=Math.floor(Math.log10(a));e<=Math.ceil(Math.log10(b));e++)[1,2,5].forEach(m=>{const v=m*Math.pow(10,e);if(v>=a&&v<=b)r.push(v)});return r.length>=2?r:niceTicks(a,b)}
-function svgChart(o){const Wd=Math.max(300,o.W||320),H=o.H||250,pl=6,pr=o.pr||60,pt=10,pb=22,fy=o.fy||fp;
+function svgChart(o){const Wd=Math.max(300,o.W||320),H=o.H||250,pl=o.S.some(s=>s.left)?52:6,pr=o.pr||60,pt=10,pb=22,fy=o.fy||fp;
   const S=o.S.map(s=>({...s,p:s.p.filter(q=>q[1]!=null&&isFinite(q[1])&&(!o.log||q[1]>0))})).filter(s=>s.p.length>1);if(!S.length)return'';
-  const all=S.flatMap(s=>s.p.map(q=>q[1])).concat((o.hl||[]).map(h=>h.v)).concat(o.base!=null?[o.base]:[]).concat((o.bands||[]).flatMap(b=>[b.a,b.b])).filter(v=>v!=null&&isFinite(v)&&(!o.log||v>0));
+  const all=S.filter(s=>!s.left).flatMap(s=>s.p.map(q=>q[1])).concat((o.hl||[]).map(h=>h.v)).concat(o.base!=null?[o.base]:[]).concat((o.bands||[]).flatMap(b=>[b.a,b.b])).filter(v=>v!=null&&isFinite(v)&&(!o.log||v>0));
   let lo=o.lo!=null?o.lo:Math.min(...all),hi=o.hi!=null?o.hi:Math.max(...all);const rlo=lo,rhi=hi;
   if(o.log){lo=Math.log(lo);hi=Math.log(hi)}const sp=(hi-lo)||1;if(o.lo==null)lo-=sp*.05;if(o.hi==null)hi+=sp*.05;
   const t0=Math.min(...S.map(s=>s.p[0][0])),t1=Math.max(...S.map(s=>s.p[s.p.length-1][0]));
@@ -935,9 +935,12 @@ function svgChart(o){const Wd=Math.max(300,o.W||320),H=o.H||250,pl=6,pr=o.pr||60
   tks.forEach(v=>{const y=Y(v);if(y<pt-2||y>yb+2)return;g+=`<line x1="${pl}" x2="${Wd-pr}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)"/>`;
     if(!labs.some(l=>Math.abs(l.y-y)<13))g+=`<text x="${Wd-pr+6}" y="${(y+4).toFixed(1)}" font-size="10.5" fill="var(--mute)">${esc(fy(v))}</text>`});
   (o.hl||[]).forEach(h=>{const y=Y(h.v).toFixed(1);g+=`<line x1="${pl}" x2="${Wd-pr}" y1="${y}" y2="${y}" stroke="${h.c}" stroke-width="${h.w||1}" ${h.dash?`stroke-dasharray="${h.dash}"`:''}/>`});
-  const path=p=>p.map((q,k)=>(k?'L':'M')+X(q[0]).toFixed(1)+' '+Y(q[1]).toFixed(1)).join('');
+  const Lv=S.filter(s=>s.left).flatMap(s=>s.p.map(q=>q[1]));
+  if(Lv.length){let a=Math.min(...Lv),b=Math.max(...Lv);const m=(b-a||Math.abs(b)||1)*.05;a-=m;b+=m;const YL=v=>pt+(b-v)/(b-a)*(H-pt-pb);
+    S.forEach(s=>{if(s.left)s.Y=YL});niceTicks(a,b).forEach(v=>{g+=`<text x="${pl-5}" y="${(YL(v)+4).toFixed(1)}" font-size="10.5" text-anchor="end" fill="${S.find(s=>s.left).c}">${esc((o.fyl||fy)(v))}</text>`})}
+  const path=(p,f)=>p.map((q,k)=>(k?'L':'M')+X(q[0]).toFixed(1)+' '+(f||Y)(q[1]).toFixed(1)).join('');
   S.forEach(s=>{if(s.area){const bs=o.base!=null?Y(o.base):yb;g+=`<path d="${path(s.p)}L${X(s.p[s.p.length-1][0]).toFixed(1)} ${bs.toFixed(1)}L${X(s.p[0][0]).toFixed(1)} ${bs.toFixed(1)}Z" fill="${s.c}" opacity=".16"/>`}
-    g+=`<path d="${path(s.p)}" fill="none" stroke="${s.c}" stroke-width="${s.w||1.6}" stroke-linejoin="round" ${s.dash?`stroke-dasharray="${s.dash}"`:''}/>`});
+    g+=`<path d="${path(s.p,s.Y)}" fill="none" stroke="${s.c}" stroke-width="${s.w||1.6}" stroke-linejoin="round" ${s.dash?`stroke-dasharray="${s.dash}"`:''}/>`});
   (o.marks||[]).forEach(m=>{g+=`<circle cx="${X(m.t).toFixed(1)}" cy="${Y(m.v).toFixed(1)}" r="${m.r||4}" fill="${m.c}" stroke="var(--card)" stroke-width="1.5"/>`});
   labs.forEach(l=>{g+=`<rect x="${Wd-pr+3}" y="${(l.y-8).toFixed(1)}" width="${pr-4}" height="16" rx="4" style="fill:color-mix(in srgb,${l.c} 16%,transparent)"/><text x="${Wd-pr+3+(pr-4)/2}" y="${(l.y+4).toFixed(1)}" font-size="10.5" font-weight="700" text-anchor="middle" fill="${l.c}">${esc(l.l)}</text>`});
   const span=(t1-t0)/864e5,xt=[];
@@ -945,7 +948,7 @@ function svgChart(o){const Wd=Math.max(300,o.W||320),H=o.H||250,pl=6,pr=o.pr||60
   else if(span>=75){const stpM=span>550?6:span>270?3:span>130?2:1,d0=new Date(t0);for(let k=1;k<400;k++){const d=new Date(d0.getFullYear(),d0.getMonth()+k,1);if(d.getTime()>=t1)break;if(stpM===1||d.getMonth()%stpM===0)xt.push([d.getTime(),MS[d.getMonth()]+(d.getMonth()===0?' '+String(d.getFullYear()).slice(2):'')])}}
   else[.2,.4,.6,.8].forEach(f=>{const tt=t0+f*(t1-t0),d=new Date(tt);xt.push([tt,pad(d.getDate())+'/'+pad(d.getMonth()+1)])});
   xt.forEach(([tt,l])=>{const x=X(tt);if(x>pl+10&&x<Wd-pr-10)g+=`<text x="${x.toFixed(1)}" y="${H-6}" font-size="10.5" fill="var(--mute)" text-anchor="middle">${l}</text>`});
-  const id='c'+(++CHN);CH[id]={Wd,pl,pr,t0,t1,X,Y,S:S.map(s=>({n:s.n||'',c:s.c,p:s.p})),tf:o.tf||fe,td:o.td||dFr};
+  const id='c'+(++CHN);CH[id]={Wd,pl,pr,t0,t1,X,Y,S:S.map(s=>({n:s.n||'',c:s.c,p:s.p,Y:s.Y,tf:s.tf})),tf:o.tf||fe,td:o.td||dFr};
   return`<div class="cw"><svg data-ch="${id}" viewBox="0 0 ${Wd} ${H}" width="100%" height="${H}" style="display:block;overflow:visible">${g}<line class="xh" y1="${pt}" y2="${yb}" stroke="var(--mute)" stroke-dasharray="3 3" style="display:none"/>${S.map(s=>`<circle class="xd" r="3.6" fill="${s.c}" stroke="var(--card)" stroke-width="1.5" style="display:none"/>`).join('')}</svg><div class="ctip"></div></div>`}
 
 /* ---------- Affichage ---------- */
@@ -1071,8 +1074,8 @@ async function renderTab(kk,bx){const A=ANA,box=bx||$('#atab');if(!A||!box)retur
     const cur=pts[pts.length-1],R=h.rows,lb={fav:['Favorable (70 et plus)','up'],neu:['Neutre (45 à 69)','am'],bad:['Peu favorable (moins de 45)','dn']},
       few=R[0].n<10||R[2].n<10,verdict=few?'Trop peu de relevés en zone favorable ou peu favorable pour dire si la note a été utile sur cette action.':(R[0].avg>R[2].avg?'Sur cette action, la note a plutôt été utile : les cours montaient davantage après une note favorable.':'Sur cette action, la note n’a pas été utile : les cours ne montaient pas davantage après une note favorable.');
     box.innerHTML=H('Indicateur « cours seul » au fil du temps (différent de la note sur 100)',`${dFr(WF.t[WF.t.length-1])} · note <b>${Math.round(cur.note)}</b> · cours <b>${fe(p)}</b> · suite pas encore connue`)
-      +svgChart({W:Wd,H:240,lo:0,hi:100,ticks:[0,45,70,100],fy:v=>nf(0).format(v),tf:v=>nf(0).format(v)+' / 100',zones:[{a:0,b:45,c:'color-mix(in srgb,var(--dn) 10%,transparent)'},{a:45,b:70,c:'color-mix(in srgb,#b45309 9%,transparent)'},{a:70,b:100,c:'color-mix(in srgb,var(--up) 10%,transparent)'}],S:[{n:'Note',p:pts.map(x=>[x.t,x.note]),c:'var(--ink)',w:1.4}],marks:[{t:cur.t,v:cur.note,c:'var(--ink)'}],hl:[{v:cur.note,c:'var(--mute)',l:nf(0).format(cur.note)}]})
-      +`<p style="font-weight:700;margin:10px 0">${verdict}</p><div class="tw2"><table class="nt"><thead><tr><th>Quand la note était…</th><th>Relevés</th><th>Cours un an plus tard (moyenne)</th><th>En hausse un an plus tard</th></tr></thead><tbody>`
+      +svgChart({W:Wd,H:240,lo:0,hi:100,ticks:[0,45,70,100],fy:v=>nf(0).format(v),tf:v=>nf(0).format(v)+' / 100',zones:[{a:0,b:45,c:'color-mix(in srgb,var(--dn) 10%,transparent)'},{a:45,b:70,c:'color-mix(in srgb,#b45309 9%,transparent)'},{a:70,b:100,c:'color-mix(in srgb,var(--up) 10%,transparent)'}],fyl:v=>nf(v<10?2:0).format(v),S:[{n:'Cours',p:WF.t.slice(pts[0].i).map((t,q)=>[t,WF.c[pts[0].i+q]]),c:'var(--acc)',w:1.6,left:true,tf:fe},{n:'Indicateur',p:pts.map(x=>[x.t,x.note]),c:'var(--ink)',w:1.2}],marks:[{t:cur.t,v:cur.note,c:'var(--ink)'}],hl:[{v:cur.note,c:'var(--mute)',l:nf(0).format(cur.note)}]})
+      +`<div class="sub2"><b style="color:var(--acc)">━ Cours (échelle de gauche)</b> &nbsp; <b>━ Indicateur sur 100 (échelle de droite)</b></div><p style="font-weight:700;margin:10px 0">${verdict}</p><div class="tw2"><table class="nt"><thead><tr><th>Quand la note était…</th><th>Relevés</th><th>Cours un an plus tard (moyenne)</th><th>En hausse un an plus tard</th></tr></thead><tbody>`
       +R.map(r=>`<tr><td class="${lb[r.lb][1]}">${lb[r.lb][0]}</td><td>${r.n}</td><td>${r.avg==null?'–':sg0(r.avg*100)}</td><td>${r.up==null?'–':nf(0).format(r.up*100)+' % des fois'}</td></tr>`).join('')
       +`</tbody></table></div><div class="sub" style="margin-top:8px">Toujours calculé sur tout l’historique, quelle que soit la période choisie. Un relevé toutes les 4 semaines, calculé sans le PER (son historique n’est pas disponible). Les périodes d’un an se chevauchent et le passé ne garantit rien : c’est une indication, pas une preuve.</div>`}
   
