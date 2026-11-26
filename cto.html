@@ -975,10 +975,10 @@ function posActHTML(){
   const cols=['Nom','Quantité','PRU Net (€)','Prix actuel (€)','Valeur Actuel (€)','Gain du jour (€)','Gain Latent (€)','Performance (%)','Gain Réalisé (€)','Dividende Reçu (€)','PRU ajusté','Perf. PRU ajusté (%)','Détention (jour)','Perf. annuelle moy. (%)'];
   const EQ=['Gain du jour (€)','Gain Latent (€)','Performance (%)','Perf. PRU ajusté (%)','Perf. annuelle moy. (%)'];
   const rows=S2.map(p=>{const a=(p.inv-(p.div+p.rl))/p.sh,vp=p.live&&p.pc?(p.px-p.pc)/p.pc*100:null;
-    return[p.nom,pQty(p.sh,'dot'),pPx(p.pru),pPx(p.px)+(vp==null?'':` (${pPerf(vp)})`),pEur(p.val),(vp==null?'N/A':pEurA(p.day)+' ('+(vp>0?'+':'')+pyN(vp,2)+'%)'),pEurA(p.lat),pPerf(p.latP),pEurA(p.rl),pEur(p.div),
+    return[p.nom,pQty(p.sh,'dot'),pPx(p.pru),pPx(p.px)+(vp==null?'':` (${pPerf(vp)})`),pEur(p.val),(vp==null?'N/A':pEurA(p.day)+' ('+pPerf(vp)+')'),pEurA(p.lat),pPerf(p.latP),pEurA(p.rl),pEur(p.div),
       isNaN(a)?'N/A':pPx(Math.max(a,0)),isNaN(a)||isNaN(p.px)?'N/A':a<=0?'Gratuite':pPerf((p.px-a)/a*100),pDuree(p.jours,p.secs),pPerf(perfAnn(p.latP,p.jours))]});
   const sum=k=>A.reduce((s,p)=>s+(p[k]||0),0),tv=sum('val'),gl=sum('lat'),gr=sum('rl'),dv=sum('div'),cap=sum('inv'),vj=A.reduce((s,p)=>s+(p.live&&p.pc?p.day:0),0),tvv=tv-vj;
-  const T=cols.map(()=>'');T[0]='Total';T[4]=pEur(tv);T[5]=tvv>0?pEurA(vj)+' ('+(vj>0?'+':'')+pyN(vj/tvv*100,2)+'%)':'N/A';T[6]=pEurA(gl);T[8]=pEurA(gr);T[9]=pEur(dv);T[7]=cap>0?pPerf(gl/cap*100):'N/A';
+  const T=cols.map(()=>'');T[0]='Total';T[4]=pEur(tv);T[5]=tvv>0?pEurA(vj)+' ('+pPerf(vj/tvv*100)+')':'N/A';T[6]=pEurA(gl);T[8]=pEurA(gr);T[9]=pEur(dv);T[7]=cap>0?pPerf(gl/cap*100):'N/A';
   const ca=cap-dv-gr;
   if(cap>0){T[11]=ca>0?pPerf((tv-ca)/ca*100):'Gratuite';const jw=A.reduce((s,p)=>s+(p.jours||0)*(p.inv||0),0)/cap;T[13]=pPerf(perfAnn(gl/cap*100,jw))}
   
@@ -999,11 +999,19 @@ function allocData(){
   const groupe=(cles,off,ordre)=>{const val={},mem={};cles.forEach((k,i)=>{val[k]=(val[k]||0)+rows[i].v;(mem[k]=mem[k]||[]).push(i)});
     return(ordre||Object.keys(val).sort((a,b)=>val[b]-val[a])).filter(k=>k in val).map((k,i)=>({n:k,v:pEur(val[k]),pct:val[k]/total*100,pt:pc(val[k]/total*100),c:allocColor(i+off),m:mem[k]}))};
   let capTot=0,nCap=0;const caps=rows.map(r=>{const d=S.wl.f[r.t]||{},mc=d.mc,qt=String(d.qt||'').toUpperCase();if(mc&&!ETFQ.includes(qt)){capTot+=+mc;nCap++}return capBucket(mc,qt)});
+  const SECFR={'Technology':'Technologie','Financial Services':'Services financiers','Healthcare':'Santé','Consumer Cyclical':'Conso. cyclique','Consumer Defensive':'Conso. de base','Industrials':'Industrie','Basic Materials':'Matériaux de base','Energy':'Énergie','Utilities':'Services publics','Real Estate':'Immobilier','Communication Services':'Communication'},PAYSFR={'France':'France','Netherlands':'Pays-Bas','United States':'États-Unis','Germany':'Allemagne','United Kingdom':'Royaume-Uni','Switzerland':'Suisse','Italy':'Italie','Spain':'Espagne','Belgium':'Belgique','Ireland':'Irlande','Denmark':'Danemark','Sweden':'Suède','Finland':'Finlande','Norway':'Norvège','China':'Chine','Japan':'Japon','Taiwan':'Taïwan','South Korea':'Corée du Sud','Israel':'Israël','Luxembourg':'Luxembourg','Austria':'Autriche','Portugal':'Portugal','Canada':'Canada','Australia':'Australie','Hong Kong':'Hong Kong','India':'Inde','Brazil':'Brésil'},SPEC=['ETF / fonds','Secteur inconnu','Pays inconnu'];
+  const fd=r=>S.wl.f[r.t]||{},isE=r=>ETFQ.includes(String(fd(r).qt||'').toUpperCase());
+  const secs=rows.map(r=>isE(r)?'ETF / fonds':fd(r).sec?(SECFR[fd(r).sec]||fd(r).sec):'Secteur inconnu'),pays=rows.map(r=>isE(r)?'ETF / fonds':fd(r).co?(PAYSFR[fd(r).co]||fd(r).co):'Pays inconnu');
+  const ordL=arr=>{const v={};arr.forEach((k,i)=>v[k]=(v[k]||0)+rows[i].v);return Object.keys(v).sort((a,b)=>(SPEC.includes(a)-SPEC.includes(b))||v[b]-v[a])};
+  const nbk=arr=>new Set(arr.filter(k=>!SPEC.includes(k))).size;
   const A=rows.map((r,i)=>({n:r.n,v:pEur(r.v),pct:r.v/total*100,pt:pc(r.v/total*100),c:allocColor(i),m:[i],x:caps[i]}));
   const K=groupe(caps,3,[...CAPB.map(b=>b[0]),'ETF / fonds','Capitalisation inconnue']),iK={};K.forEach((it,i)=>iK[it.n]=i);
   const plur=(n,a,b)=>`${n} ${n<2?a:b}`;
+  const KS=groupe(secs,1,ordL(secs)),iS={};KS.forEach((it,i)=>iS[it.n]=i);const KP=groupe(pays,5,ordL(pays)),iP={};KP.forEach((it,i)=>iP[it.n]=i);
   return[{title:'Par action',items:A,nouns:['action','actions'],rest:['Total portefeuille',pEur(total),plur(A.length,'position','positions'),''],f:rows.map((_,i)=>[[i,1]]),W:rows.map(r=>r.v/total)},
-    {title:'Par capitalisation',items:K,nouns:['tranche','tranches'],rest:['Capitalisation cumulée',nCap?fmtCap(capTot):'N/A',plur(nCap,'société','sociétés'),'(hors ETF)'],f:caps.map(c=>[[iK[c],1]])}]}
+    {title:'Par capitalisation',items:K,nouns:['tranche','tranches'],rest:['Capitalisation cumulée',nCap?fmtCap(capTot):'N/A',plur(nCap,'société','sociétés'),'(hors ETF)'],f:caps.map(c=>[[iK[c],1]])},
+    {title:'Par secteur',items:KS,nouns:['secteur','secteurs'],rest:['Secteurs représentés',String(nbk(secs)),plur(nbk(secs),'secteur','secteurs'),'(hors ETF)'],f:secs.map(c=>[[iS[c],1]])},
+    {title:'Par pays (siège social)',items:KP,nouns:['pays','pays'],rest:['Pays représentés',String(nbk(pays)),plur(nbk(pays),'pays','pays'),'(hors ETF)'],f:pays.map(c=>[[iP[c],1]])}]}
 function allocHTML(){return'<div id="alloc"><div class="al-grid"></div></div>'}
 function allocInit(DON){
   const root=document.getElementById('alloc');if(!root)return;
@@ -1312,7 +1320,8 @@ const CELL_RE=/^(?:([▲▼▬=])\s)?(.*\d.*?)\s?(€|%)?$/,PAREN_RE=/^(.*?)\s?\
 const stkBg=(cs,rs)=>{const m=BG_RE.exec(cs||'')||BG_RE.exec(rs||'');if(!m)return cs;const c=m[1].trim();return(cs||'')+`background-color:var(--card);background-image:linear-gradient(${c},${c});`};
 function parenCell(v,pw,nw){const m=PAREN_RE.exec(String(v));if(!m)return null;let[,px,ar,num]=m;const col=ar=='▲'?'#16a34a':ar=='▼'?'#dc2626':'#64748b';if(ar=='▬')ar='=';
   const unit=num.endsWith('%')?'%':'';if(unit)num=num.slice(0,-1);
-  return`<span class="ca"><span class="rv" style="min-width:${pw}ch">${esc(px)}</span><span style="color:${col};font-weight:700;display:inline-flex;align-items:baseline;gap:.12em;margin-left:.4em"><span>(</span><span class="ar">${ar}</span><span class="rv" style="min-width:${nw}ch">${esc(num)}</span><span>${unit})</span></span></span>`}
+  let pa='',pmw=pw;const am=/^([▲▼▬=])\s(.*)$/.exec(px);if(am){pa=am[1]=='▬'?'=':am[1];px=am[2];pmw=Math.max(pw-2,0)}
+  return`<span class="ca">${pa?`<span class="ar">${pa}</span>`:''}<span class="rv" style="min-width:${pmw}ch">${esc(px)}</span><span style="color:${col};font-weight:700;display:inline-flex;align-items:baseline;margin-left:.4em"><span class="rv" style="min-width:${nw+2.4}ch;white-space:nowrap">(<span class="ar">${ar}</span>${esc(num)}</span><span>${unit})</span></span></span>`}
 /* cols : noms ; rows : tableaux de textes ; o.cell(col,val)->css ; o.row[i]->css ; o.sticky : nom de colonne figée */
 function peaTable(cols,rows,o={}){
   const parsed={},numW={},hasAr={},parenW={},tot=o.total||null,all=tot?[...rows,tot]:rows,ix=o.index||null;
@@ -1338,6 +1347,7 @@ function peaTable(cols,rows,o={}){
 /* tri au clic sur un en-tête (même logique de clé que le Streamlit) */
 const tblKey=s=>{s=(s||'').trim();let m=s.match(/^(\d{2})[-\/](\d{2})[-\/](\d{4})$/);if(m)return+(m[3]+m[2]+m[1]);m=s.match(/^(\d{2})\/(\d{4})$/);if(m)return+(m[2]+m[1]);
   const c=s.replace(/[\u00a0\u202f\s€%▲▼▬=]/g,'').replace('\u2212','-').replace(',','.');if(/^[+\-]?\d+(\.\d+)?$/.test(c))return parseFloat(c);
+  const pm=s.replace(/[\u00a0\u202f\s▲▼▬=]/g,'').match(/^([+\-\u2212]?\d+(?:,\d+)?)€?\(/);if(pm)return parseFloat(pm[1].replace('\u2212','-').replace(',','.'));
   const l=s.match(/^(\d+)\s*\(/);if(l)return parseFloat(l[1]);return s=='-'||s==''?null:s.toLowerCase()};
 document.addEventListener('click',e=>{const th=e.target.closest&&e.target.closest('.pea-tbl thead th');if(!th||th.classList.contains('ix'))return;
   const t=th.closest('table'),hr=t.tHead.rows[0],i=[...hr.cells].indexOf(th),d=(t._last===i&&t._dir==1)?-1:1;t._dir=d;t._last=i;
@@ -1358,7 +1368,7 @@ async function fundFetch(tks){if(!S.url||S.fbusy)return;S.fbusy=true;S.fmsg='';S
     LS.s(AX+'_wlf',S.wl.f);S.fmsg=n?'':'old'}
   catch(e){S.fmsg='old'}
   S.fbusy=false;draw()}
-function fondEnsure(tks){const stale=tks.filter(t=>!S.wl.f[t]||Date.now()-(S.wl.f[t]._at||0)>FUND_TTL);
+function fondEnsure(tks){const stale=tks.filter(t=>!S.wl.f[t]||!('sec' in S.wl.f[t])||Date.now()-(S.wl.f[t]._at||0)>FUND_TTL);
   if(!stale.length||S.fbusy||!S.url)return;const k=stale.join(',');if(S.fTry&&S.fTry.split('|')[0]==k&&Date.now()-+S.fTry.split('|')[1]<3e5)return;setTimeout(()=>fundFetch(stale),0)}
 /* ===== Composants communs repris du Streamlit : cartes, infobulles, cartographie mensuelle ===== */
 const TIPS=[];
