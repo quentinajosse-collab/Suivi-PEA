@@ -12,7 +12,7 @@
 
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 main{max-width:980px;margin:0 auto;padding:14px 14px 40px}
 header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:6px 0 14px}
 h1{font-size:13px;font-weight:600;color:var(--mute);margin:0}
@@ -198,7 +198,7 @@ button{border-radius:10px;font-weight:600;transition:all .15s ease-in-out}
 .ocard{border-radius:12px;padding:8px 4px;text-align:center;min-width:0;display:flex;flex-direction:column;justify-content:center}
 .ocard .ol{color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:.03em;line-height:1.25}
 .ocard .ov{font-family:'Manrope','Inter',sans-serif;font-weight:800;margin-top:3px;line-height:1.25}
-#opsbar{position:fixed;left:0;right:0;bottom:0;z-index:9999;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:20px 20px 0 0;border-top:1px solid #e2e8f0;box-shadow:0 -6px 24px rgba(15,23,42,.12);padding:14px max(16px,6vw) calc(14px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+#opsbar{position:fixed;left:env(safe-area-inset-left,0px);right:env(safe-area-inset-right,0px);bottom:0;z-index:9999;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:20px 20px 0 0;border-top:1px solid #e2e8f0;box-shadow:0 -6px 24px rgba(15,23,42,.12);padding:14px max(16px,6vw) calc(14px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:1fr 1fr;gap:1rem}
 #opsbar button{height:52px;font-size:1rem;font-weight:700;border-radius:14px;letter-spacing:.01em;padding:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #opsbar #add{background:linear-gradient(135deg,#0284c7 0%,#0369a1 100%);border:none;color:#fff;box-shadow:0 4px 14px rgba(2,132,199,.35)}
 #opsbar #add:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(2,132,199,.45)}
@@ -972,18 +972,18 @@ const exp2=(k,t,b)=>`<details class="exp" data-ex="${k}"${S.exc.has(k)?'':' open
 function posActHTML(){
   const A=R.pos.filter(p=>p.open&&p.sh>1e-4);if(!A.length)return'<div class="info">Aucune position active pour le moment.</div>';
   const S2=[...A].sort((a,b)=>b.latP-a.latP);
-  const cols=['Nom','Quantité','PRU Net (€)','Prix actuel (€)','Valeur Actuel (€)','Gain Latent (€)','Performance (%)','Gain Réalisé (€)','Dividende Reçu (€)','PRU ajusté','Perf. PRU ajusté (%)','Détention (jour)','Perf. annuelle moy. (%)'];
-  const EQ=['Gain Latent (€)','Performance (%)','Perf. PRU ajusté (%)','Perf. annuelle moy. (%)'];
+  const cols=['Nom','Quantité','PRU Net (€)','Prix actuel (€)','Valeur Actuel (€)','Gain du jour (€)','Gain Latent (€)','Performance (%)','Gain Réalisé (€)','Dividende Reçu (€)','PRU ajusté','Perf. PRU ajusté (%)','Détention (jour)','Perf. annuelle moy. (%)'];
+  const EQ=['Gain du jour (€)','Gain Latent (€)','Performance (%)','Perf. PRU ajusté (%)','Perf. annuelle moy. (%)'];
   const rows=S2.map(p=>{const a=(p.inv-(p.div+p.rl))/p.sh,vp=p.live&&p.pc?(p.px-p.pc)/p.pc*100:null;
-    return[p.nom,pQty(p.sh,'dot'),pPx(p.pru),pPx(p.px)+(vp==null?'':` (${pPerf(vp)})`),pEur(p.val),pEurA(p.lat),pPerf(p.latP),pEurA(p.rl),pEur(p.div),
+    return[p.nom,pQty(p.sh,'dot'),pPx(p.pru),pPx(p.px)+(vp==null?'':` (${pPerf(vp)})`),pEur(p.val),(vp==null?'N/A':pEurA(p.day)+' ('+(vp>0?'+':'')+pyN(vp,2)+'%)'),pEurA(p.lat),pPerf(p.latP),pEurA(p.rl),pEur(p.div),
       isNaN(a)?'N/A':pPx(Math.max(a,0)),isNaN(a)||isNaN(p.px)?'N/A':a<=0?'Gratuite':pPerf((p.px-a)/a*100),pDuree(p.jours,p.secs),pPerf(perfAnn(p.latP,p.jours))]});
   const sum=k=>A.reduce((s,p)=>s+(p[k]||0),0),tv=sum('val'),gl=sum('lat'),gr=sum('rl'),dv=sum('div'),cap=sum('inv'),vj=A.reduce((s,p)=>s+(p.live&&p.pc?p.day:0),0),tvv=tv-vj;
-  const T=cols.map(()=>'');T[0]='Total';T[4]=pEur(tv);T[5]=pEurA(gl);T[7]=pEurA(gr);T[8]=pEur(dv);T[6]=cap>0?pPerf(gl/cap*100):'N/A';
+  const T=cols.map(()=>'');T[0]='Total';T[4]=pEur(tv);T[5]=tvv>0?pEurA(vj)+' ('+(vj>0?'+':'')+pyN(vj/tvv*100,2)+'%)':'N/A';T[6]=pEurA(gl);T[8]=pEurA(gr);T[9]=pEur(dv);T[7]=cap>0?pPerf(gl/cap*100):'N/A';
   const ca=cap-dv-gr;
-  if(cap>0){T[10]=ca>0?pPerf((tv-ca)/ca*100):'Gratuite';const jw=A.reduce((s,p)=>s+(p.jours||0)*(p.inv||0),0)/cap;T[12]=pPerf(perfAnn(gl/cap*100,jw))}
-  T[3]=tvv>0?`(${pPerf(vj/tvv*100)})`:'';
+  if(cap>0){T[11]=ca>0?pPerf((tv-ca)/ca*100):'Gratuite';const jw=A.reduce((s,p)=>s+(p.jours||0)*(p.inv||0),0)/cap;T[13]=pPerf(perfAnn(gl/cap*100,jw))}
+  
   const h=Math.min(Math.max(40+(rows.length+1)*35+20,100),1000);
-  return peaTable(cols,rows.map(r=>dashRow(r,cols,EQ)),{cell:flecheStyle(['Performance (%)','Perf. PRU ajusté (%)','Perf. annuelle moy. (%)','Gain Latent (€)','Gain Réalisé (€)']),sticky:'Nom',maxH:h,total:dashRow(T,cols,EQ)})}
+  return peaTable(cols,rows.map(r=>dashRow(r,cols,EQ)),{cell:flecheStyle(['Performance (%)','Perf. PRU ajusté (%)','Perf. annuelle moy. (%)','Gain du jour (€)','Gain Latent (€)','Gain Réalisé (€)']),sticky:'Nom',maxH:h,total:dashRow(T,cols,EQ)})}
 
 /* --- 2) Répartition du portefeuille : deux anneaux liés (port de _render_allocation / _ALLOC4_HTML) --- */
 const ALC=['#8fb0ff','#f2c5e8','#c8d9ff','#c8b8f5','#f2b6ae','#dda899','#f4d9b0','#c5dfc5','#6fb3ad'];
