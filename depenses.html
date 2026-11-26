@@ -229,7 +229,7 @@ dialog#dlgH{width:min(560px,94vw);max-height:88vh;overflow:auto}
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0284c7">
-<title>Watchlist</title>
+<title>Watchlist</title><style>.wsec{margin:0 0 6px}.wsh{margin:16px 4px 6px;font-size:.95rem;font-weight:800;color:var(--ink)}.wsec:first-child .wsh{margin-top:6px}</style>
 <style>
 :root{--bg:#f4f7fb;--card:#fff;--ink:#0f172a;--mute:#64748b;--line:#e2e8f0;--up:#15803d;--dn:#b91c1c;--acc:#0284c7;--alt:#f8fafc}
 @media(prefers-color-scheme:dark){:root{--bg:#0b1220;--card:#131c2e;--ink:#e5edf8;--mute:#94a3b8;--line:#243049;--alt:#0f1829;--acc:#4f8fd0;--up:#34d399;--dn:#f87171}}
@@ -305,7 +305,27 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
 .ob .oa1{background:linear-gradient(to right,color-mix(in srgb,var(--dn) 24%,transparent) var(--w),transparent var(--w))}
 .ob .ob1 b{color:var(--up)}.ob .oa1 b{color:var(--dn)}
 .ob .on{color:var(--mute);font-size:11.5px;margin-top:8px}
+.topb{padding:4px 14px;font-size:.85rem;min-height:34px;border-radius:8px;background:var(--card);border:1px solid var(--line);color:var(--mut);font-weight:600;cursor:pointer;margin:0 0 10px;width:auto;box-shadow:0 1px 3px rgba(0,0,0,.06)}.topb.on{border-color:var(--bleu);color:var(--bleu)}
 :root{--amb:#b45309}@media(prefers-color-scheme:dark){:root{--amb:#fbbf24}}
+.ov2{background:transparent;border:1px solid rgba(49,51,63,.2);border-radius:.5rem;overflow:hidden;color:var(--ink);font-variant-numeric:tabular-nums lining-nums}
+.ov2 [data-mt]{cursor:pointer}.ov2 [data-mt] .l::after{content:" ⓘ";opacity:.4;font-size:.85em}
+.ov2 .l{display:block;font-size:.8rem;color:var(--mute);line-height:1.35}
+.ov2 .v{font-family:'Manrope','Inter',system-ui,sans-serif;font-weight:800;letter-spacing:-.03em;white-space:nowrap}
+.ov2 .d{display:block;font-size:.78rem;font-weight:700;white-space:nowrap}.ov2 .g{color:#15803d}.ov2 .r{color:#dc2626}.ov2 .n{color:var(--mute)}
+.ov2-top{padding:15px}
+.ov2-top .big{font-size:2.3rem;line-height:1.15;display:block;margin:2px 0 8px}
+.ov2-chip{display:inline-flex;flex-wrap:wrap;gap:2px 8px;align-items:center;padding:5px 12px;border-radius:999px;font-weight:700;font-size:.86rem;background:rgba(21,128,61,.11);color:#15803d}.ov2-chip.r{background:rgba(220,38,38,.1)}.ov2-chip .l{display:inline;color:inherit;font-size:inherit}
+.ov2-split{display:flex;height:8px;border-radius:4px;overflow:hidden;background:rgba(100,116,139,.18);margin:16px 0 10px}.ov2-split i{display:block}
+.ov2-kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ov2-kv>div+div{text-align:center}.ov2-kv>div:last-child{text-align:right}.ov2-kv .l{font-size:.74rem;white-space:nowrap}.ov2-kv .v{display:block;font-size:clamp(.82rem,3.8vw,1.1rem)}
+.ov2-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px}
+.ov2 h4{margin:0;padding:16px 15px 6px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);border-top:1px solid rgba(100,116,139,.18)}
+.ov2-per{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:2px 8px 12px}
+.ov2-per>div{text-align:center;padding:6px 4px;min-width:0}.ov2-per>div+div{border-left:1px solid rgba(100,116,139,.18)}.ov2-per .v{display:block;font-size:1.15rem}
+.ov2-rows{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:2px 8px 12px}.ov2-rows.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.ov2-row{display:block;text-align:center;padding:8px 4px;min-width:0}.ov2-row+.ov2-row{border-left:1px solid rgba(100,116,139,.18)}.ov2-row:nth-child(3n+1){border-left:0}.ov2-row:nth-child(n+4){border-top:1px solid rgba(100,116,139,.18)}.ov2-rows.c2 .ov2-row:nth-child(3n+1){border-left:1px solid rgba(100,116,139,.18)}.ov2-rows.c2 .ov2-row:nth-child(2n+1){border-left:0}.ov2-rows.c2 .ov2-row:nth-child(n+3){border-top:0}
+.ov2-row .l{font-size:.76rem;color:var(--mute);line-height:1.25;min-height:2.5em;display:flex;align-items:center;justify-content:center}.ov2-row>span:last-child{display:block;text-align:center}.ov2-row .v{display:block;font-size:clamp(.82rem,3.9vw,1.1rem)}.ov2-row .d{font-size:.74rem}
+.ov2-top{text-align:center}.ov2-kv>div:first-child{text-align:left}.ov2-top .l{text-align:center}
+
 .am{color:var(--amb)}
 .mode{display:flex;gap:6px;margin:12px 0 4px}.mode button{flex:1;padding:9px 6px;border-radius:999px}.mode button.on{background:var(--acc);border-color:var(--acc);color:#fff}
 #pane2,#pane3{display:none}#cdlg.mA #pane1,#cdlg.mF #pane1,#cdlg.mF #pane2{display:none}#cdlg.mA #pane2,#cdlg.mF #pane3{display:block}
@@ -488,7 +508,8 @@ function alEval(a,p){const c=a&&a.c,out=[];if(!c||c.length<60||!(p>0))return out
 const alOf=tk=>alEval(ALS[tk],PX[tk]&&PX[tk].p);
 /* à côté du nom, sur la même ligne : la note sur 100 puis une icône par alerte (le détail est dans l'encadré des alertes) */
 const alBadges=tk=>{const n=SCget(tk),L=alOf(tk);return(n==null?'':`<i class="sc ${zcls(n)}" title="Note sur 100">${n}</i>`)+(L.length?`<span class="ali" title="${esc(L.map(a=>ALT[a.k][1]+' : '+a.tx).join(' · '))}">${L.map(a=>ALT[a.k][0]).join('')}</span>`:'')};
-function alRender(){const box=$('#al');if(!box)return;if(!W.length){box.innerHTML='';return}
+function alRender(){wSect('al',alRender1)}
+function alRender1(){const box=BX.cur||$('#al');if(!box)return;if(!W.length){box.innerHTML='';return}
   const all=WF().map(w=>({tk:w.ticker,nom:w.nom,L:alOf(w.ticker)})).filter(x=>x.L.length),buy=x=>x.L.filter(a=>a.k!=='brk').length,
     wait=WF().filter(w=>!/^\^/.test(w.ticker)&&!ALS[w.ticker]).length,op=LS.g('wl_alo')!==0,
     sig=JSON.stringify([all.map(x=>[x.tk,x.L.map(a=>a.k)]),wait,ALF,ALMORE,WF().length,TFK()]);
@@ -1226,7 +1247,7 @@ function anNoteSeries(B){return B.nh||(B.nh=(async()=>{
   for(let i=0;i<wk.length;i++){if(i%60===59)await new Promise(r=>setTimeout(r));const q=anNoteAt(wk[i],D,F,years,crypto,bm);if(q)pts.push(q)}
   B.nhv={pts,stock,years,cash:years.some(x=>typeof x.cash==='number')};return B.nhv})())}
 let NZ={tk:'',a:null,b:null},NZC=null,NZD=null,NZR=0;
-const NZMIN=90*864e5;
+const NZMIN=21*864e5;
 function nzWin(){const{T0,T1}=NZC;let a=NZ.a==null?T0:NZ.a,b=NZ.b==null?T1:NZ.b;a=Math.max(T0,Math.min(a,T1-NZMIN));b=Math.min(T1,Math.max(b,a+NZMIN));return[a,b]}
 function nzSet(a,b){const{T0,T1}=NZC;NZ.a=a<=T0+864e5?null:a;NZ.b=b>=T1-864e5?null:b;if(!NZR)NZR=requestAnimationFrame(()=>{NZR=0;nzDraw()})}
 function nzDraw(){const C=NZC,el=$('#nzch');if(!C||!el)return;const[a,b]=nzWin(),{T0,T1,pts}=C,V=pts.filter(x=>x.t>=a&&x.t<=b),end=b>=T1-864e5,last=pts[pts.length-1];
@@ -1255,7 +1276,7 @@ function nzShow(A,box,T){const R=A.B.nhv,pts=R.pts.slice(),p=A.p,N=A.NS,Wd=anW()
       +' Le PER prévisionnel et l’objectif des analystes n’ont pas d’historique : ils ne comptent que dans le dernier point, qui peut donc faire un saut.'
       +(f1&&!R.cash?' La trésorerie passée n’est pas fournie : la valeur DCF est absente du passé et la dette est comptée sans la déduire (redéploie la dernière version du script Google pour corriger).':'');
   box.innerHTML=`<h3>${T}</h3><div class="sub2">Aujourd’hui : <b class="${zcls(Math.round(N.total))}">${Math.round(N.total)} / 100</b> · cours <b>${fe(p)}</b></div>`
-    +'<div class="zm" id="nzm">'+[1,3,5,10].filter(y=>y<yrs-.3).map(y=>`<button data-zy="${y}">${y} an${y>1?'s':''}</button>`).join('')+'<button data-zy="0">Tout</button></div>'
+    +'<div class="zm" id="nzm">'+[[1/12,'1 mois'],[.5,'6 mois'],[1,'1 an'],[3,'3 ans'],[5,'5 ans'],[10,'10 ans']].filter(([y])=>y<yrs-.3).map(([y,l])=>`<button data-zy="${y}">${l}</button>`).join('')+'<button data-zy="0">Tout</button></div>'
     +'<div class="sub2" id="nzr" style="margin:6px 0 4px"></div><div id="nzch"></div>'
     +`<div class="nv" id="nv" aria-label="Période affichée"><svg viewBox="0 0 1000 40" preserveAspectRatio="none"><path d="${mini}" fill="none" stroke="var(--acc)" stroke-width="1.2" vector-effect="non-scaling-stroke"/></svg><div class="nvs" id="nvl" style="left:0"></div><div class="nvs" id="nvr" style="right:0"></div><div class="nvw" id="nvw"><i data-h="a"></i><i data-h="b"></i></div></div>`
     +'<div class="sub2">Fais glisser le cadre pour te déplacer, ou ses poignées pour élargir et resserrer la période.</div>'
@@ -1425,7 +1446,8 @@ function rkAll(cat,row){const L=W.filter(x=>rkCat(x.ticker)===cat).map(x=>({tk:x
   const chips=`<div class="rkc">${[['note','Par note'],['sec','Par secteur']].map(([k,l])=>`<button data-s="${k}" class="${k===RKS?'on':''}">${l}</button>`).join('')}</div>`;
   if(RKS!=='sec')return chips+L.map(row).join('');
   const f=x=>secOf(x.tk)||'Secteur inconnu';return chips+[...new Set(L.map(f))].sort((a,b)=>a.localeCompare(b,'fr')).map(g=>{const l=L.filter(x=>f(x)===g);return`<div class="rkh">${esc(g)} · ${l.length}</div>`+l.map(row).join('')}).join('')}
-function rkRender(){const box=$('#rk');if(!box)return;if(!W.length){box.innerHTML='';return}
+function rkRender(){wSect('rk',rkRender1)}
+function rkRender1(){const box=BX.cur||$('#rk');if(!box)return;if(!W.length){box.innerHTML='';return}
   const op=LS.g('wl_rko')!==0,cats=['PEA','Crypto','US'],byC=c=>WF().filter(x=>rkCat(x.ticker)===c&&SC[x.ticker]&&SC[x.ticker][0]!=null).map(x=>({tk:x.ticker,nom:x.nom,s:SC[x.ticker][0]})).sort((a,b)=>b.s-a.s),
     L=byC(RKC),top=L.slice(0,5),low=L.slice(Math.max(5,L.length-5)).reverse(),row=x=>`<div class="rr" data-tk="${esc(x.tk)}"><span>${esc(x.nom)}</span><b class="${x.s==null?'':zcls(x.s)}">${x.s??'–'}</b></div>`,
     pend=WF().filter(x=>rkCat(x.ticker)&&!rkOk(x.ticker)).length;
@@ -1446,15 +1468,26 @@ async function rkRun(){secRun();if(RKB||!URL_()||!W.length)return;const hOk=tk=>
 setTimeout(rkRun,6000);setInterval(()=>{if(!document.hidden)rkRun()},18e5);
 /* ---------- Calendrier des résultats & actualités des valeurs de la watchlist ---------- */
 /* ---------- Filtre des onglets : groupe / secteur / zone ---------- */
-let TF={d:'all',v:''};
+let TF={d:'grp',v:''};const NOG='Sans groupe',BX={cur:null};
 const sectOf=tk=>secOf(tk)||'Secteur inconnu',
-  WF=()=>W.filter(w=>TF.d==='all'||!TF.v||(TF.d==='grp'?(w.groupes||[]).includes(TF.v):TF.d==='sec'?sectOf(w.ticker)===TF.v:zoneOf(w.ticker)===TF.v)),
+  WF=()=>W.filter(w=>TF.d==='all'||!TF.v||(TF.d==='grp'?(TF.v===NOG?!(w.groupes||[]).length:(w.groupes||[]).includes(TF.v)):TF.d==='sec'?sectOf(w.ticker)===TF.v:zoneOf(w.ticker)===TF.v)),
   TFK=()=>TF.d+'|'+TF.v;
-function tfVals(){return TF.d==='grp'?allG():[...new Set(W.map(w=>TF.d==='sec'?sectOf(w.ticker):zoneOf(w.ticker)))].sort((a,b)=>a.localeCompare(b,'fr'))}
+function tfVals(){return TF.d==='grp'?[...allG(),...(W.some(w=>!(w.groupes||[]).length)?[NOG]:[])]:[...new Set(W.map(w=>TF.d==='sec'?sectOf(w.ticker):zoneOf(w.ticker)))].sort((a,b)=>a.localeCompare(b,'fr'))}
 function tfRender(){const b=$('#wtf');if(!b)return;if(TF.v&&!tfVals().includes(TF.v))TF.v='';
   const h=[['all','Tout'],['grp','Groupe'],['sec','Secteur'],['zone','Zone']].map(([k,l])=>`<button data-f="${k}" class="${k===TF.d?'on':''}">${l}</button>`).join('')
     +(TF.d!=='all'?`<select class="nwsel" data-fv><option value="">${TF.d==='grp'?'Tous les groupes':TF.d==='sec'?'Tous les secteurs':'Toutes les zones'}</option>${tfVals().map(v=>`<option value="${esc(v)}"${v===TF.v?' selected':''}>${esc(v)}</option>`).join('')}</select>`:'');
   if(b._h!==h){b._h=h;b.innerHTML=h}}
+/* sans valeur choisie dans « Groupe / Secteur / Zone », chaque groupe, secteur ou zone s'affiche en section, comme la liste des valeurs */
+function wSect(id,fn){const host=document.getElementById(id);if(!host)return;
+  const flat=()=>{if(host.dataset.sec){host.dataset.sec='';host.innerHTML='';host._h=null}BX.cur=null;fn()};
+  if(TF.d==='all'||TF.v)return flat();
+  const keep=TF.v,vals=tfVals().filter(v=>{TF.v=v;const n=WF().length;TF.v=keep;return n>0});
+  if(!vals.length)return flat();
+  const key=TF.d+'|'+vals.join('\u0001');
+  if(host.dataset.sec!==key){host.dataset.sec=key;host._h=null;host.innerHTML=vals.map((v,i)=>`<div class="wsec"><h3 class="wsh">${esc(v)}</h3><div class="wsb" data-i="${i}"></div></div>`).join('')}
+  vals.forEach((v,i)=>{const sb=host.querySelector(`.wsb[data-i="${i}"]`);if(!sb)return;TF.v=v;BX.cur=sb;if(id==='al')ALSIG=null;
+    try{fn()}finally{TF.v=keep;BX.cur=null}
+    sb.parentElement.style.display=sb.textContent.trim()?'':'none'})}
 function tfApply(){tfRender();ALSIG=null;alRender();rkRender();calRender();nwRender()}
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('#wtf [data-f]');if(!t)return;TF={d:t.dataset.f,v:''};tfApply()});
 document.addEventListener('change',e=>{const t=e.target.closest&&e.target.closest('#wtf [data-fv]');if(!t)return;TF.v=t.value;tfApply()});
@@ -1467,7 +1500,8 @@ function calItems(){const up=[],last=[];
     if(nx&&spDays(nx.date)>=-1)up.push({tk:w.ticker,nom:w.nom,date:nx.date,date2:nx.date2,eps:nx.eps});
     const h=E.hist&&E.hist.length?E.hist[E.hist.length-1]:null;if(h)last.push({tk:w.ticker,nom:w.nom,q:h.q,act:h.act,est:h.est,sur:beat(h)})});
   up.sort((a,b)=>a.date<b.date?-1:1);last.sort((a,b)=>a.q<b.q?1:-1);return{up,last}}
-function calRender(){const box=$('#cal');if(!box)return;const T=earnTks();if(!T.length){setBox(box,'');return}
+function calRender(){wSect('cal',calRender1)}
+function calRender1(){const box=BX.cur||$('#cal');if(!box)return;const T=earnTks();if(!T.length){setBox(box,'');return}
   const{up,last}=calItems(),op=LS.g('wl_calo')!==0,pend=T.filter(w=>!CAL[w.ticker]||!CAL[w.ticker].E).length,f2=v=>v==null?'–':nfr(2,2).format(v),
     su=CALMORE?up:up.slice(0,6),sl=CALMORE?last:last.slice(0,6),
     rowU=x=>{const dd=spDays(x.date),when=dd>0?'dans '+dd+' j':dd===0?'aujourd’hui':'hier';
@@ -1483,7 +1517,8 @@ function calRender(){const box=$('#cal');if(!box)return;const T=earnTks();if(!T.
 async function calRun(){if(CALB||!URL_())return;const todo=earnAll().filter(w=>{const c=CAL[w.ticker];return!c||Date.now()-c.at>(c.E&&c.E.ok?432e5:36e5)}).map(w=>w.ticker);if(!todo.length)return;CALB=true;
   try{let n=0;while(todo.length){await bgWait();const tk=todo.shift(),E=await anEarn(tk);CAL[tk]={at:Date.now(),E};if(++n%3===0){LS.s('wl_cal',CAL);calRender()}await bgSleep(500)}}catch(e){}
   LS.s('wl_cal',CAL);CALB=false;calRender()}
-function nwRender(){const box=$('#nw');if(!box)return;const T=WF().filter(w=>!/^\^/.test(w.ticker));if(!T.length){setBox(box,'');return}
+function nwRender(){wSect('nw',nwRender1)}
+function nwRender1(){const box=BX.cur||$('#nw');if(!box)return;const T=WF().filter(w=>!/^\^/.test(w.ticker));if(!T.length){setBox(box,'');return}
   const op=LS.g('wl_nwo')!==0,M=new Map();
   T.forEach(w=>{const c=NW[w.ticker];if(!c||!Array.isArray(c.L))return;c.L.forEach(a=>{if(!a||!a.t||!a.u)return;const k=a.u,o=M.get(k)||{t:a.t,p:a.p,u:a.u,ts:a.ts||0,n:[]};if(!o.n.includes(w.ticker))o.n.push(w.ticker);M.set(k,o)})});
   const all=[...M.values()].sort((a,b)=>b.ts-a.ts),names=[...new Set(all.flatMap(a=>a.n))].sort((a,b)=>nmW(a).localeCompare(nmW(b),'fr'));
@@ -1516,8 +1551,8 @@ function wtSet(k){tfRender();if(!WT.some(x=>x[0]===k))k='';document.body.dataset
   b.addEventListener('click',e=>{const t=e.target.closest('button[data-t]');if(t)wtSet(document.body.dataset.wt===t.dataset.t?'':t.dataset.t)});
   wtSet('');tfRender();
   /* chaque onglet affiche son contenu en entier : les cadres repliables restent toujours ouverts */
-  const open=()=>document.querySelectorAll('#al>details,#rk>details,#cal>details,#nw>details').forEach(d=>{if(!d.open)d.open=true});
-  const mo=new MutationObserver(open);['al','rk','cal','nw'].forEach(i=>{const n=document.getElementById(i);if(n)mo.observe(n,{childList:true})});open()})();
+  const open=()=>document.querySelectorAll('#al details,#rk details,#cal details,#nw details').forEach(d=>{if(!d.open)d.open=true});
+  const mo=new MutationObserver(open);['al','rk','cal','nw'].forEach(i=>{const n=document.getElementById(i);if(n)mo.observe(n,{childList:true,subtree:true})});open()})();
 /* ---------- Démarrage ---------- */
 addEventListener('storage',e=>{if(e.key==='url')refresh();if(e.key==='sb')pull();if(e.key==='wl_list'){W=norm(LS.g('wl_list'));render()}if(e.key==='wl_groups'){G=(LS.g('wl_groups')||[]).filter(Boolean);render()}});
 addEventListener('message',e=>{if(e.source===parent&&e.data&&e.data.hubHome){document.querySelectorAll('dialog[open]').forEach(d=>{try{d.close()}catch(_){}});scrollTo(0,0)}});
@@ -1550,7 +1585,7 @@ try{const o=JSON.parse(sessionStorage.getItem('wl_open')||'null');if(o&&W.some(x
 <script>/* Module Watchlist (?m=watchlist) : page autonome embarquée dans ce fichier, isolée du reste de l'appli */
 if(new URLSearchParams(location.search).get("m")==="watchlist"){const src=document.getElementById("wlsrc").textContent.replace(/<\\\/script>/g,"<\/script>");window.__wl=1;location.replace(URL.createObjectURL(new Blob([src],{type:"text/html;charset=utf-8"})))}</script>
 <header><h1>💶 Mes Dépenses, Salaires, Primes, Crédit, Santé &amp; Impôts</h1><small id="sub"></small></header>
-<main><nav id="nav"></nav><div id="app"></div></main>
+<main><div id="topbar"></div><nav id="nav"></nav><div id="app"></div></main>
 <div id="opsbar"><button id="fabA" type="button"></button><button id="fabB" type="button"></button></div>
 
 <dialog id="dlg"><form method="dialog" id="frm">
@@ -2029,11 +2064,15 @@ function cashflow(L){
  return`<div class="sc"><svg width="${W.toFixed(0)}" height="${(Hm+20).toFixed(0)}">${rb}${nd}${lb}</svg></div><div class="lg"><span>Touche un flux ou une étiquette pour le détail · fais glisser pour voir tout le schéma</span></div>`}
 
 /* ---------- Dépenses récurrentes (modifiables sur le téléphone) ---------- */
-function vRec(){const R=D.recurrentes,c=R.filter(r=>r.type==="Charge").reduce((a,r)=>a+r.montant,0),v=R.filter(r=>r.type==="Revenu").reduce((a,r)=>a+r.montant,0);
+function vRec(){const R=D.recurrentes,c=R.filter(r=>r.type==="Charge").reduce((a,r)=>a+r.montant,0),v=R.filter(r=>r.type==="Revenu").reduce((a,r)=>a+r.montant,0),
+ ls=[...(D.salaires||[])].filter(s=>s.date).sort((x,y)=>x.date<y.date?1:-1)[0],sv=ls?Math.max(0,(ls.net||0)-(ls.impot||0)):0,base=v>0?v:sv,vir=base-c,
+ srcTxt=v>0?"revenus récurrents saisis ci-dessous":(ls?"dernier salaire reçu ("+mlabel(ls.date.slice(0,7))+", net après impôts)":"aucun salaire connu");
  return`<button id="bAddRec" style="width:100%;margin-bottom:12px">➕ Ajouter une récurrence</button>
  <div class="kpis"><div class="kpi" style="--c:var(--rouge)"><span>Charges / mois</span><b>${eur2(c)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Revenus / mois</span><b>${eur2(v)}</b></div>
  <div class="kpi" style="--c:var(--bleu)"><span>Solde / mois</span><b>${eur2(v-c)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Charges / an</span><b>${eur2(c*12)}</b></div></div>
- ${card("rec-list","Récurrentes · touche une ligne pour la modifier",`<div class="lst">${R.length?R.map((r,i)=>`<div class="op" data-rec="${i}"><div class="m"><b>${esc(r.libelle)}</b><small>${esc(r.categorie||"")} · ${r.type==="Revenu"?"Revenu":"Charge"}${r.groupe?" · 🧳 "+esc(r.groupe):""}</small></div><span class="am ${r.type==="Revenu"?"pos":"neg"}">${eur2(r.montant)}</span><span style="color:var(--mut)">✎</span></div>`).join(""):'<div class="empty">Aucune récurrence</div>'}</div>`)}`}
+ <div class="kpis k3" style="margin-top:10px"><div class="kpi" style="--c:var(--rouge)"><span>Montant à laisser sur le compte</span><b>${eur2(c)}</b></div><div class="kpi" style="--c:var(--bleu)"><span>Salaire pris en compte</span><b>${eur2(base)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Virement possible vers l'autre compte</span><b>${eur2(vir)}</b></div></div>
+ <div class="d" style="margin:6px 4px 12px">Les prélèvements restent sur le compte du salaire : tu y laisses le montant des charges et tu peux virer le reste (loisirs, épargne…). Salaire retenu : ${srcTxt}.</div>
+ ${card("rec-list","Prélèvements simulés · touche une ligne pour la modifier",`<div class="lst">${R.length?R.map((r,i)=>`<div class="op" data-rec="${i}"><div class="m"><b>${esc(r.libelle)}</b><small>${esc(r.categorie||"")} · ${r.type==="Revenu"?"Revenu":"Charge"}${r.groupe?" · 🧳 "+esc(r.groupe):""}</small></div><span class="am ${r.type==="Revenu"?"pos":"neg"}">${eur2(r.montant)}</span><span style="color:var(--mut)">✎</span></div>`).join(""):'<div class="empty">Aucune récurrence</div>'}</div>`)}`}
 
 /* ---------- Suivi crédit (tous les prêts regroupés) ---------- */
 function pmt(c,t,n){const i=t/1200;return i>0?c*i/(1-Math.pow(1+i,-n)):c/n}
@@ -2185,13 +2224,13 @@ let salY=TODAY().slice(0,4);
    (à défaut d'année précédente : moyenne mensuelle de l'année en cours). Ne dépend que des salaires.
    Cohérence : reste à payer = impôt estimé − impôt déjà payé ; net après impôts du reste = net avant impôts du reste − reste à payer ;
    taux moyen = impôt estimé ÷ revenu net avant impôts (même base que le « Taux d'impôt moyen » de l'onglet Salaire). */
-function taxEst(y){
+function taxEst(y,noOv){
  const F=D.fisc||{},parts=F.parts>0?F.parts:1,ratio=F.ratio>0?F.ratio:1.03,B=BAR[F.bar]||BAR["2025"],cy=TODAY().slice(0,4),
  S=D.salaires.filter(s=>s.date&&s.date.startsWith(y)),recu=sum(S,"net"),imp=sum(S,"impot"),mr=new Set(S.map(s=>s.date.slice(0,7))).size,prev={};
  D.salaires.forEach(s=>{if(s.date&&s.date.slice(0,4)<y){const a=s.date.slice(0,4),p=prev[a]??={n:0,m:new Set()};p.n+=s.net;p.m.add(s.date.slice(5,7))}});
  const pm=Object.values(prev).map(p=>p.n/p.m.size),moy=mr?recu/mr:(pm.length?pm.reduce((a,b)=>a+b,0)/pm.length:0),
- rest=y===cy?Math.max(0,12-mr):0,pr=rest*moy,proj=recu+pr,R=irCalc(proj*ratio,parts,B),reste=Math.max(0,R.ir-imp),prNet=Math.max(0,pr-reste);
- return{recu,imp,rest,moy,pr,prNet,proj,netAp:Math.max(0,proj-R.ir),ir:R.ir,reste,taux:proj>0?R.ir/proj:0,tauxR:pr>0?Math.min(1,reste/pr):null,np:pm.length}}
+ rest=y===cy?Math.max(0,12-mr):0,ov=!noOv&&y===cy&&F.ca>0,pr=ov?Math.max(0,F.ca-recu):rest*moy,proj=ov?F.ca:recu+pr,R=irCalc(proj*ratio,parts,B,F.ded!==false),reste=Math.max(0,R.ir-imp),prNet=Math.max(0,pr-reste);
+ return{recu,imp,rest,moy,pr,prNet,proj,netAp:Math.max(0,proj-R.ir),ir:R.ir,reste,taux:proj>0?R.ir/proj:0,tauxR:pr>0?Math.min(1,reste/(pr*ratio)):null,np:pm.length}}
 function taxCard(y){const t=taxEst(y);if(!(t.proj>0))return"";
  const k=(l,v,c,w)=>`<div class="kpi${w?" wide":""}" style="--c:var(--${c})"><span>${l}</span><b>${v}</b></div>`,cy=y===TODAY().slice(0,4);
  const du=t.taux*t.recu,ks=[k("Impôt estimé de l'année",eur(t.ir),"orange",1),k("Net avant impôts estimé / an",eur(t.proj),"bleu"),k("Net après impôts estimé / an",eur(t.netAp),"vert"),k("Taux moyen estimé de l'année",fp(t.taux*100),"orange")];
@@ -2381,7 +2420,7 @@ function irCalc(net,parts,B,ded){const ab=ded===false?0:Math.min(Math.max(net*.1
  return{rev,ir,tmi,taux:net>0?ir/net:0}}
 function vTax(){
  const F=D.fisc||{},parts=F.parts>0?F.parts:1,ratio=F.ratio>0?F.ratio:1.03,B=BAR[F.bar]||BAR["2025"],ded=F.ded!==false,cy=TODAY().slice(0,4),
- auto=Math.round(taxEst(cy).proj),ca=F.ca>0?F.ca:auto,
+ auto=Math.round(taxEst(cy,1).proj),ca=F.ca>0?F.ca:auto,
  R=irCalc(ca*ratio,parts,B,ded),taux=ca>0?R.ir/ca:0,mb=ca/12,mn=(ca-R.ir)/12;
  return`${card("t-set","Simulateur d'impôts",`<label>Salaire net avant impôts annuel (€) — vide = estimé d'après mes salaires</label><input type="number" step="1" inputmode="decimal" data-d="fisc.ca" value="${F.ca>0?F.ca:""}" placeholder="${auto||""}">
  <label>Nombre de parts</label><input type="number" step="0.5" min="1" inputmode="decimal" data-d="fisc.parts" value="${parts}">
@@ -2389,7 +2428,7 @@ function vTax(){
  <div class="d" style="margin-top:8px">Estimation simplifiée (sans crédits ni réductions d'impôt, ni revenus du capital). Net imposable ≈ net avant impôts × ${String(ratio).replace(".",",")}.</div>`,"margin-top:0")}
  ${ca>0?`<div class="kpis k3"><div class="kpi" style="--c:var(--bleu)"><span>Net avant impôts / mois</span><b>${eur(mb)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Taux d'imposition</span><b>${fp(taux*100)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Net après impôts / mois</span><b>${eur(mn)}</b></div></div>`:'<div class="card"><div class="empty">Saisis un salaire net avant impôts annuel, ou ajoute des salaires dans Suivi Salaire.</div></div>'}`}
 /* Ordre des onglets : … Suivi Salaire · Prime · Simulateur d'impôts · Santé (tout à droite) · Données */
-const TABS=[["home","🏠","Vue d'ensemble",vHome],["ana","📊","Analyse",vAna],["rec","🔁","Dépenses récurrentes",vRec],["cred","🏦","Suivi Crédit",vCred],["sal","💼","Suivi Salaire",vSal],["ov","🏠","Vue d'ensemble",vOv],["pos","📊","Positions",vPos],["cla","🏆","Classement par gain",vCla],["int","📜","Versements & retraits",vMvt],["ehs","🧾","Historique",vEhs],["tax","🧾","Simulateur d'impôts",vTax],["sante","🩺","Santé",vSante],["data","🔄","Données",vData],["liv","🐖","Tableau de bord",vLiv],["hst","📜","Historique",vHst],["lvi","📝","Taux & intérêts",vLvi]];
+const TABS=[["home","🏠","Vue d'ensemble",vHome],["ana","📊","Analyse",vAna],["rec","🧮","Simulation de dépenses",vRec],["cred","🏦","Suivi Crédit",vCred],["sal","💼","Suivi Salaire",vSal],["ov","🏠","Vue d'ensemble",vOv],["pos","📊","Positions",vPos],["cla","🏆","Classement par gain",vCla],["int","📜","Versements & retraits",vMvt],["ehs","🧾","Historique",vEhs],["tax","🧾","Simulateur d'impôts",vTax],["sante","🩺","Santé",vSante],["data","🔄","Données",vData],["liv","🐖","Tableau de bord",vLiv],["hst","📜","Historique",vHst],["lvi","📝","Taux & intérêts",vLvi]];
 /* Limite chaque liste et chaque tableau à 5 lignes visibles, le reste défile */
 function fitLists(){
  document.querySelectorAll(".lst").forEach(l=>{l.style.maxHeight="";if(!l.offsetParent)return;const k=l.children[5];if(k)l.style.maxHeight=(k.offsetTop+1)+"px"});
@@ -2440,7 +2479,8 @@ function render(){hideTip();const t=TABS.find(x=>x[0]===tab);
    else{const D0=D;D=epView(UI.epc,UI.epp);EPF=UI.epp==="all"?"":UI.epp;try{html=t[3]()}finally{D=D0;EPF=""}}
    html=epSel(cs)+html}else html=t[3]();
   $("#app").innerHTML=html;
- const nv=$("#nav"),sl=nv.scrollLeft;nv.style.display=TIDS.length>1?"":"none";nv.innerHTML=TABS.filter(x=>TIDS.includes(x[0])).map(x=>`<button data-t="${x[0]}" class="${x[0]===tab?"on":""}">${x[1]} ${x[2]}</button>`).join("");
+ const nv=$("#nav"),sl=nv.scrollLeft;nv.style.display=TIDS.length>1?"":"none";nv.innerHTML=TABS.filter(x=>TIDS.includes(x[0])&&!(MOD==="dep"&&x[0]==="data")).map(x=>`<button data-t="${x[0]}" class="${x[0]===tab?"on":""}">${x[1]} ${x[2]}</button>`).join("");
+ $("#topbar").innerHTML=MOD==="dep"?`<button data-t="data" class="topb${tab==="data"?" on":""}">🔄 Données</button>`:"";
  const on=nv.querySelector(".on");if(on)nv.scrollLeft=on.offsetLeft-(nv.clientWidth-on.offsetWidth)/2;else nv.scrollLeft=sl;
  $("#sub").textContent="v"+VER+" · "+D.depenses.length+" opérations";bind();sortTables();barSet();document.querySelectorAll(".sc[data-end]").forEach(e=>{e.scrollLeft=e.scrollWidth});fitLists()}
 function bind(){document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{if(b.dataset.t==="sal"&&tab!=="sal")salY=TODAY().slice(0,4);tab=b.dataset.t;saveTab();render();scrollTo(0,0)});
@@ -2918,11 +2958,13 @@ const fN=(v,d=2)=>Number(v).toLocaleString("fr-FR",{minimumFractionDigits:d,maxi
  pPx=v=>{if(v==null||isNaN(v))return"N/A";const t=v.toFixed(4);return fN(v,t.endsWith("00")?2:t.endsWith("0")?3:4)+" €"},pQ=q=>q%1===0?fN(q,0):fN(q,4).replace(/0+$/,"").replace(/,$/,""),
  perfAnn=(p,j)=>{if(p==null||isNaN(p)||j==null||j<30)return NaN;const g=1+p/100;return g<=0?-100:(Math.pow(g,365/j)-1)*100},
  perfCell=v=>{const t=String(v);return t.startsWith("▲")?"color:#16a34a;font-weight:700;":t.startsWith("▼")?"color:#dc2626;font-weight:700;":"color:var(--mut);font-weight:700;"};
-const OMT={};const OMT0={"Performance Globale":"% = gain total (valeur du compte + retraits − versements placés) ÷ versements placés. Demande la valeur réelle des comptes (en bas de la Vue d'ensemble ou relevés PDF).","Performance Annuelle Moyenne":"% = (1 + performance globale) ^ (1 ÷ années depuis le premier versement) − 1, soit un taux annuel composé (calculé après 3 mois).","Plus-Value Latente":"% = plus-value latente ÷ capital investi dans les fonds encore détenus (fonds à historique complet uniquement).","Plus-Value Actée":"% = plus-value actée lors des ventes et arbitrages ÷ valeur actuelle du compte.","Abondement Reçu":"% = abondement de l'employeur ÷ total des versements placés.","Intéressement & Participation":"% = intéressement + participation + PPV placés ÷ total des versements placés."};
+const OMT={};const OMT0={"Performance Globale":"% = gain total (valeur du compte + retraits − versements placés) ÷ versements placés. Demande la valeur réelle des comptes (en bas de la Vue d'ensemble ou relevés PDF).","Performance Annuelle Moyenne":"% = (1 + performance globale) ^ (1 ÷ années depuis le premier versement) − 1, soit un taux annuel composé (calculé après 3 mois).","Plus-Value Latente":"% = plus-value latente ÷ capital investi dans les fonds encore détenus (fonds à historique complet uniquement).","Plus-Value Actée":"% = plus-value actée lors des ventes et arbitrages ÷ coût d'achat des parts vendues (rendement au moment de chaque vente).","Abondement Reçu":"% = abondement de l'employeur ÷ total des versements placés.","Intéressement & Participation":"% = intéressement + participation + PPV placés ÷ total des versements placés."};
+const ovCl=(t,inv)=>{if(t==null||!/[1-9]/.test(t))return"n";const neg=String(t).trim()[0]=="-";return(inv?neg:!neg)?"g":"r"},ovSign=v=>!isFinite(v)||Math.abs(v)<.005?"":v>0?"g":"r",
+ ovRow=(l,val,delta,inv,cl)=>`<div class="ov2-row"${OMT[l]?` data-mt="${esc(OMT[l])}"`:""}><span class="l">${l}</span><span><span class="v ${cl||""}">${val}</span>${delta!=null?`<span class="d ${ovCl(delta,inv)}">${delta}</span>`:""}</span></div>`;
 function omt(label,val,delta,sec,inv){let d="";if(delta!=null){const neg=delta[0]=="-",good=inv?neg:!neg;d=`<div class="mtd ${good?"g":"r"}">${neg?OARD:OARU}<span>${delta}</span></div>`}
  const tp=OMT[label];return`<div class="mtr ${sec}${tp?" tp":""}"${tp?` data-mt="${esc(tp)}"`:""}><div class="mtl"><p>${label}</p></div><div class="mtv">${val}</div>${d}</div>`}
 let OMB=null;const ombClose=()=>{if(OMB){OMB.remove();OMB=null}};
-document.addEventListener("click",e=>{const m=e.target.closest&&e.target.closest(".mtr[data-mt]"),same=OMB&&m&&OMB._m===m;ombClose();if(!m||same)return;
+document.addEventListener("click",e=>{const m=e.target.closest&&e.target.closest(".mtr[data-mt],.ov2 [data-mt]"),same=OMB&&m&&OMB._m===m;ombClose();if(!m||same)return;
  OMB=document.createElement("div");OMB.id="pea-metric-bubble";OMB.textContent=m.dataset.mt;OMB._m=m;document.body.appendChild(OMB);
  const r=m.getBoundingClientRect(),b=OMB.getBoundingClientRect();OMB.style.left=Math.min(Math.max(r.left+r.width/2-b.width/2,8),innerWidth-b.width-8)+"px";
  let t=r.top-b.height-8;if(t<8)t=r.bottom+8;OMB.style.top=t+"px"},true);
@@ -2965,14 +3007,20 @@ function vOv(){
   pg=hasV&&ap>0?gt/ap*100:null,pam=pg!=null&&ans>=.25&&1+pg/100>0?(Math.pow(1+pg/100,1/ans)-1)*100:null,gam=pg!=null&&ans>=.25?gt/ans:null,
   lat=P.coutOk>0?P.lat:null,pl=P.coutOk>0?P.lat/P.coutOk*100:null,real=P.real,pa=S.tot>0?real/S.tot*100:null,
   ab=sm(S.pl,"Abondement"),ip=sm(S.pl,"Intéressement")+sm(S.pl,"Participation")+sm(S.pl,"PPV");
- return`<details class="exp" data-ex="ov1"${UI.exc.has("ov1")?"":" open"}><summary>📊 Vue d'ensemble de l'épargne salariale</summary><div class="in"><div class="dcard">
- <p class="dst">💰 Capital & Investissement</p>
- <div class="mcols mc4">${omt("Valeur Actuelle",oGE(S.tot),null,"cap")}${omt("Montant Investi",P.coutOk>0?oGE(P.coutOk):"N/A",null,"cap")}${omt("Total Apports",oGE(ap),null,"cap")}${omt("Retiré des comptes",oGE(S.tr),null,"cap")}</div>
- <p class="dst" style="margin-top:16px">📈 Performances</p>
- <div class="mcols mc2">${omt("Performance Globale",pg!=null?oPT(pg):"N/A",pg!=null?oDE(gt):null,"perf")}${omt("Performance Annuelle Moyenne",pam!=null?oPT(pam):"N/A",gam!=null?oDE(gam):null,"perf")}</div>
- <p class="dst" style="margin-top:16px">🏷️ Plus-values & Versements</p>
- <div class="mcols mc2">${omt("Plus-Value Latente",lat!=null?oGE(lat):"N/A",pl!=null?oDP(pl):null,"gain")}${omt("Plus-Value Actée",oGE(real),pa!=null?oDP(pa):null,"gain")}</div>
- <div class="mcols mc2">${omt("Abondement Reçu",oGE(ab),ap>0?oDP(ab/ap*100):null,"gain")}${omt("Intéressement & Participation",oGE(ip),ap>0?oDP(ip/ap*100):null,"gain")}</div>
+ const sold=(P.ventes||[]).reduce((t,v)=>t+(v.cr||0),0),paS=sold>.005?real/sold*100:null,
+  chipR=pg!=null&&gt<0?" r":"";
+ return`<details class="exp" data-ex="ov1"${UI.exc.has("ov1")?"":" open"}><summary>📊 Vue d'ensemble de l'épargne salariale</summary><div class="in"><div class="ov2">
+ <div class="ov2-top">
+  <div${OMT["Valeur Actuelle"]?` data-mt="${esc(OMT["Valeur Actuelle"])}"`:""}><span class="l">Valeur Actuelle</span><span class="v big">${oGE(S.tot)}</span></div>
+  ${pg!=null?`<div class="ov2-chip${chipR}"${OMT["Performance Globale"]?` data-mt="${esc(OMT["Performance Globale"])}"`:""}><span class="v">${oDE(gt)}</span><span class="v">${oPT(pg)}</span></div><span class="l" style="margin-top:5px">Performance Globale</span>`:`<span class="l">Performance globale : N/A</span>`}
+  <div class="ov2-kv" style="margin-top:16px"><div><span class="l"><span class="ov2-dot" style="background:#0284c7"></span>Investi</span><span class="v">${P.coutOk>0?oGE(P.coutOk):"N/A"}</span></div>
+   <div><span class="l">Total Apports</span><span class="v">${oGE(ap)}</span></div>
+   <div><span class="l">Retiré</span><span class="v">${oGE(S.tr)}</span></div></div>
+ </div>
+ <h4>📈 Performances</h4>
+ <div class="ov2-rows c2">${ovRow("Performance Annuelle Moyenne",pam!=null?oPT(pam):"N/A",gam!=null?oDE(gam):null,0,pam!=null?ovSign(pam):"")}${ovRow("Ancienneté",ans>0?fN(ans)+" ans":"N/A",null)}</div>
+ <h4>🏷️ Plus-values & Versements</h4>
+ <div class="ov2-rows c2">${ovRow("Plus-Value Latente",lat!=null?oGE(lat):"N/A",pl!=null?oDP(pl):null,0,lat!=null?ovSign(lat):"")}${ovRow("Plus-Value Actée",oGE(real),paS!=null?oDP(paS):null,0,ovSign(real))}${ovRow("Abondement Reçu",oGE(ab),ap>0?oDP(ab/ap*100):null)}${ovRow("Intéressement & Participation",oGE(ip),ap>0?oDP(ip/ap*100):null)}</div>
  </div></div></details>
  ${!hasV?`<div class="ovnote" style="margin-top:12px">Saisis la valeur réelle de tes comptes (en bas de cette page) ou lis un relevé PDF pour obtenir les performances.</div>`:""}
  ${P.inc.length?`<div class="ovnote" style="margin-top:12px">⚠ Historique incomplet pour ${P.inc.map(r=>esc(supNm(r.nom))).join(", ")} : plus-value latente et montant investi sont calculés sans ces fonds. Importe les relevés manquants pour les compléter.</div>`:""}

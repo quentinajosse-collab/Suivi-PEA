@@ -103,6 +103,8 @@ dialog .hint{color:var(--mut);font-size:12px;margin:6px 0 0}
 
 /* Fond identique aux modules PEA / CTO / Crypto (mode clair) */
 @media(prefers-color-scheme:light),(prefers-color-scheme:no-preference){body{background:radial-gradient(circle at 8% 8%,rgba(2,132,199,.10) 0%,transparent 45%),radial-gradient(circle at 92% 18%,rgba(124,58,237,.08) 0%,transparent 45%),radial-gradient(circle at 15% 92%,rgba(13,148,136,.08) 0%,transparent 45%),linear-gradient(180deg,#f8fafc 0%,#eef2f7 100%);background-attachment:fixed}}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+@media(orientation:landscape) and (max-height:520px){nav{gap:0;padding-top:calc(4px + env(safe-area-inset-top));padding-bottom:calc(40px + env(safe-area-inset-bottom))}nav button{padding:4px 2px}nav button b{font-size:17px}}
 </style>
 </head>
 <body>
@@ -224,6 +226,7 @@ function buildMods(){const A=accs();MODS=[];
   MODS0.forEach(m=>{if(m==='@cto')MODS.push({id:'cto',ic:'🏦',lb:'CTO',src:'cto.html'});else MODS.push(m.id==='crypto'?{...m,src:cryHref()}:m)})}
 buildMods();
 let cur='home';
+try{screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock()}catch(e){}
 const nav=$('#nav');
 let DOT=['','Synchronisation'];
 function renderNav(){nav.innerHTML=MODS.map(m=>`<button data-id="${m.id}"><b>${m.ic}</b>${esc(m.lb)}</button>`).join('')+'<div class="sp"></div><button id="gear"><b>⚙️</b>Réglages</button><div id="dot"></div>';
@@ -344,19 +347,19 @@ function perfActifs(A,D,cf,m0){
   let c=0,w=0;F.forEach(([dt,v])=>{c+=v;w+=v*Math.max(0,Math.min(1,(T1-new Date(dt+'T12:00:00').getTime())/sp))});
   const den=v0+w;return den>1?(v1-v0-c)/den*100:null}
 function drawEvo(all,pf,ff){
-  const el=$('#evo'),N={'1m':1,'6m':6,'1a':12,'3a':36,'5a':60,'10a':120,all:0}[EVR],cy=String(new Date().getFullYear()),pts0=EVR==='ytd'?all.slice(Math.max(0,all.findIndex(q=>q[0].slice(0,4)===cy)-1)):N?all.slice(-(N+1)):all,rg=`<div class="evr">${[['1j','1 j'],['7j','7 j'],['1m','1 m'],['6m','6 m'],['ytd','YTD'],['1a','1 an'],['3a','3 ans'],['5a','5 ans'],['10a','10 ans'],['all','Tout'],['perso','Perso.']].map(([k,l])=>`<button data-r="${k}"${EVR===k?' class="on"':''}>${l}</button>`).join('')}</div>`;
-  const DAYMS=864e5,isoL=x=>new Date(x.getTime()-x.getTimezoneOffset()*6e4).toISOString().slice(0,10),ago=n=>{const x=new Date();x.setDate(x.getDate()-n);return isoL(x)},tdI=isoL(new Date());
+  const el=$('#evo'),N={'1m':1,'6m':6,'1a':12,'3a':36,'5a':60,'10a':120,all:0}[EVR],cy=String(new Date().getFullYear()),pts0=EVR==='ytd'?all.slice(Math.max(0,all.findIndex(q=>q[0].slice(0,4)===cy)-1)):N?all.slice(-(N+1)):all,rg=`<div class="evr">${[['1h','1 h'],['1j','1 j'],['7j','7 j'],['1m','1 m'],['6m','6 m'],['ytd','YTD'],['1a','1 an'],['3a','3 ans'],['5a','5 ans'],['10a','10 ans'],['all','Tout'],['perso','Perso.']].map(([k,l])=>`<button data-r="${k}"${EVR===k?' class="on"':''}>${l}</button>`).join('')}</div>`;
+  const mid0=n=>{const x=new Date();x.setHours(0,0,0,0);x.setDate(x.getDate()-n);return x.getTime()},DAYMS=864e5,isoL=x=>new Date(x.getTime()-x.getTimezoneOffset()*6e4).toISOString().slice(0,10),ago=n=>{const x=new Date();x.setDate(x.getDate()-n);return isoL(x)},tdI=isoL(new Date());
   let cA=ago(30),cB=tdI;{const c=LS.g('hub_evc');if(c&&c.a&&c.b){cA=c.a;cB=c.b}if(cA>cB){const t=cA;cA=cB;cB=t}if(cB>tdI)cB=tdI}
   const cSpan=Math.max(0,Math.round((new Date(cB+'T12:00:00')-new Date(cA+'T12:00:00'))/DAYMS)),pEnd=EVR!=='perso'||cB>=tdI,
   rc=EVR==='perso'?`<div class="evc"><label>Du <input type="date" id="evca" value="${cA}" max="${tdI}"></label><label>au <input type="date" id="evcb" value="${cB}" max="${tdI}"></label></div>`:'',
   bind=()=>{el.onclick=e=>{const b=e.target.closest('[data-r]');if(b){EVR=b.dataset.r;LS.s('hub_evr',EVR);drawEvo(all,pf,ff)}};el.onchange=e=>{const t=e.target;if(t.id==='evca'||t.id==='evcb'){const a=$('#evca').value,b=$('#evcb').value;if(a&&b){LS.s('hub_evc',{a,b});drawEvo(all,pf,ff)}}}};
-  let pts=pts0;{let fp=null;if(ff){if(EVR==='1j')fp=ff.h(Date.now()-DAYMS,Date.now());else if(EVR==='7j')fp=ff.h(Date.now()-7*DAYMS,Date.now());else if(EVR==='ytd')fp=ff.d((+cy-1)+'-12-31',tdI);else if(EVR==='perso')fp=cSpan<=3?ff.h(new Date(cA+'T00:00:00').getTime(),cB>=tdI?Date.now():new Date(cB+'T23:59:00').getTime()):ff.d(cA,cB);else{const FS={'1m':[ago(30),1],'6m':[ago(182),3],'1a':[ago(365),5]}[EVR];fp=FS?ff(FS[0],FS[1]):null}}if(fp&&fp.length>1)pts=fp}
-  const shortY=['1m','1j','7j','ytd'].includes(EVR)||(EVR==='perso'&&cSpan<=200),plab=d=>d.length>10?(EVR==='1j'?d.slice(11,13)+' h':(+d.slice(8,10))+' '+MOIS[+d.slice(5,7)-1]+' '+d.slice(11,13)+' h'):d.length>=10?(+d.slice(8,10))+' '+MOIS[+d.slice(5,7)-1]+(shortY?'':' '+d.slice(2,4)):mlab(d);
+  let pts=pts0;{let fp=null;if(ff){if(EVR==='1h')fp=ff.h(Date.now()-36e5,Date.now(),3e5);else if(EVR==='1j')fp=ff.h(mid0(0),Date.now());else if(EVR==='7j')fp=ff.h(mid0(7),Date.now());else if(EVR==='ytd')fp=ff.d((+cy-1)+'-12-31',tdI);else if(EVR==='perso')fp=cSpan<=3?ff.h(new Date(cA+'T00:00:00').getTime(),cB>=tdI?Date.now():new Date(cB+'T23:59:00').getTime()):ff.d(cA,cB,1);else{const FS={'1m':[ago(30),1],'6m':[ago(182),3],'1a':[ago(365),5]}[EVR];fp=FS?ff(FS[0],FS[1]):null}}if(fp&&fp.length>1)pts=fp}
+  const shortY=['1m','1h','1j','7j','ytd'].includes(EVR)||(EVR==='perso'&&cSpan<=200),plab=d=>d.length>10?(EVR==='1h'?d.slice(11,16):EVR==='1j'?d.slice(11,13)+' h':(+d.slice(8,10))+' '+MOIS[+d.slice(5,7)-1]+' '+d.slice(11,13)+' h'):d.length>=10?(+d.slice(8,10))+' '+MOIS[+d.slice(5,7)-1]+(shortY?'':' '+d.slice(2,4)):mlab(d);
   const tl=(d,i)=>{if(d.length>10){const mn=d.slice(14,16);return (+d.slice(8,10))+' '+MOIS[+d.slice(5,7)-1]+' · '+d.slice(11,13)+(mn==='00'?' h':':'+mn)}return(i===pts.length-1&&d>=tdI)?'Aujourd’hui':plab(d)};
   if(pts.length<2){el.innerHTML=`<div class="hd"><h2>📈 Évolution du patrimoine</h2></div><div class="sub" style="margin-top:6px">Pas encore assez de données : ouvre le PEA et les CTO une fois (cours en ligne), l’historique se construit ensuite tout seul.</div>${rg}${rc}`;bind();return}
   const W=600,H=230,pl=50,pr=10,pt=12,pb=pts[0][0].length>10?38:24,vs=pts.map(x=>x[1]);const mn=Math.min(...vs),mx=Math.max(...vs);let lo=mn,hi=mx;const sp0=(hi-lo)||Math.abs(hi)*.1||1,rs=sp0/4,mg=Math.pow(10,Math.floor(Math.log10(rs))),nr=rs/mg,stp=(nr<=1?1:nr<=2?2:nr<=2.5?2.5:nr<=5?5:10)*mg;lo=Math.floor(lo/stp)*stp;hi=Math.ceil(hi/stp)*stp;if(mn>=0&&lo<0)lo=0;if(hi===lo)hi=lo+stp;const TK=[];for(let v=lo;v<=hi+stp/1e3;v+=stp)TK.push(v);
   const X=i=>pl+i*(W-pl-pr)/(pts.length-1),Y=v=>pt+(hi-v)/(hi-lo)*(H-pt-pb),d=smooth(pts.map((q,i)=>[X(i),Y(q[1])])),
-    d0=vs[0],dl=vs[vs.length-1]-d0,dp=pf&&pEnd?pf(pts[0][0].slice(0,10)):(d0>0?dl/d0*100:null),col=dl>=0?'var(--up)':'var(--dn)',
+    d0=vs[0],dl=vs[vs.length-1]-d0,dp=d0>0?dl/d0*100:null,col=dl>=0?'var(--up)':'var(--dn)',
     gl=TK.map(v=>{const yy=Y(v);return`<line x1="${pl}" x2="${W-pr}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="var(--line)" stroke-dasharray="3 3"/><text x="${pl-6}" y="${(yy+4).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--mut)">${cmpT(v,stp)}</text>`}).join(''),
     xl=(()=>{const hr=pts[0][0].length>10,n=Math.min(pts.length,5),ix=[...new Set(Array.from({length:n},(_,k)=>Math.round(k*(pts.length-1)/(n-1||1))))];let pd='';return ix.map(i=>{const d=pts[i][0],an=i===0?'start':i===pts.length-1?'end':'middle',x=X(i).toFixed(1);if(!hr)return`<text x="${x}" y="${H-6}" text-anchor="${an}" font-size="11" fill="var(--mut)">${plab(d)}</text>`;const mn=d.slice(14,16),l1=d.slice(11,13)+(mn==='00'?' h':':'+mn),dd=d.slice(0,10),l2=dd!==pd?(+d.slice(8,10))+' '+MOIS[+d.slice(5,7)-1]:'';pd=dd;return`<text x="${x}" y="${H-20}" text-anchor="${an}" font-size="11" fill="var(--mut)">${l1}</text>`+(l2?`<text x="${x}" y="${H-6}" text-anchor="${an}" font-size="11" font-weight="700" fill="var(--mut)">${l2}</text>`:'')}).join('')})();
   el.innerHTML=`<div class="hd"><div><h2>📈 Évolution du patrimoine</h2><div class="sub"><b class="${dl>=0?'up':'dn'}">${dl<0?'−':'+'}${eur2(Math.abs(dl))}${dp==null?'':' ('+(dp<0?'−':'+')+Math.abs(dp).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' %)'}</b> sur la période</div></div></div>
@@ -370,10 +373,11 @@ function drawEvo(all,pf,ff){
     tp.innerHTML=`${tl(pts[i][0],i)} · <b>${eur2(pts[i][1])}</b>`+(i>0?`<br><span style="color:${vc};font-weight:700">${vd<0?'−':'+'}${eur2(Math.abs(vd))}${vq==null||!isFinite(vq)?'':' ('+(vq<0?'−':'+')+Math.abs(vq).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' %)'}</span>`:'');tp.style.display='block';const er=el.getBoundingClientRect();tp.style.left=Math.max(60,Math.min(er.width-60,r.left-er.left+x/W*r.width))+'px';tp.style.top=(r.top-er.top+4)+'px'};
   sv.onpointermove=mv;sv.onpointerdown=mv;sv.onpointerleave=()=>{tp.style.display='none';ln.style.display=ci.style.display='none'}}
 /* ---------- Répartition du patrimoine par actif ---------- */
-const RCOL=['#0ea5e9','#8b5cf6','#f59e0b','#10b981','#14b8a6','#ec4899','#64748b'];
+const RCOL=['#0ea5e9','#8b5cf6','#f59e0b','#10b981','#14b8a6','#ec4899','#f97316'];
+const NCOL={'PEA':'#0ea5e9','CTO':'#8b5cf6','Crypto':'#f59e0b','Épargne salariale':'#10b981','Comptes bancaires':'#14b8a6','Livrets':'#ec4899','Immobilier':'#fb7185'};
 const lite=(h,k)=>'#'+[1,3,5].map(i=>Math.round(parseInt(h.slice(i,i+2),16)+(255-parseInt(h.slice(i,i+2),16))*k).toString(16).padStart(2,'0')).join('');
 function drawRep(items,net_){
-  const el=$('#rep'),L=items.map((x,i)=>({n:x[0],ic:x[1],v:x[2],s:x[3]||'',c:RCOL[i%RCOL.length]})).filter(x=>x.v>0.5),T=L.reduce((s,x)=>s+x.v,0);
+  const el=$('#rep'),L=items.map((x,i)=>({n:x[0],ic:x[1],v:x[2],s:x[3]||'',c:NCOL[x[0]]||RCOL[i%RCOL.length]})).filter(x=>x.v>0.5),T=L.reduce((s,x)=>s+x.v,0);
   if(!T){el.innerHTML='<div class="hd"><h2>🥧 Répartition du patrimoine</h2></div><div class="sub" style="margin-top:6px">Pas encore de données.</div>';return}
   L.sort((a,b)=>b.v-a.v);
   const r=70,C=2*Math.PI*r,gap=L.length>1?3:0,pc=x=>(x.v/T*100).toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1})+' %';let off=0;
@@ -404,14 +408,14 @@ function drawTab(all){
 const todayI=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const serH=(k,d)=>{const q=LS.g(k+'d');return q&&q.length&&d>=q[0][0]?serAt(q,d):serAt(LS.g(k),d)};
 /* Série plus fine (journalière / hebdomadaire) pour les périodes courtes */
-function evoFine(net_,A,D,cf,cur,from,step){const out=[],t=todayI(),d=new Date(from+'T12:00:00');
-  for(let g=0;g<900;g++){const e=d.toISOString().slice(0,10);if(e>=t)break;out.push([e,stateAt(e,A,D,cf,net_).total]);d.setDate(d.getDate()+step)}
+function evoFine(net_,A,D,cf,cur,from,step){const out=[],t=todayI(),d=new Date(from+'T12:00:00'),pv=e=>{const x=new Date(e+'T12:00:00');x.setDate(x.getDate()-1);return x.toISOString().slice(0,10)};
+  for(let g=0;g<900;g++){const e=d.toISOString().slice(0,10);if(e>=t)break;out.push([e,stateAt(g?e:pv(e),A,D,cf,net_).total]);d.setDate(d.getDate()+step)}
   out.push([t,cur]);return out}
-function evoDays(net_,A,D,cf,cur,from,to){const t=todayI(),a=new Date(from+'T12:00:00'),sp=Math.max(1,Math.round((new Date(to+'T12:00:00')-a)/864e5)),st=Math.max(1,Math.ceil(sp/30)),out=[],d=new Date(a);
-  for(let g=0;g<400;g++){const e=d.toISOString().slice(0,10);if(e>=to)break;out.push([e,e>=t?cur:stateAt(e,A,D,cf,net_).total]);d.setDate(d.getDate()+st)}
+function evoDays(net_,A,D,cf,cur,from,to,mid){const t=todayI(),a=new Date(from+'T12:00:00'),sp=Math.max(1,Math.round((new Date(to+'T12:00:00')-a)/864e5)),st=Math.max(1,Math.ceil(sp/30)),out=[],d=new Date(a);
+  for(let g=0;g<400;g++){const e=d.toISOString().slice(0,10);if(e>=to)break;out.push([e,e>=t?cur:stateAt(mid&&!g?(x=>{x=new Date(e+'T12:00:00');x.setDate(x.getDate()-1);return x.toISOString().slice(0,10)})():e,A,D,cf,net_).total]);d.setDate(d.getDate()+st)}
   out.push([to,to>=t?cur:stateAt(to,A,D,cf,net_).total]);return out}
 /* Série horaire : estimation de fin de journée (historique) + instantanés réels enregistrés à chaque ouverture (hub_snapi), reliés linéairement */
-function evoHours(net_,A,D,cf,cur,t0,t1){const DAY=864e5,H1=36e5,now=Date.now(),loc=ms=>new Date(ms-new Date(ms).getTimezoneOffset()*6e4).toISOString(),dk=ms=>loc(ms).slice(0,10),
+function evoHours(net_,A,D,cf,cur,t0,t1,U){const DAY=864e5,H1=U||36e5,now=Date.now(),loc=ms=>new Date(ms-new Date(ms).getTimezoneOffset()*6e4).toISOString(),dk=ms=>loc(ms).slice(0,10),
   tEnd=Math.min(t1,now),tStart=Math.min(t0,tEnd-H1),stp=Math.max(1,Math.ceil((tEnd-tStart)/H1/30)),tod=dk(now),P=[];
   for(let ms=tStart-DAY;ms<=tEnd+DAY;ms+=DAY){const d=dk(ms);if(d>=tod)break;P.push([new Date(d+'T23:59:00').getTime(),stateAt(d,A,D,cf,net_).total])}
   (LS.g('hub_snapi')||[]).forEach(x=>P.push([x[0],net_?x[2]:x[1]]));
@@ -419,7 +423,7 @@ function evoHours(net_,A,D,cf,cur,t0,t1){const DAY=864e5,H1=36e5,now=Date.now(),
   P.sort((x,y)=>x[0]-y[0]);
   const val=t=>{if(!P.length)return cur;if(t<=P[0][0])return P[0][1];for(let i=1;i<P.length;i++){if(t<=P[i][0]){const x0=P[i-1][0],y0=P[i-1][1],x1=P[i][0],y1=P[i][1];return x1===x0?y1:y0+(y1-y0)*(t-x0)/(x1-x0)}}return P[P.length-1][1]},
   out=[];let t=Math.floor(tEnd/H1)*H1;while(t>=tStart){out.unshift([loc(t).slice(0,16),val(t)]);t-=stp*H1}
-  if(tEnd>Math.floor(tEnd/H1)*H1)out.push([loc(tEnd).slice(0,16),val(tEnd)]);return out}
+  if(out.length&&out[0][0]>loc(tStart).slice(0,16))out.unshift([loc(tStart).slice(0,16),val(tStart)]);if(tEnd>Math.floor(tEnd/H1)*H1)out.push([loc(tEnd).slice(0,16),val(tEnd)]);return out}
 function stateAt(ao,A,D,cf,net_){
   const pea=A.some(a=>a.type==='PEA')?serH('hub_pea_hist',ao):0,cto=A.filter(a=>a.type==='CTO').reduce((t,a)=>t+serH('hub_'+a.id+'_hist',ao),0),cry=A.some(a=>a.type==='Crypto')?serH('hub_crypto_hist',ao):0,
     pl=(D.interessement||[]).filter(s=>s.date&&s.date<=ao&&String(s.dest||'').startsWith('Placé')).reduce((t,s)=>t+(s.montant||0),0),rt=(D.retraits_epargne||[]).filter(r=>r.date&&r.date<=ao).reduce((t,r)=>t+(r.montant||0),0),
@@ -475,7 +479,7 @@ function renderHome(){
   if(p&&ct&&brut>0){const td=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10),sn=LS.g('hub_snap')||{},o=sn[td],b=Math.round(brut),n=Math.round(net);
     if(!o||o.b!==b||o.n!==n){sn[td]={b,n};const ks=Object.keys(sn).sort();while(ks.length>900)delete sn[ks.shift()];LS.s('hub_snap',sn)}}
   {const ni=Date.now(),si=LS.g('hub_snapi')||[],l=si[si.length-1],b=Math.round(brut*100)/100,n=Math.round(net*100)/100;if(brut>0&&(!l||ni-l[0]>=20*6e4||((l[1]!==b||l[2]!==n)&&ni-l[0]>=3*6e4))){si.push([ni,b,n]);const cut=ni-30*864e5;while(si.length&&(si[0][0]<cut||si.length>1500))si.shift();LS.s('hub_snapi',si)}}
-  const EP=evoPoints(net_,A,D,cf,net_?net:brut);const ff=(f,st)=>evoFine(net_,A,D,cf,net_?net:brut,f,st);ff.h=(a,b)=>evoHours(net_,A,D,cf,net_?net:brut,a,b);ff.d=(f,t)=>evoDays(net_,A,D,cf,net_?net:brut,f,t);drawEvo(EP,m=>perfActifs(A,D,cf,m),ff);drawTab(EP);
+  const EP=evoPoints(net_,A,D,cf,net_?net:brut);const ff=(f,st)=>evoFine(net_,A,D,cf,net_?net:brut,f,st);ff.h=(a,b,u)=>evoHours(net_,A,D,cf,net_?net:brut,a,b,u);ff.d=(f,t,m)=>evoDays(net_,A,D,cf,net_?net:brut,f,t,m);drawEvo(EP,m=>perfActifs(A,D,cf,m),ff);drawTab(EP);
   const tI=todayI(),ai=$('#asof');if(!ai.value||ai.value>tI)ai.value=tI;const ao=ai.value,past=ao<tI;document.body.classList.toggle('past',past);
   let items=[['PEA','📈',p?p.total:0],['CTO','🏦',ct?ct.total:0],['Crypto','₿',cr?cr.total:0],['Épargne salariale','🎁',de.cur],['Comptes bancaires','🏧',sb],['Livrets','🐖',sl],['Immobilier','🏡',net_?immoNet:immoBrut,net_&&iv>0?'Bien estimé à '+eur(iv):'']];
   const asb=$('#asb');

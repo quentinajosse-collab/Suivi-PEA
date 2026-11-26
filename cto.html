@@ -168,7 +168,7 @@ button{border-radius:10px;font-weight:600;transition:all .15s ease-in-out}
 .ov2 .l{display:block;font-size:.8rem;color:#64748b;line-height:1.35}
 .ov2 .v{font-family:'Manrope','Inter',system-ui,sans-serif;font-weight:800;letter-spacing:-.03em;white-space:nowrap}
 .ov2 .d{display:block;font-size:.78rem;font-weight:700;white-space:nowrap}.ov2 .g{color:#15803d}.ov2 .r{color:#dc2626}.ov2 .n{color:#64748b}
-.ov2-top{padding:15px}
+.ov2-top{padding:15px;text-align:center}.ov2-kv>div:first-child{text-align:left}
 .ov2-top .big{font-size:2.3rem;line-height:1.15;display:block;margin:2px 0 8px}
 .ov2-chip{display:inline-flex;flex-wrap:wrap;gap:2px 8px;align-items:center;padding:5px 12px;border-radius:999px;font-weight:700;font-size:.86rem;background:rgba(21,128,61,.11);color:#15803d}.ov2-chip.r{background:rgba(220,38,38,.1)}.ov2-chip .l{display:inline;color:inherit;font-size:inherit}
 .ov2-split{display:flex;height:8px;border-radius:4px;overflow:hidden;background:rgba(100,116,139,.18);margin:16px 0 10px}.ov2-split i{display:block}
@@ -286,6 +286,7 @@ canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .mgp{position:relative}.mglist{max-height:280px;overflow:auto;margin-top:4px;border:1px solid #d9dee5;border-radius:8px;background:var(--card,#fff);box-shadow:0 6px 18px rgba(15,23,42,.12)}
 .mgit{display:block;width:100%;text-align:left;padding:10px 12px;border:0;border-bottom:1px solid #eef0f3;background:transparent;font:inherit;font-size:.9rem;color:#31333f;cursor:pointer;height:auto;white-space:normal}
 .mgit:hover,.mgit.on{background:#eef4ff}.mgno{padding:9px 12px;font-size:.82rem;color:#64748b}
+@media(orientation:landscape) and (max-height:520px){#opsbar{padding:6px max(16px,6vw) calc(6px + env(safe-area-inset-bottom,0px));gap:.6rem;border-radius:14px 14px 0 0}#opsbar button{height:38px;font-size:.9rem}}
 </style>
 </head>
 <body>
@@ -387,7 +388,7 @@ function norm(o,i){
 /* ---------- Calculs (même logique que app_perso.py) ---------- */
 function addDays(set,a,b){const e=new Date(b.getFullYear(),b.getMonth(),b.getDate());for(let d=new Date(a.getFullYear(),a.getMonth(),a.getDate());d<=e;d.setDate(d.getDate()+1))set.add(d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate())}
 function compute(tx,prices){
-  const now=new Date(),by={},pos=[];let divTot=0,fees=0,cost=0,real=0;
+  const now=new Date(),by={},pos=[];let divTot=0,fees=0,cost=0,real=0,soldCost=0;
   tx.forEach(t=>{if(t.type=='ACHAT'||t.type=='VENTE')fees+=t.f;
     if(t.type!='APPORT'&&t.type!='RETRAIT'&&t.type!='INTERET')(by[t.tk]=by[t.tk]||[]).push(t)});
   const key=t=>{const d=new Date(t.d);if(t.type=='SPLIT')d.setHours(0,0,0,0);return d.getTime()};
@@ -396,7 +397,7 @@ function compute(tx,prices){
     let sh=0,inv=0,ach=0,div=0,rl=0,nb=0,cs=null,secs=0;const ds=new Set(),nom=g[g.length-1].nom;
     for(const t of g){
       if(t.type=='ACHAT'){nb++;if(cs==null)cs=t.d;sh+=t.q;inv+=t.q*t.p+t.f;ach+=t.q*t.p+t.f}
-      else if(t.type=='VENTE'){nb++;const rev=t.q*t.p-t.f;if(sh>0){const pru=inv/sh;rl+=rev-t.q*pru;sh-=t.q;inv=sh*pru;if(sh<=1e-4&&cs!=null){addDays(ds,cs,t.d);secs+=Math.max((t.d-cs)/1e3,0);cs=null}}}
+      else if(t.type=='VENTE'){nb++;const rev=t.q*t.p-t.f;if(sh>0){const pru=inv/sh;rl+=rev-t.q*pru;soldCost+=Math.min(t.q,sh)*pru;sh-=t.q;inv=sh*pru;if(sh<=1e-4&&cs!=null){addDays(ds,cs,t.d);secs+=Math.max((t.d-cs)/1e3,0);cs=null}}}
       else if(t.type=='SPLIT'){if(sh>0)sh=sh*t.q;if(t.rompu>0&&t.dr<=now)div+=t.rompu}
       else if(t.type=='DIVIDENDE'){div+=t.p-t.ret-t.c+t.arr;if(t.remb>0){inv=Math.max(0,inv-t.remb);ach=Math.max(0,ach-t.remb)}}
     }
@@ -428,7 +429,7 @@ function compute(tx,prices){
   let interets=0;tx.forEach(t=>{if(t.type=='INTERET'&&t.d<=eod)interets+=t.q});
   const apports=tx.reduce((s,t)=>s+(t.type=='APPORT'?t.q:t.type=='RETRAIT'?-t.q:0),0);
   const valeur=pos.reduce((s,p)=>s+p.val,0),day=pos.reduce((s,p)=>s+p.day,0);
-  return{pos,cash,apports,valeur,total:valeur+cash,gain:valeur+cash-apports,divTot,divNet,interets,fees,real,day,
+  return{pos,cash,apports,valeur,total:valeur+cash,gain:valeur+cash-apports,divTot,divNet,interets,fees,real,soldCost,day,
     anyLive:pos.some(p=>p.open&&p.live)};
 }
 
@@ -803,7 +804,7 @@ const OMT0={"Performance Globale":"% = gains cumulés (plus-values latentes + ac
 "Performance du Jour":"% = gain du jour ÷ valeur du portefeuille à la clôture de la veille (hors apports et retraits).",
 "Performance Annuelle Moyenne":"% = (1 + performance globale) ^ (1 ÷ nombre d'années depuis l'ouverture) − 1, soit un taux annuel composé (calculé après 3 mois d'historique).",
 "Plus-Value Latente":"% = plus-value latente ÷ capital investi dans les titres encore détenus.",
-"Plus-Value Actée":"% = plus-value actée ÷ valeur totale actuelle du portefeuille (actions + cash).",
+"Plus-Value Actée":"% = plus-value actée ÷ coût d'achat des titres vendus (rendement au moment de chaque vente).",
 "Dividendes Reçus":"% = dividendes nets reçus ÷ total des apports nets.",
 "Frais Totaux":"% = frais totaux (courtage + TTF) ÷ gains totaux (plus-values latentes + actées + dividendes encaissés).",
 "Rendement sur cours":"% = dividendes nets annuels (reçus ÷ nombre d'années depuis l'ouverture, après 3 mois) ÷ valeur actuelle des titres détenus (cours du jour). La flèche indique le dividende annuel moyen en €.",
@@ -875,7 +876,7 @@ function ovX(v){
   /* Perf. du jour : on part des cours en direct (même base que l'en-tête et le tableau des positions : cours − clôture de la veille) ; l'historique ne sert que s'il n'y a pas de cours en direct */
   const dn=R.total-R.day,jl=R.anyLive?[R.day,dn>0?R.day/dn*100:0]:null;
   if(H){yv=H.y;mv=H.m;jv=jl||H.j}else{yv=null;mv=null;jv=jl}
-  const pl=inv>0?pnl/inv*100:0,pa=tot>0?real/tot*100:0,pd=ap>0?dv/ap*100:null,pf=tg>0?fees/tg*100:null;
+  const pl=inv>0?pnl/inv*100:0,pa=R.soldCost>0.005?real/R.soldCost*100:null,pd=ap>0?dv/ap*100:null,pf=tg>0?fees/tg*100:null;
   const dan=ans>=.25?dv/ans:dv,rc=val>0?uP(dan/val*100):'N/A',rk=inv>0?uP(dan/inv*100):'N/A',dam=ans>=.25?dv/ans:null;
   function uP(x){return x.toFixed(2).replace('.',',')+' %'}
   const T=Math.round(cg('yearly_target',10000)),fin=cg('objectif_fin',new Date().getFullYear()+'-12-31'),pfo=Number(cg('objectif_perf',7)),v0=tot;
@@ -910,7 +911,7 @@ function ovX(v){
     <div class="ov2-per">${ovPer('Performance du Jour','Jour',jv)}${ovPer('Performance du Mois','Mois',mv)}${ovPer('Performance YTD','Année',yv)}</div>
     <div class="ov2-rows c2">${ovRow('Performance Annuelle Moyenne',pam!=null?oPT(pam):'N/A',gam!=null?oDE(gam):null,0,pam!=null?ovSign(pam):'')}${ovRow('Drawdown Maximum',H&&H.dd!=null?oPT(Math.min(H.dd,0)):'N/A',H&&H.cur!=null?H.cur.toFixed(2).replace('.',',')+'%':null,0,H&&H.dd<0?'r':'')}</div>
     <h4>🏷️ Plus-values, Dividendes & Frais</h4>
-    <div class="ov2-rows">${ovRow('Plus-Value Latente',oGE(pnl),oDP(pl),0,ovSign(pnl))}${ovRow('Plus-Value Actée',oGE(real),oDP(pa),0,ovSign(real))}${ovRow('Dividendes Reçus',oGE(dv),pd!=null?oDP(pd):null)}${it>0?ovRow('Intérêts Reçus',oGE(it),ap>0?oDP(it/ap*100):null):''}${ovRow('Frais Totaux',oGE(fees),pf!=null?pf.toFixed(2).replace('.',',')+'%':null,1)}${ovRow('Rendement sur cours',rc,dam!=null?oDE(dam):null)}${ovRow('Rendement sur coût',rk,dam!=null?oDE(dam):null)}</div>
+    <div class="ov2-rows">${ovRow('Plus-Value Latente',oGE(pnl),oDP(pl),0,ovSign(pnl))}${ovRow('Plus-Value Actée',oGE(real),pa!=null?oDP(pa):null,0,ovSign(real))}${ovRow('Dividendes Reçus',oGE(dv),pd!=null?oDP(pd):null)}${it>0?ovRow('Intérêts Reçus',oGE(it),ap>0?oDP(it/ap*100):null):''}${ovRow('Frais Totaux',oGE(fees),pf!=null?pf.toFixed(2).replace('.',',')+'%':null,1)}${ovRow('Rendement sur cours',rc,dam!=null?oDE(dam):null)}${ovRow('Rendement sur coût',rk,dam!=null?oDE(dam):null)}</div>
   </div></div></details>
   <details class="exp" open><summary>🎯 Objectif</summary><div class="in">
     <div class="sbox"><p><b>💰 Objectif</b></p><div class="ocols">${num('yearly_target','Valeur visée (€)',T,1,0)}<div><label>Date de fin</label><div class="din"><input type="date" data-cfg="objectif_fin" value="${fin}" min="2000-01-01" max="2100-12-31"></div></div>${num('objectif_perf','Performance / an (%)',pfo.toFixed(1),.5,-50,100)}</div></div>
@@ -975,7 +976,7 @@ function posActHTML(){
   const cols=['Nom','Quantité','PRU Net (€)','Prix actuel (€)','Valeur Actuel (€)','Gain du jour (€)','Gain Latent (€)','Performance (%)','Gain Réalisé (€)','Dividende Reçu (€)','PRU ajusté','Perf. PRU ajusté (%)','Détention (jour)','Perf. annuelle moy. (%)'];
   const EQ=['Gain du jour (€)','Gain Latent (€)','Performance (%)','Perf. PRU ajusté (%)','Perf. annuelle moy. (%)'];
   const rows=S2.map(p=>{const a=(p.inv-(p.div+p.rl))/p.sh,vp=p.live&&p.pc?(p.px-p.pc)/p.pc*100:null;
-    return[p.nom,pQty(p.sh,'dot'),pPx(p.pru),pPx(p.px)+(vp==null?'':` (${pPerf(vp)})`),pEur(p.val),(vp==null?'N/A':pEurA(p.day)+' ('+pPerf(vp)+')'),pEurA(p.lat),pPerf(p.latP),pEurA(p.rl),pEur(p.div),
+    return[p.nom,pQty(p.sh,'dot'),pPx(p.pru),pPx(p.px),pEur(p.val),(vp==null?'N/A':pEurA(p.day)+' ('+pPerf(vp)+')'),pEurA(p.lat),pPerf(p.latP),pEurA(p.rl),pEur(p.div),
       isNaN(a)?'N/A':pPx(Math.max(a,0)),isNaN(a)||isNaN(p.px)?'N/A':a<=0?'Gratuite':pPerf((p.px-a)/a*100),pDuree(p.jours,p.secs),pPerf(perfAnn(p.latP,p.jours))]});
   const sum=k=>A.reduce((s,p)=>s+(p[k]||0),0),tv=sum('val'),gl=sum('lat'),gr=sum('rl'),dv=sum('div'),cap=sum('inv'),vj=A.reduce((s,p)=>s+(p.live&&p.pc?p.day:0),0),tvv=tv-vj;
   const T=cols.map(()=>'');T[0]='Total';T[4]=pEur(tv);T[5]=tvv>0?pEurA(vj)+' ('+pPerf(vj/tvv*100)+')':'N/A';T[6]=pEurA(gl);T[8]=pEurA(gr);T[9]=pEur(dv);T[7]=cap>0?pPerf(gl/cap*100):'N/A';
@@ -1321,7 +1322,7 @@ const stkBg=(cs,rs)=>{const m=BG_RE.exec(cs||'')||BG_RE.exec(rs||'');if(!m)retur
 function parenCell(v,pw,nw){const m=PAREN_RE.exec(String(v));if(!m)return null;let[,px,ar,num]=m;const col=ar=='▲'?'#16a34a':ar=='▼'?'#dc2626':'#64748b';if(ar=='▬')ar='=';
   const unit=num.endsWith('%')?'%':'';if(unit)num=num.slice(0,-1);
   let pa='',pmw=pw;const am=/^([▲▼▬=])\s(.*)$/.exec(px);if(am){pa=am[1]=='▬'?'=':am[1];px=am[2];pmw=Math.max(pw-2,0)}
-  return`<span class="ca">${pa?`<span class="ar">${pa}</span>`:''}<span class="rv" style="min-width:${pmw}ch">${esc(px)}</span><span style="color:${col};font-weight:700;display:inline-flex;align-items:baseline;margin-left:.1em"><span class="rv" style="min-width:${nw+2.3}ch;white-space:nowrap">(<span class="ar">${ar}</span>${esc(num)}</span><span>${unit})</span></span></span>`}
+  return`<span class="ca">${pa?`<span class="ar">${pa}</span>`:''}<span class="rv" style="min-width:${pmw}ch">${esc(px)}</span><span style="color:${col};font-weight:700;display:inline-flex;align-items:baseline;margin-left:.2em"><span class="rv" style="white-space:nowrap;text-align:left">(<span class="ar">${ar}</span>${esc(num)}</span><span>${unit})</span></span></span>`}
 /* cols : noms ; rows : tableaux de textes ; o.cell(col,val)->css ; o.row[i]->css ; o.sticky : nom de colonne figée */
 function peaTable(cols,rows,o={}){
   const parsed={},numW={},hasAr={},parenW={},tot=o.total||null,all=tot?[...rows,tot]:rows,ix=o.index||null;
@@ -1895,7 +1896,7 @@ function drawHis(v){
   /* quotidien */
   const dq=[];
   for(let i=0;i<D.length;i++){const e=row(i),p=i?row(i-1):row(-1),g=gain(e,p),x=ad[D[i]]||Z;
-    if(Math.abs(g)<.01&&x.nb==0&&x.app==0)continue;
+    
     dq.push({k:D[i],lab:D[i].split('-').reverse().join('-'),nb:x.nb,real:e.r-p.r,lat:(e.act-e.iv)-(p.act-p.iv),div:e.d-p.d,perf:g/base(p)*100,val:e.act,ach:x.ach,vte:x.vte,fra:x.fra,app:x.app,sale:x.sale})}
   dq.reverse();
   /* mensuel */
