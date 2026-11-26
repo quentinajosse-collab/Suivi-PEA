@@ -1321,7 +1321,7 @@ const stkBg=(cs,rs)=>{const m=BG_RE.exec(cs||'')||BG_RE.exec(rs||'');if(!m)retur
 function parenCell(v,pw,nw){const m=PAREN_RE.exec(String(v));if(!m)return null;let[,px,ar,num]=m;const col=ar=='▲'?'#16a34a':ar=='▼'?'#dc2626':'#64748b';if(ar=='▬')ar='=';
   const unit=num.endsWith('%')?'%':'';if(unit)num=num.slice(0,-1);
   let pa='',pmw=pw;const am=/^([▲▼▬=])\s(.*)$/.exec(px);if(am){pa=am[1]=='▬'?'=':am[1];px=am[2];pmw=Math.max(pw-2,0)}
-  return`<span class="ca">${pa?`<span class="ar">${pa}</span>`:''}<span class="rv" style="min-width:${pmw}ch">${esc(px)}</span><span style="color:${col};font-weight:700;display:inline-flex;align-items:baseline;margin-left:.4em"><span class="rv" style="min-width:${nw+2.4}ch;white-space:nowrap">(<span class="ar">${ar}</span>${esc(num)}</span><span>${unit})</span></span></span>`}
+  return`<span class="ca">${pa?`<span class="ar">${pa}</span>`:''}<span class="rv" style="min-width:${pmw}ch">${esc(px)}</span><span style="color:${col};font-weight:700;display:inline-flex;align-items:baseline;margin-left:.1em"><span class="rv" style="min-width:${nw+2.3}ch;white-space:nowrap">(<span class="ar">${ar}</span>${esc(num)}</span><span>${unit})</span></span></span>`}
 /* cols : noms ; rows : tableaux de textes ; o.cell(col,val)->css ; o.row[i]->css ; o.sticky : nom de colonne figée */
 function peaTable(cols,rows,o={}){
   const parsed={},numW={},hasAr={},parenW={},tot=o.total||null,all=tot?[...rows,tot]:rows,ix=o.index||null;
