@@ -162,6 +162,25 @@ button{border-radius:10px;font-weight:600;transition:all .15s ease-in-out}
 .mtv{font-family:'Manrope','Inter',system-ui,sans-serif;font-variant-numeric:tabular-nums lining-nums;font-weight:800;letter-spacing:-.035em;color:#0f172a;font-size:1.55rem;line-height:1.25;white-space:nowrap;max-width:100%}
 .mtd{display:flex;align-items:center;gap:.15rem;width:fit-content;max-width:100%;font-family:'Manrope','Inter',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:-.025em}
 .mtd.g{color:#09ab3b}.mtd.r{color:#ff2b2b}.mtd svg{width:1.1em;height:1.1em;flex:none}
+/* Vue d'ensemble : un panneau unique, valeur en tête puis listes aérées */
+.ov2{background:#fff;border:1px solid #e2e8f0;border-radius:20px;overflow:hidden;box-shadow:0 8px 24px -12px rgba(15,23,42,.18);color:#0f172a;font-variant-numeric:tabular-nums lining-nums}
+.ov2 [data-mt]{cursor:pointer}.ov2 [data-mt] .l::after{content:" ⓘ";opacity:.4;font-size:.85em}
+.ov2 .l{display:block;font-size:.8rem;color:#64748b;line-height:1.35}
+.ov2 .v{font-family:'Manrope','Inter',system-ui,sans-serif;font-weight:800;letter-spacing:-.03em;white-space:nowrap}
+.ov2 .d{display:block;font-size:.78rem;font-weight:700;white-space:nowrap}.ov2 .g{color:#15803d}.ov2 .r{color:#dc2626}.ov2 .n{color:#64748b}
+.ov2-top{padding:20px 20px 16px;background:linear-gradient(160deg,rgba(2,132,199,.09),rgba(124,58,237,.07) 60%,rgba(13,148,136,.05))}
+.ov2-top .big{font-size:2.3rem;line-height:1.15;display:block;margin:2px 0 8px}
+.ov2-chip{display:inline-flex;flex-wrap:wrap;gap:2px 8px;align-items:center;padding:5px 12px;border-radius:999px;font-weight:700;font-size:.86rem;background:rgba(21,128,61,.11);color:#15803d}.ov2-chip.r{background:rgba(220,38,38,.1)}.ov2-chip .l{display:inline;color:inherit;font-size:inherit}
+.ov2-split{display:flex;height:8px;border-radius:4px;overflow:hidden;background:#e2e8f0;margin:16px 0 10px}.ov2-split i{display:block}
+.ov2-kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ov2-kv>div+div{text-align:center}.ov2-kv>div:last-child{text-align:right}.ov2-kv .l{font-size:.74rem;white-space:nowrap}.ov2-kv .v{display:block;font-size:clamp(.82rem,3.8vw,1.1rem)}
+.ov2-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px}
+.ov2 h4{margin:0;padding:16px 20px 6px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#64748b;border-top:1px solid #eef2f7}
+.ov2-per{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:2px 8px 12px}
+.ov2-per>div{text-align:center;padding:6px 4px;min-width:0}.ov2-per>div+div{border-left:1px solid #eef2f7}.ov2-per .v{display:block;font-size:1.15rem}
+.ov2-rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));column-gap:28px;padding:0 20px 8px}
+.ov2-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f1f5f9}
+.ov2-row .l{font-size:.9rem;color:#334155}.ov2-row>span:last-child{text-align:right}.ov2-row .v{display:block;font-size:1.02rem}
+@media(max-width:420px){.ov2-top .big{font-size:2rem}.ov2-per .v{font-size:1rem}.ov2-per .d{font-size:.72rem}}
 #pea-metric-bubble{position:fixed;z-index:999999;max-width:280px;padding:9px 12px;border-radius:10px;background:#1e293b;color:#f8fafc;font:500 13px/1.4 system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.28);pointer-events:none}
 .sbox{border:1px solid rgba(49,51,63,.2);border-radius:.5rem;padding:calc(1rem - 1px);display:flex;flex-direction:column;gap:1rem}
 .sbox>p{margin:0}
@@ -838,6 +857,12 @@ function ovHistX(inv){const C=getC();if(!C)return null;const{D,V,F}=C,n=D.length
   let dd=null,cur=null;
   if(n>=3){let idx=1,pk=1,mn=0,lastdd=0;for(let i=1;i<n;i++){const p=V[i-1],r=p>0?(V[i]-p-F[i])/p:0;idx*=1+r;pk=Math.max(pk,idx);const d=(idx/pk-1)*100;if(d<mn)mn=d;lastdd=d}dd=mn;cur=lastdd}
   return{y:per(y+'-01-01'),m:per(y+'-'+pad(m+1)+'-01'),j:per(dstr(yest),true),dd,cur}}
+/* Vue d'ensemble : mêmes libellés (donc mêmes infobulles) et mêmes calculs qu'avant, seule la présentation change */
+const ovTip=l=>OMT[l]?` data-mt="${esc(OMT[l])}"`:'';
+const ovCl=(t,inv)=>{if(t==null||!/[1-9]/.test(t))return'n';const neg=String(t).trim()[0]=='-';return(inv?neg:!neg)?'g':'r'};
+const ovRow=(l,val,delta,inv,cl)=>`<div class="ov2-row"${ovTip(l)}><span class="l">${l}</span><span><span class="v ${cl||''}">${val}</span>${delta!=null?`<span class="d ${ovCl(delta,inv)}">${delta}</span>`:''}</span></div>`;
+const ovPer=(l,short,a)=>`<div${ovTip(l)}><span class="l">${short}</span><span class="v ${a?ovCl(oPT(a[1])):'n'}">${a?oPT(a[1]):'N/A'}</span>${a?`<span class="d ${ovCl(oDE(a[0]))}">${oDE(a[0])}</span>`:''}</div>`;
+const ovSign=v=>!isFinite(v)||Math.abs(v)<.005?'':v>0?'g':'r';
 function ovX(v){
   const op=R.pos.filter(p=>p.open),inv=op.reduce((s,p)=>s+p.inv,0),val=R.valeur,pnl=val-inv,real=R.real,dv=R.divNet,it=R.interets||0,tg=pnl+real+dv+it,ap=R.apports,tot=R.total,fees=R.fees,cst=R.pos.reduce((x,p)=>x+p.ach,0);
   const base=ap>0?ap:(cst>0?cst:inv),pg=base>0?tg/base*100:0;
@@ -848,7 +873,6 @@ function ovX(v){
   /* Perf. du jour : on part des cours en direct (même base que l'en-tête et le tableau des positions : cours − clôture de la veille) ; l'historique ne sert que s'il n'y a pas de cours en direct */
   const dn=R.total-R.day,jl=R.anyLive?[R.day,dn>0?R.day/dn*100:0]:null;
   if(H){yv=H.y;mv=H.m;jv=jl||H.j}else{yv=null;mv=null;jv=jl}
-  const pm=(a,l)=>omt(l,a?oPT(a[1]):'N/A',a?oDE(a[0]):null,'perf');
   const pl=inv>0?pnl/inv*100:0,pa=tot>0?real/tot*100:0,pd=ap>0?dv/ap*100:null,pf=tg>0?fees/tg*100:null;
   const dan=ans>=.25?dv/ans:dv,rc=val>0?uP(dan/val*100):'N/A',rk=inv>0?uP(dan/inv*100):'N/A',dam=ans>=.25?dv/ans:null;
   function uP(x){return x.toFixed(2).replace('.',',')+' %'}
@@ -870,18 +894,21 @@ function ovX(v){
     body=pb+`<div style="display:grid;gap:6px;margin-top:8px;grid-template-columns:repeat(2,minmax(0,1fr))">${oc('Apport mensuel nécessaire',oGE(pmt),col,1)}${oc("Niveau d'effort",ban,col,1)}</div>`
       +`<div style="display:grid;gap:6px;margin-top:8px;grid-template-columns:repeat(3,minmax(0,1fr))">${oc('Actuel',oGE(v0),'#0284c7')}${oc('Total à verser',oGE(pmt*n),'#4f46e5')}${oc('Sans nouvel apport',oGE(sans),'#64748b')}</div><div style="height:22px"></div>`}
   const num=(id,lab,val,step,min,max)=>`<div><label>${lab}</label><div class="nin"><input type="number" inputmode="decimal" data-cfg="${id}" value="${val}" step="${step}" min="${min}"${max!=null?` max="${max}"`:''}><button type="button" data-step="-${step}" aria-label="Diminuer">−</button><button type="button" data-step="${step}" aria-label="Augmenter">+</button></div></div>`;
-  v.innerHTML=`<details class="exp" open><summary>📊 Vue d'ensemble du Portefeuille</summary><div class="in"><div class="dcard">
-    <p class="dst">💰 Capital & Investissement</p>
-    <div class="mcols mc4">${omt('Valeur Actuelle',oGE(tot),null,'cap')}${omt('Montant Investi',oGE(inv),null,'cap')}${omt('Cash Disponible',oGE(R.cash),null,'cap')}${omt('Apports',oGE(S.tx.filter(t=>!t.virt&&t.type=='APPORT').reduce((s,t)=>s+t.q,0)),null,'cap')}</div>
-    <p class="dst" style="margin-top:16px">📈 Performances</p>
-    <div class="mcols mc2">${omt('Performance Globale',oPT(pg),oDE(tg),'perf')}${pm(yv,'Performance YTD')}</div>
-    <div class="mcols mc2">${pm(mv,'Performance du Mois')}${pm(jv,'Performance du Jour')}</div>
-    <div class="mcols mc2">${omt('Performance Annuelle Moyenne',pam!=null?oPT(pam):'N/A',gam!=null?oDE(gam):null,'perf')}${omt('Drawdown Maximum',H&&H.dd!=null?oPT(Math.min(H.dd,0)):'N/A',H&&H.cur!=null?H.cur.toFixed(2).replace('.',',')+'%':null,'perf')}</div>
-    <p class="dst" style="margin-top:16px">🏷️ Plus-values, Dividendes & Frais</p>
-    <div class="mcols mc2">${omt('Plus-Value Latente',oGE(pnl),oDP(pl),'gain')}${omt('Plus-Value Actée',oGE(real),oDP(pa),'gain')}</div>
-    <div class="mcols mc2">${omt('Dividendes Reçus',oGE(dv),pd!=null?oDP(pd):null,'gain')}${omt('Frais Totaux',oGE(fees),pf!=null?pf.toFixed(2).replace('.',',')+'%':null,'gain',1)}</div>
-    ${it>0?`<div class="mcols mc2">${omt('Intérêts Reçus',oGE(it),ap>0?oDP(it/ap*100):null,'gain')}</div>`:''}
-    <div class="mcols mc2">${omt('Rendement sur cours',rc,dam!=null?oDE(dam):null,'gain')}${omt('Rendement sur coût',rk,dam!=null?oDE(dam):null,'gain')}</div>
+  const apb=S.tx.filter(t=>!t.virt&&t.type=='APPORT').reduce((s,t)=>s+t.q,0),cash=R.cash,sp=Math.max(0,val)+Math.max(0,cash),pv=sp>0?Math.max(0,val)/sp*100:0;
+  v.innerHTML=`<details class="exp" open><summary>📊 Vue d'ensemble du Portefeuille</summary><div class="in"><div class="ov2">
+    <div class="ov2-top">
+      <div${ovTip('Valeur Actuelle')}><span class="l">Valeur Actuelle</span><span class="v big">${oGE(tot)}</span></div>
+      <div class="ov2-chip ${ovCl(oDE(tg))=='r'?'r':''}"${ovTip('Performance Globale')}><span class="v">${oDE(tg)}</span><span class="v">${oPT(pg)}</span></div><span class="l" style="margin-top:5px">Performance Globale</span>
+      <div class="ov2-split" title="Répartition titres / cash"><i style="width:${pv}%;background:#0284c7"></i><i style="width:${sp>0?100-pv:0}%;background:#2dd4bf"></i></div>
+      <div class="ov2-kv"><div${ovTip('Montant Investi')}><span class="l"><span class="ov2-dot" style="background:#0284c7"></span>Investi</span><span class="v">${oGE(inv)}</span></div>
+        <div${ovTip('Cash Disponible')}><span class="l"><span class="ov2-dot" style="background:#2dd4bf"></span>Cash</span><span class="v">${oGE(cash)}</span></div>
+        <div${ovTip('Apports')}><span class="l">Apports</span><span class="v">${oGE(apb)}</span></div></div>
+    </div>
+    <h4>📈 Performances</h4>
+    <div class="ov2-per">${ovPer('Performance du Jour','Jour',jv)}${ovPer('Performance du Mois','Mois',mv)}${ovPer('Performance YTD','Année',yv)}</div>
+    <div class="ov2-rows">${ovRow('Performance Annuelle Moyenne',pam!=null?oPT(pam):'N/A',gam!=null?oDE(gam):null,0,pam!=null?ovSign(pam):'')}${ovRow('Drawdown Maximum',H&&H.dd!=null?oPT(Math.min(H.dd,0)):'N/A',H&&H.cur!=null?H.cur.toFixed(2).replace('.',',')+'%':null,0,H&&H.dd<0?'r':'')}</div>
+    <h4>🏷️ Plus-values, Dividendes & Frais</h4>
+    <div class="ov2-rows">${ovRow('Plus-Value Latente',oGE(pnl),oDP(pl),0,ovSign(pnl))}${ovRow('Plus-Value Actée',oGE(real),oDP(pa),0,ovSign(real))}${ovRow('Dividendes Reçus',oGE(dv),pd!=null?oDP(pd):null)}${it>0?ovRow('Intérêts Reçus',oGE(it),ap>0?oDP(it/ap*100):null):''}${ovRow('Frais Totaux',oGE(fees),pf!=null?pf.toFixed(2).replace('.',',')+'%':null,1)}${ovRow('Rendement sur cours',rc,dam!=null?oDE(dam):null)}${ovRow('Rendement sur coût',rk,dam!=null?oDE(dam):null)}</div>
   </div></div></details>
   <details class="exp" open><summary>🎯 Objectif</summary><div class="in">
     <div class="sbox"><p><b>💰 Objectif</b></p><div class="ocols">${num('yearly_target','Valeur visée (€)',T,1,0)}<div><label>Date de fin</label><div class="din"><input type="date" data-cfg="objectif_fin" value="${fin}" min="2000-01-01" max="2100-12-31"></div></div>${num('objectif_perf','Performance / an (%)',pfo.toFixed(1),.5,-50,100)}</div></div>
@@ -891,7 +918,7 @@ function ovX(v){
 
 /* Infobulle au clic sur un indicateur (comme _METRIC_TIP_JS du Streamlit) */
 let OMB=null;const ombClose=()=>{if(OMB){OMB.remove();OMB=null}};
-document.addEventListener('click',e=>{const m=e.target.closest&&e.target.closest('.mtr[data-mt]'),same=OMB&&m&&OMB._m===m;ombClose();if(!m||same)return;
+document.addEventListener('click',e=>{const m=e.target.closest&&e.target.closest('.mtr[data-mt],.ov2 [data-mt]'),same=OMB&&m&&OMB._m===m;ombClose();if(!m||same)return;
   OMB=document.createElement('div');OMB.id='pea-metric-bubble';OMB.textContent=m.dataset.mt;OMB._m=m;document.body.appendChild(OMB);
   const r=m.getBoundingClientRect(),b=OMB.getBoundingClientRect();OMB.style.left=Math.min(Math.max(r.left+r.width/2-b.width/2,8),innerWidth-b.width-8)+'px';
   let t=r.top-b.height-8;if(t<8)t=r.bottom+8;OMB.style.top=t+'px'},true);
