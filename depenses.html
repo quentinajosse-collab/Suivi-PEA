@@ -343,12 +343,14 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
 .vw{display:flex;gap:6px;margin:8px 0}.vw button{flex:1;padding:6px 4px;border-radius:999px;font-size:13px}.vw button.on{background:var(--acc);border-color:var(--acc);color:#fff}.rkall{width:100%;margin-top:10px;font-size:13px}.rkh{margin:10px 0 2px;font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
 .fi{position:relative;overflow:hidden}.fi img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;padding:6px}
 .nwr{display:block;padding:8px 0;border-top:1px solid var(--line);color:var(--ink);text-decoration:none}.nwr span{display:block;font-weight:600;font-size:13.5px;line-height:1.35}.nwr small{display:block;color:var(--mute);font-size:11.5px;margin-top:2px}.nwr small b{color:var(--acc);font-weight:600}.rk h4.ch{margin:10px 0 4px;font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}.rk .rr small{display:block}.nwsel{width:100%;margin:8px 0 2px;padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:var(--alt);color:var(--ink);font:inherit;font-size:13px}
+.wtabs{display:flex;gap:6px;overflow-x:auto;margin:10px 0 0;padding-bottom:2px}.wtabs button{flex:1 0 auto;padding:9px 12px;border-radius:999px;border:1px solid var(--line);background:var(--alt);color:var(--ink);font:inherit;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer}.wtabs button.on{background:var(--acc);border-color:var(--acc);color:#fff}#al,#rk,#cal,#nw{display:none}body[data-wt=al] #al,body[data-wt=rk] #rk,body[data-wt=cal] #cal,body[data-wt=nw] #nw{display:block}.rk>details>summary{pointer-events:none;cursor:default}
 </style>
 </head>
 <body>
 <main>
   <h1>👁️ Watchlist</h1>
   <div class="sub" id="sub"></div>
+  <div class="wtabs" id="wtabs"></div>
   <div class="rk" id="al"></div>
   <div class="rk" id="rk"></div>
   <div class="rk" id="cal"></div>
@@ -1493,6 +1495,15 @@ document.addEventListener('click',e=>{const t=e.target;if(!t||!t.closest)return;
 document.addEventListener('change',e=>{const s=e.target.closest&&e.target.closest('[data-nwf]');if(s){NWF=s.value;nwRender()}});
 document.addEventListener('toggle',e=>{const d=e.target.closest&&e.target.closest('#cal,#nw');if(d)LS.s(d.id==='cal'?'wl_calo':'wl_nwo',e.target.open?1:0)},true);
 setTimeout(calRun,3500);setTimeout(nwRun,2500);setInterval(()=>{if(!document.hidden){calRun();nwRun()}},3e5);
+/* ---------- Onglets du haut : alertes / classement / résultats / actualités ---------- */
+const WT=[['al','🔔 Alertes'],['rk','🏁 Classement'],['cal','📅 Résultats'],['nw','📰 Actualités']];
+function wtSet(k){if(!WT.some(x=>x[0]===k))k='al';document.body.dataset.wt=k;LS.s('wl_tab',k);const b=$('#wtabs');if(b)b.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.t===k))}
+(function(){const b=$('#wtabs');if(!b)return;b.innerHTML=WT.map(x=>`<button data-t="${x[0]}">${x[1]}</button>`).join('');
+  b.addEventListener('click',e=>{const t=e.target.closest('button[data-t]');if(t)wtSet(t.dataset.t)});
+  wtSet(LS.g('wl_tab')||'al');
+  /* chaque onglet affiche son contenu en entier : les cadres repliables restent toujours ouverts */
+  const open=()=>document.querySelectorAll('#al>details,#rk>details,#cal>details,#nw>details').forEach(d=>{if(!d.open)d.open=true});
+  const mo=new MutationObserver(open);['al','rk','cal','nw'].forEach(i=>{const n=document.getElementById(i);if(n)mo.observe(n,{childList:true})});open()})();
 /* ---------- Démarrage ---------- */
 addEventListener('storage',e=>{if(e.key==='url')refresh();if(e.key==='sb')pull();if(e.key==='wl_list'){W=norm(LS.g('wl_list'));render()}if(e.key==='wl_groups'){G=(LS.g('wl_groups')||[]).filter(Boolean);render()}});
 addEventListener('message',e=>{if(e.source===parent&&e.data&&e.data.hubHome){document.querySelectorAll('dialog[open]').forEach(d=>{try{d.close()}catch(_){}});scrollTo(0,0)}});
