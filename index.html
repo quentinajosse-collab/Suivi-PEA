@@ -153,7 +153,12 @@ dialog .hint{color:var(--mut);font-size:12px;margin:6px 0 0}
 <script>
 "use strict";
 const $=s=>document.querySelector(s);
-const LS={g(k){try{return JSON.parse(localStorage.getItem(k))}catch{return null}},s(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+const todayL=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+/* Une opération datée d'un jour futur n'est comptée (patrimoine, dépenses, comptes) qu'à minuit de sa date : on masque le futur à la lecture, sans toucher aux données stockées ni à la synchro */
+const noFut=D=>{if(!D||typeof D!=='object')return D;const T=todayL(),o={...D};['depenses','transferts','livrets_lignes','retraits_epargne','interessement','salaires'].forEach(k=>{if(Array.isArray(D[k]))o[k]=D[k].filter(x=>!(x&&x.date&&String(x.date).slice(0,10)>T))});return o};
+const LS={g(k){try{const v=JSON.parse(localStorage.getItem(k));return k==='depenses_v1'?noFut(v):v}catch{return null}},s(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+/* changement de jour : on rafraîchit l'accueil pour intégrer à minuit les opérations du jour */
+let _dj=todayL();setInterval(()=>{if(todayL()!==_dj){_dj=todayL();try{if(typeof cur!=='undefined'&&cur==='home')renderHome()}catch(e){}}},3e4);
 const eur2=n=>(n||0).toLocaleString('fr-FR',{style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2});
 const eur=n=>(n||0).toLocaleString('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0});
 const MODS0=[

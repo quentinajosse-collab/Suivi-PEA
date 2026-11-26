@@ -1686,6 +1686,8 @@ function bars(map,col,tf){const e=Object.entries(map).sort((a,b)=>b[1]-a[1]);if(
 
 /* ---------- Dates (chaînes ISO AAAA-MM-JJ, sans décalage de fuseau) ---------- */
 function TODAY(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
+/* À minuit, une opération datée du jour est comptée : on rafraîchit l'affichage au changement de date */
+let _d0=TODAY();const _mid=()=>{if(TODAY()!==_d0){_d0=TODAY();try{render()}catch(e){}}};setInterval(_mid,30000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)_mid()});
 const D0=s=>new Date(s+"T12:00:00Z");
 function addD(s,n){const d=D0(s);d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
 function diffD(a,b){return Math.round((D0(b)-D0(a))/864e5)}
@@ -1694,7 +1696,8 @@ function nextM(m){let[y,o]=m.split("-").map(Number);o++;if(o>12){o=1;y++}return 
 function addM(s,k){const d=D0(s),day=d.getUTCDate();d.setUTCDate(1);d.setUTCMonth(d.getUTCMonth()+k);const dm=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0,12)).getUTCDate();d.setUTCDate(Math.min(day,dm));return d.toISOString().slice(0,10)}
 function isoWeek(m){const th=addD(m,3),y=+th.slice(0,4),j=y+"-01-04",m1=addD(j,-dow(j));return[y,Math.floor(diffD(m1,m)/7)+1]}
 const MS=["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."],cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
-const OPS=()=>D.depenses.filter(o=>/^\d{4}-\d{2}-\d{2}$/.test(o.date||""));
+const OPS=()=>{const T=TODAY();return D.depenses.filter(o=>/^\d{4}-\d{2}-\d{2}$/.test(o.date||"")&&o.date<=T)};
+const FUT=()=>{const T=TODAY();return D.depenses.map((o,i)=>({...o,i})).filter(o=>/^\d{4}-\d{2}-\d{2}$/.test(o.date||"")&&o.date>T).sort((x,y)=>x.date.localeCompare(y.date))};
 
 /* ---------- Infobulles (survol à la souris, toucher / glisser au doigt) ---------- */
 const TC={r:"#f87171",g:"#2dd4bf",b:"#38bdf8",v:"#a78bfa",o:"#fb923c"};
@@ -1822,7 +1825,7 @@ function selHtml(){const s=selSum(),c=cg(s.d-s.r);return`<div class="kpis k3" st
 function selLine(){const s=selSum(),c=cg(s.d-s.r);return s.n?s.n+" sélectionnée"+(s.n>1?"s":"")+" · "+c.l+" "+eur2(c.v):"Touche des opérations"}
 function refSel(){const l=$("#selLine");if(l)l.textContent=selLine()}
 function curTgt(){return UI.gt||UI.gd||(UI.hg!=="all"&&!UI.hg.startsWith("sg:")?UI.hg:"__new")}
-function yearStats(g){const M={};D.depenses.forEach(o=>{if(o.groupe!==g||!o.date)return;const y=o.date.slice(0,4),x=M[y]??={y,d:0,r:0};if(isRev(o))x.r+=o.montant;else x.d+=o.montant});return Object.values(M).sort((a,b)=>a.y.localeCompare(b.y))}
+function yearStats(g){const M={};OPS().forEach(o=>{if(o.groupe!==g||!o.date)return;const y=o.date.slice(0,4),x=M[y]??={y,d:0,r:0};if(isRev(o))x.r+=o.montant;else x.d+=o.montant});return Object.values(M).sort((a,b)=>a.y.localeCompare(b.y))}
 function vHome(){
  fixPer();
  const{a,b}=perRange(),used={};D.depenses.forEach(o=>{if(o.date)used[o.categorie]=1});
@@ -1835,8 +1838,8 @@ function vHome(){
  const t=nrm(q.trim()),filt=!!t||UI.scat!=="all"||UI.hs!=="all"||UI.hg!=="all",sm=UI.selMode;
  /* Avec un groupe choisi, la période est ignorée : le groupe est affiché en entier */
  const L=D.depenses.map((o,i)=>({...o,i})).filter(o=>/^\d{4}-\d{2}-\d{2}$/.test(o.date||"")&&(UI.hg!=="all"?(hgSG?hgSG.groupes.includes(o.groupe):o.groupe===UI.hg):(o.date>=a&&o.date<=b))&&(UI.hs==="all"||(isRev(o)?"Revenu":"Dépense")===UI.hs)&&(UI.scat==="all"||o.categorie===UI.scat)&&(!t||nrm(o.libelle).includes(t))).sort((x,y)=>y.date.localeCompare(x.date)||y.i-x.i);
- const r=L.filter(isRev).reduce((s,o)=>s+o.montant,0),d=L.filter(o=>!isRev(o)).reduce((s,o)=>s+o.montant,0),gk=cg(d-r);
- const GS=grs.map((g,gi)=>{const l=D.depenses.filter(o=>o.groupe===g),dd=l.filter(o=>!isRev(o)).reduce((s,o)=>s+o.montant,0),rr=l.filter(isRev).reduce((s,o)=>s+o.montant,0);return{g,pos:gi+1,n:l.length,d:dd,r:rr,ys:yearStats(g)}});
+ const LP=L.filter(o=>o.date<=TODAY()),r=LP.filter(isRev).reduce((s,o)=>s+o.montant,0),d=LP.filter(o=>!isRev(o)).reduce((s,o)=>s+o.montant,0),gk=cg(d-r);
+ const GS=grs.map((g,gi)=>{const l=OPS().filter(o=>o.groupe===g),dd=l.filter(o=>!isRev(o)).reduce((s,o)=>s+o.montant,0),rr=l.filter(isRev).reduce((s,o)=>s+o.montant,0);return{g,pos:gi+1,n:l.length,d:dd,r:rr,ys:yearStats(g)}});
  const tgt=curTgt(),isNew=tgt==="__new";
  /* Section : créer un groupe / ajouter des opérations à un groupe */
  const tn=isNew?((UI.gn||"").trim()||"nouveau groupe"):tgt,
@@ -1874,7 +1877,7 @@ function vHome(){
  <div class="kpis"><div class="kpi" style="--c:var(--vert)"><span>Revenus</span><b>${eur(r)}</b></div><div class="kpi" style="--c:var(--rouge)"><span>Dépenses</span><b>${eur(d)}</b></div>
  <div class="kpi wide" style="--c:var(--bleu)"><span>Solde</span><b>${eur(r-d)}</b></div>
  ${UI.hg!=="all"?`<div class="kpi wide" style="--c:var(--${gk.c})"><span>${gk.l} ${hgSG?"du groupe de groupes":"du groupe"} « ${esc(hgN)} »</span><b>${eur(gk.v)}</b></div>`:""}</div>
- ${trCard(a,b)}<div id="opList" style="scroll-margin-top:70px">${card("home-list",(UI.hg!=="all"?(hgSG?"Groupe de groupes":"Groupe")+" « "+esc(hgN)+" » · ":"Opérations sur la période · ")+L.length,`${sm?`<div style="background:color-mix(in srgb,var(--bleu) 12%,var(--card));border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:.82rem">☑ Touche les opérations à ajouter au groupe « ${esc(tn)} ». Les filtres et la recherche restent utilisables.<div class="row" style="margin:8px 0 0"><button class="sec" id="selAll" style="flex:1">Tout sélectionner</button><button class="sec" id="selNone" style="flex:1">Tout désélectionner</button></div><button class="sec" id="selUn" style="width:100%;margin-top:6px">Retirer du groupe les opérations cochées</button></div>`:""}<div class="lst">${L.length?L.map(o=>`<div class="op${sm&&UI.sel.has(o.i)?" sel":""}" data-op="${o.i}"><div class="m"><b>${esc(o.libelle)}</b><small>${fdy(o.date)} · ${esc(o.categorie)}${o.groupe?" · 🧳 "+esc(o.groupe):""}</small></div><span class="am ${isRev(o)?"pos":"neg"}">${isRev(o)?"+":"−"}${eur2(o.montant)}</span><span class="ck" style="color:var(--mut)">${sm?(UI.sel.has(o.i)?"☑":"☐"):"✎"}</span></div>`).join(""):'<div class="empty">Aucune opération</div>'}</div>`,"margin-top:0")}</div>
+ ${trCard(a,b)}<div id="opList" style="scroll-margin-top:70px">${card("home-list",(UI.hg!=="all"?(hgSG?"Groupe de groupes":"Groupe")+" « "+esc(hgN)+" » · ":"Opérations sur la période · ")+L.length,`${sm?`<div style="background:color-mix(in srgb,var(--bleu) 12%,var(--card));border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:.82rem">☑ Touche les opérations à ajouter au groupe « ${esc(tn)} ». Les filtres et la recherche restent utilisables.<div class="row" style="margin:8px 0 0"><button class="sec" id="selAll" style="flex:1">Tout sélectionner</button><button class="sec" id="selNone" style="flex:1">Tout désélectionner</button></div><button class="sec" id="selUn" style="width:100%;margin-top:6px">Retirer du groupe les opérations cochées</button></div>`:""}<div class="lst">${L.length?L.map(o=>`<div class="op${sm&&UI.sel.has(o.i)?" sel":""}" data-op="${o.i}"><div class="m"><b>${esc(o.libelle)}</b><small>${fdy(o.date)} · ${esc(o.categorie)}${o.groupe?" · 🧳 "+esc(o.groupe):""}</small></div><span class="am ${isRev(o)?"pos":"neg"}">${isRev(o)?"+":"−"}${eur2(o.montant)}</span><span class="ck" style="color:var(--mut)">${sm?(UI.sel.has(o.i)?"☑":"☐"):"✎"}</span></div>`).join(""):'<div class="empty">Aucune opération</div>'}</div>`,"margin-top:0")}</div>${(()=>{const F=FUT();return F.length?card("home-fut","⏳ À venir · "+F.length+" (comptées à minuit)",`<div class="lst">${F.map(o=>`<div class="op" data-op="${o.i}" style="opacity:.75"><div class="m"><b>${esc(o.libelle)}</b><small>${fdy(o.date)} · ${esc(o.categorie)}</small></div><span class="am ${isRev(o)?"pos":"neg"}">${isRev(o)?"+":"−"}${eur2(o.montant)}</span><span class="ck" style="color:var(--mut)">✎</span></div>`).join("")}</div>`):""})()}
  <div id="grpSec" style="scroll-margin-top:70px"><div class="sh" style="margin:18px 4px 8px">🧳 Groupes de dépenses</div>
  ${card("home-grp","🧳 Mes groupes · touche un titre pour trier",tbl+(grs.length?`<label style="margin-top:12px">Voir le détail d'un groupe</label><select data-u="gd"><option value="">— Choisir un groupe —</option>${grs.map((g,k)=>opt(g,(k+1)+". "+g,UI.gd||"")).join("")}</select>`:"")+mg)}</div><div id="sgSec">${sgCard}</div>${selBar}`}
 
@@ -1994,8 +1997,8 @@ function livClosed(a){const m=livMoves(a),T=TODAY();return m.some(x=>x.d<=T)&&Ma
 const livOpen=()=>livAll().filter(a=>!livClosed(a)),livShut=()=>livAll().filter(livClosed);
 /* Solde d'un compte bancaire = solde initial (réglages, saisi une seule fois) + revenus − dépenses ± transferts rattachés au compte, à partir de la date d'initialisation */
 function acctBal(a){if(a.type==="Livret")return livBal(a);const s=+a.balance||0;if(a.type!=="Compte bancaire")return s;const d0=a.initDate||"";let t=s;
- (D.depenses||[]).forEach(o=>{if(o.compte===a.id&&o.date&&o.date>=d0)t+=isRev(o)?(+o.montant||0):-(+o.montant||0)});
- (D.transferts||[]).forEach(r=>{if(r.date&&r.date>=d0){if(r.de===a.id)t-=+r.montant||0;if(r.vers===a.id)t+=+r.montant||0}});return Math.round(t*100)/100}
+ (D.depenses||[]).forEach(o=>{if(o.compte===a.id&&o.date&&o.date>=d0&&o.date<=TODAY())t+=isRev(o)?(+o.montant||0):-(+o.montant||0)});
+ (D.transferts||[]).forEach(r=>{if(r.date&&r.date>=d0&&r.date<=TODAY()){if(r.de===a.id)t-=+r.montant||0;if(r.vers===a.id)t+=+r.montant||0}});return Math.round(t*100)/100}
 const bkList=()=>hubAcc().filter(a=>a.type==="Compte bancaire");
 function fillAcc(cur){const L=bkList(),s=$("#fAcc");$("#fAccW").classList.toggle("hide",!L.length||sens==="Transfert");
  s.innerHTML='<option value="">— Aucun (non comptabilisé) —</option>'+L.map(a=>`<option value="${esc(a.id)}">${esc((HIC[a.type]||"")+" "+hubNm(a)+(a.broker?" ("+a.broker+")":""))}</option>`).join("");
