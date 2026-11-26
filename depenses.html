@@ -342,6 +342,7 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
 .tw2{overflow-x:auto}.nt th{position:static;cursor:default;white-space:normal;text-transform:none;font-size:12.5px;text-align:right}.nt td{text-align:right}.nt th:first-child,.nt td:first-child{text-align:left;position:static;max-width:none}
 .vw{display:flex;gap:6px;margin:8px 0}.vw button{flex:1;padding:6px 4px;border-radius:999px;font-size:13px}.vw button.on{background:var(--acc);border-color:var(--acc);color:#fff}.rkall{width:100%;margin-top:10px;font-size:13px}.rkh{margin:10px 0 2px;font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
 .fi{position:relative;overflow:hidden}.fi img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;padding:6px}
+.nwr{display:block;padding:8px 0;border-top:1px solid var(--line);color:var(--ink);text-decoration:none}.nwr span{display:block;font-weight:600;font-size:13.5px;line-height:1.35}.nwr small{display:block;color:var(--mute);font-size:11.5px;margin-top:2px}.nwr small b{color:var(--acc);font-weight:600}.rk h4.ch{margin:10px 0 4px;font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}.rk .rr small{display:block}.nwsel{width:100%;margin:8px 0 2px;padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:var(--alt);color:var(--ink);font:inherit;font-size:13px}
 </style>
 </head>
 <body>
@@ -350,6 +351,8 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
   <div class="sub" id="sub"></div>
   <div class="rk" id="al"></div>
   <div class="rk" id="rk"></div>
+  <div class="rk" id="cal"></div>
+  <div class="rk" id="nw"></div>
   <div class="sbar"><input id="q" type="search" placeholder="🔎 Rechercher une valeur…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"></div>
   <div class="bar"><button class="pri" id="add">➕ Ajouter une valeur</button><button id="addg">📁 Créer un groupe</button></div>
   <div class="vw" id="vw"></div>
@@ -515,7 +518,7 @@ async function refresh(sub){if(busy||!W.length)return;
 function isOpen(tk){if(isCrypto(tk))return true;const q=PX[tk];if(!q)return true;if(q.ms)return q.ms==='REGULAR';const n=Date.now()/1e3;if(q.ps&&q.pe)return n>=q.ps&&n<=q.pe+(isDelayed(tk)?0:0);if(q.t)return n-q.t<1800;return true}
 const rowsOf=()=>W.map(it=>{const q=PX[it.ticker]||{},p=q.p!=null?q.p:null,pc=q.pc!=null?q.pc:null,d=p!=null&&pc?p-pc:null,pct=d!=null?d/pc*100:null;
   return{...it,p,d,pct}});
-function render(){const y=scrollY,tw=document.querySelector('.tw'),sl=tw?tw.scrollLeft:0;render0();alRender();if(scrollY!==y)scrollTo(0,y);const t2=document.querySelector('.tw');if(t2&&sl)t2.scrollLeft=sl}
+function render(){const y=scrollY,tw=document.querySelector('.tw'),sl=tw?tw.scrollLeft:0;render0();alRender();try{calRender();nwRender()}catch(e){}if(scrollY!==y)scrollTo(0,y);const t2=document.querySelector('.tw');if(t2&&sl)t2.scrollLeft=sl}
 function setSub(){const at=LS.g('wl_pxAt');$('#sub').textContent=W.length+' valeur'+(W.length>1?'s':'')+(at?' · cours de '+new Date(at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'')+' · crypto en temps réel · US toutes les 2 s · ⏱ = différé 15 min'}
 const priceCell=r=>`<b>${r.p!=null?fPx(r.p)+sfx(r.ticker):'–'}</b>${r.pct!=null&&!isOpen(r.ticker)?` <span class="cl" title="Marché fermé">Fermé</span>`:r.pct!=null?` <span class="${cls(r.pct)}" style="font-weight:700">(${arrow(r.pct)} ${SGP(r.pct)}${nf(2).format(Math.abs(r.pct))} %)</span>`:''}`;
 /* Mise à jour des prix sur place : aucune ligne n'est reconstruite, l'affichage ne bouge pas (l'ordre ne change qu'à une action de ta part) */
@@ -1438,6 +1441,58 @@ async function rkRun(){secRun();if(RKB||!URL_()||!W.length)return;const hOk=tk=>
     RKD++;if(RKD%4===0){LS.s('wl_sc6',SC);LS.s('wl_al',ALS)}rkRender();patch();await bgSleep(600)}};
   await wk();LS.s('wl_sc6',SC);LS.s('wl_al',ALS);RKB=false;ALSIG=null;alRender();rkRender();if(sec)render()}
 setTimeout(rkRun,6000);setInterval(()=>{if(!document.hidden)rkRun()},18e5);
+/* ---------- Calendrier des résultats & actualités des valeurs de la watchlist ---------- */
+let CAL=LS.g('wl_cal')||{},NW=LS.g('wl_nw')||{},CALB=false,NWB=false,CALMORE=false,NWMORE=false,NWF='all',NWERR=false;
+const earnTks=()=>W.filter(w=>!isCrypto(w.ticker)&&!/^\^/.test(w.ticker)),spDays=d=>Math.round((Date.parse(d+'T12:00:00')-Date.now())/864e5),
+  agoTx=ts=>{const m=Math.max(1,Math.round((Date.now()/1e3-ts)/60));return m<60?m+' min':m<1440?Math.round(m/60)+' h':Math.round(m/1440)+' j'};
+function setBox(box,h){if(box._h!==h){box._h=h;box.innerHTML=h}}
+function calItems(){const up=[],last=[];
+  earnTks().forEach(w=>{const c=CAL[w.ticker];if(!c||!c.E||!c.E.ok)return;const E=c.E,nx=E.next;
+    if(nx&&spDays(nx.date)>=-1)up.push({tk:w.ticker,nom:w.nom,date:nx.date,date2:nx.date2,eps:nx.eps});
+    const h=E.hist&&E.hist.length?E.hist[E.hist.length-1]:null;if(h)last.push({tk:w.ticker,nom:w.nom,q:h.q,act:h.act,est:h.est,sur:beat(h)})});
+  up.sort((a,b)=>a.date<b.date?-1:1);last.sort((a,b)=>a.q<b.q?1:-1);return{up,last}}
+function calRender(){const box=$('#cal');if(!box)return;const T=earnTks();if(!T.length){setBox(box,'');return}
+  const{up,last}=calItems(),op=LS.g('wl_calo')!==0,pend=T.filter(w=>!CAL[w.ticker]||!CAL[w.ticker].E).length,f2=v=>v==null?'–':nfr(2,2).format(v),
+    su=CALMORE?up:up.slice(0,6),sl=CALMORE?last:last.slice(0,6),
+    rowU=x=>{const dd=spDays(x.date),when=dd>0?'dans '+dd+' j':dd===0?'aujourd’hui':'hier';
+      return`<div class="rr" data-tk="${esc(x.tk)}"><span>${esc(x.nom)}<small class="sct">${when}${x.eps!=null?' · BPA attendu '+f2(x.eps):''}${x.date2&&x.date2!==x.date?' · date estimée':''}</small></span><b>${dFr(Date.parse(x.date+'T12:00:00'))}</b></div>`},
+    rowL=x=>{const c=x.sur==null?'':x.sur>.005?'up':x.sur<-.005?'dn':'';
+      return`<div class="rr" data-tk="${esc(x.tk)}"><span>${esc(x.nom)}<small class="sct">Trimestre clos le ${dFr(Date.parse(x.q+'T12:00:00'))} · BPA ${f2(x.act)} pour ${f2(x.est)} attendu</small></span><b class="${c}">${x.sur==null?'–':(x.sur>0?'+':'')+nfr(1,1).format(x.sur*100)+' %'}</b></div>`};
+  let h=`<details${op?' open':''}><summary>📅 Calendrier des résultats <small>· ${up.length} à venir${pend?' · '+pend+' à charger':''}</small></summary>`;
+  if(!URL_())h+='<div class="sub2">Renseigne l’adresse du script Google pour charger les dates de résultats.</div>';
+  else{h+=up.length?'<h4 class="ch">Prochains résultats</h4>'+su.map(rowU).join(''):`<div class="sub2">${pend?'Chargement des dates…':'Aucune date de résultats connue pour le moment.'}</div>`;
+    if(last.length)h+='<h4 class="ch">Derniers résultats publiés · écart au BPA attendu</h4>'+sl.map(rowL).join('');
+    if(up.length>6||last.length>6)h+=`<button class="rkall" data-calmore>${CALMORE?'Réduire':'Tout voir'}</button>`}
+  setBox(box,h+'</details>')}
+async function calRun(){if(CALB||!URL_())return;const todo=earnTks().filter(w=>{const c=CAL[w.ticker];return!c||Date.now()-c.at>(c.E&&c.E.ok?432e5:36e5)}).map(w=>w.ticker);if(!todo.length)return;CALB=true;
+  try{let n=0;while(todo.length){await bgWait();const tk=todo.shift(),E=await anEarn(tk);CAL[tk]={at:Date.now(),E};if(++n%3===0){LS.s('wl_cal',CAL);calRender()}await bgSleep(500)}}catch(e){}
+  LS.s('wl_cal',CAL);CALB=false;calRender()}
+function nwRender(){const box=$('#nw');if(!box)return;const T=W.filter(w=>!/^\^/.test(w.ticker));if(!T.length){setBox(box,'');return}
+  const op=LS.g('wl_nwo')!==0,M=new Map();
+  T.forEach(w=>{const c=NW[w.ticker];if(!c||!Array.isArray(c.L))return;c.L.forEach(a=>{if(!a||!a.t||!a.u)return;const k=a.u,o=M.get(k)||{t:a.t,p:a.p,u:a.u,ts:a.ts||0,n:[]};if(!o.n.includes(w.ticker))o.n.push(w.ticker);M.set(k,o)})});
+  const all=[...M.values()].sort((a,b)=>b.ts-a.ts),names=[...new Set(all.flatMap(a=>a.n))].sort((a,b)=>nmW(a).localeCompare(nmW(b),'fr'));
+  if(NWF!=='all'&&!names.includes(NWF))NWF='all';
+  const L=all.filter(a=>NWF==='all'||a.n.includes(NWF)),sh=NWMORE?L.slice(0,40):L.slice(0,10),pend=T.filter(w=>!NW[w.ticker]).length;
+  let h=`<details${op?' open':''}><summary>📰 Actualités <small>· ${all.length} article${all.length>1?'s':''}${pend?' · '+pend+' à charger':''}</small></summary>`;
+  if(!URL_())h+='<div class="sub2">Renseigne l’adresse du script Google pour charger les actualités.</div>';
+  else if(NWERR&&!all.length)h+='<div class="sub2">Actualités indisponibles : ajoute la fonction « nw » au script Google (fichier script_google_dcf.txt) puis redéploie-le.</div>';
+  else{if(names.length>1)h+=`<select class="nwsel" data-nwf><option value="all">Toutes les valeurs</option>${names.map(t=>`<option value="${esc(t)}"${t===NWF?' selected':''}>${esc(nmW(t))}</option>`).join('')}</select>`;
+    h+=sh.length?sh.map(a=>`<a class="nwr" href="${esc(a.u)}" target="_blank" rel="noopener"><span>${esc(a.t)}</span><small>${esc(a.p||'')}${a.ts?' · il y a '+agoTx(a.ts):''} · <b>${a.n.map(t=>esc(nmW(t))).join(', ')}</b></small></a>`).join(''):`<div class="sub2">${pend?'Chargement des actualités…':'Aucune actualité pour le moment.'}</div>`;
+    if(L.length>10)h+=`<button class="rkall" data-nwmore>${NWMORE?'Réduire':'Voir plus ('+Math.min(L.length,40)+')'}</button>`}
+  setBox(box,h+'</details>')}
+const nmW=tk=>{const w=W.find(x=>x.ticker===tk);return w?w.nom:tk};
+async function nwRun(){if(NWB||!URL_())return;const tks=W.filter(w=>!/^\^/.test(w.ticker)).map(w=>w.ticker).filter(tk=>!NW[tk]||Date.now()-NW[tk].at>9e5);if(!tks.length)return;NWB=true;
+  try{for(let i=0;i<tks.length;i+=6){await bgWait();const part=tks.slice(i,i+6);
+    try{const r=await fetch(qs('nw='+encodeURIComponent(part.join(',')))),j=JSON.parse(await r.text());
+      if(j&&typeof j==='object'&&!j.error&&part.some(tk=>Array.isArray(j[tk]))){NWERR=false;part.forEach(tk=>{if(Array.isArray(j[tk]))NW[tk]={at:Date.now(),L:j[tk].slice(0,6)}})}else NWERR=true}catch(e){NWERR=true}
+    nwRender();await bgSleep(300)}}catch(e){}
+  LS.s('wl_nw',NW);NWB=false;nwRender()}
+document.addEventListener('click',e=>{const t=e.target;if(!t||!t.closest)return;
+  if(t.closest('#cal')){if(t.closest('[data-calmore]')){CALMORE=!CALMORE;calRender();return}const r=t.closest('.rr');if(r)openChart(r.dataset.tk);return}
+  if(t.closest('#nw')&&t.closest('[data-nwmore]')){NWMORE=!NWMORE;nwRender()}});
+document.addEventListener('change',e=>{const s=e.target.closest&&e.target.closest('[data-nwf]');if(s){NWF=s.value;nwRender()}});
+document.addEventListener('toggle',e=>{const d=e.target.closest&&e.target.closest('#cal,#nw');if(d)LS.s(d.id==='cal'?'wl_calo':'wl_nwo',e.target.open?1:0)},true);
+setTimeout(calRun,3500);setTimeout(nwRun,2500);setInterval(()=>{if(!document.hidden){calRun();nwRun()}},3e5);
 /* ---------- Démarrage ---------- */
 addEventListener('storage',e=>{if(e.key==='url')refresh();if(e.key==='sb')pull();if(e.key==='wl_list'){W=norm(LS.g('wl_list'));render()}if(e.key==='wl_groups'){G=(LS.g('wl_groups')||[]).filter(Boolean);render()}});
 addEventListener('message',e=>{if(e.source===parent&&e.data&&e.data.hubHome){document.querySelectorAll('dialog[open]').forEach(d=>{try{d.close()}catch(_){}});scrollTo(0,0)}});
