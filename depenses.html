@@ -343,7 +343,7 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
 .vw{display:flex;gap:6px;margin:8px 0}.vw button{flex:1;padding:6px 4px;border-radius:999px;font-size:13px}.vw button.on{background:var(--acc);border-color:var(--acc);color:#fff}.rkall{width:100%;margin-top:10px;font-size:13px}.rkh{margin:10px 0 2px;font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
 .fi{position:relative;overflow:hidden}.fi img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;padding:6px}
 .nwr{display:block;padding:8px 0;border-top:1px solid var(--line);color:var(--ink);text-decoration:none}.nwr span{display:block;font-weight:600;font-size:13.5px;line-height:1.35}.nwr small{display:block;color:var(--mute);font-size:11.5px;margin-top:2px}.nwr small b{color:var(--acc);font-weight:600}.rk h4.ch{margin:10px 0 4px;font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}.rk .rr small{display:block}.nwsel{width:100%;margin:8px 0 2px;padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:var(--alt);color:var(--ink);font:inherit;font-size:13px}
-.wtabs{display:flex;gap:6px;overflow-x:auto;margin:10px 0 0;padding-bottom:2px}.wtabs button{flex:1 0 auto;padding:9px 12px;border-radius:999px;border:1px solid var(--line);background:var(--alt);color:var(--ink);font:inherit;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer}.wtabs button.on{background:var(--acc);border-color:var(--acc);color:#fff}#al,#rk,#cal,#nw{display:none}body[data-wt=al] #al,body[data-wt=rk] #rk,body[data-wt=cal] #cal,body[data-wt=nw] #nw{display:block}.rk>details>summary{pointer-events:none;cursor:default}
+.wtabs{display:flex;gap:6px;overflow-x:auto;margin:10px 0 0;padding-bottom:2px}.wtabs button{flex:1 0 auto;padding:9px 12px;border-radius:999px;border:1px solid var(--line);background:var(--alt);color:var(--ink);font:inherit;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer}.wtabs button.on{background:var(--acc);border-color:var(--acc);color:#fff}#al,#rk,#cal,#nw{display:none}body[data-wt=al] #al,body[data-wt=rk] #rk,body[data-wt=cal] #cal,body[data-wt=nw] #nw{display:block}.rk>details>summary{pointer-events:none;cursor:default}body[data-wt=""] #wtf{display:none}#wtf{align-items:center;flex-wrap:wrap}#wtf .nwsel{flex:1 1 100%;margin:0}
 </style>
 </head>
 <body>
@@ -351,6 +351,7 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
   <h1>👁️ Watchlist</h1>
   <div class="sub" id="sub"></div>
   <div class="wtabs" id="wtabs"></div>
+  <div class="vw" id="wtf"></div>
   <div class="rk" id="al"></div>
   <div class="rk" id="rk"></div>
   <div class="rk" id="cal"></div>
@@ -488,9 +489,9 @@ const alOf=tk=>alEval(ALS[tk],PX[tk]&&PX[tk].p);
 /* à côté du nom, sur la même ligne : la note sur 100 puis une icône par alerte (le détail est dans l'encadré des alertes) */
 const alBadges=tk=>{const n=SCget(tk),L=alOf(tk);return(n==null?'':`<i class="sc ${zcls(n)}" title="Note sur 100">${n}</i>`)+(L.length?`<span class="ali" title="${esc(L.map(a=>ALT[a.k][1]+' : '+a.tx).join(' · '))}">${L.map(a=>ALT[a.k][0]).join('')}</span>`:'')};
 function alRender(){const box=$('#al');if(!box)return;if(!W.length){box.innerHTML='';return}
-  const all=W.map(w=>({tk:w.ticker,nom:w.nom,L:alOf(w.ticker)})).filter(x=>x.L.length),buy=x=>x.L.filter(a=>a.k!=='brk').length,
-    wait=W.filter(w=>!/^\^/.test(w.ticker)&&!ALS[w.ticker]).length,op=LS.g('wl_alo')!==0,
-    sig=JSON.stringify([all.map(x=>[x.tk,x.L.map(a=>a.k)]),wait,ALF,ALMORE,W.length]);
+  const all=WF().map(w=>({tk:w.ticker,nom:w.nom,L:alOf(w.ticker)})).filter(x=>x.L.length),buy=x=>x.L.filter(a=>a.k!=='brk').length,
+    wait=WF().filter(w=>!/^\^/.test(w.ticker)&&!ALS[w.ticker]).length,op=LS.g('wl_alo')!==0,
+    sig=JSON.stringify([all.map(x=>[x.tk,x.L.map(a=>a.k)]),wait,ALF,ALMORE,WF().length,TFK()]);
   if(ALF!=='all'&&!all.some(x=>x.L.some(a=>a.k===ALF)))ALF='all';
   /* le cadre n'est reconstruit que si les signaux changent : sinon seules les distances sont mises à jour */
   if(sig===ALSIG&&box.firstChild){box.querySelectorAll('.alr').forEach(r=>{const x=all.find(y=>y.tk===r.dataset.tk);if(x)r.querySelector('small').innerHTML=x.L.map(a=>ALT[a.k][0]+' '+esc(a.tx)).join('<br>')});return}
@@ -1425,9 +1426,9 @@ function rkAll(cat,row){const L=W.filter(x=>rkCat(x.ticker)===cat).map(x=>({tk:x
   if(RKS!=='sec')return chips+L.map(row).join('');
   const f=x=>secOf(x.tk)||'Secteur inconnu';return chips+[...new Set(L.map(f))].sort((a,b)=>a.localeCompare(b,'fr')).map(g=>{const l=L.filter(x=>f(x)===g);return`<div class="rkh">${esc(g)} · ${l.length}</div>`+l.map(row).join('')}).join('')}
 function rkRender(){const box=$('#rk');if(!box)return;if(!W.length){box.innerHTML='';return}
-  const op=LS.g('wl_rko')!==0,cats=['PEA','Crypto','US'],byC=c=>W.filter(x=>rkCat(x.ticker)===c&&SC[x.ticker]&&SC[x.ticker][0]!=null).map(x=>({tk:x.ticker,nom:x.nom,s:SC[x.ticker][0]})).sort((a,b)=>b.s-a.s),
+  const op=LS.g('wl_rko')!==0,cats=['PEA','Crypto','US'],byC=c=>WF().filter(x=>rkCat(x.ticker)===c&&SC[x.ticker]&&SC[x.ticker][0]!=null).map(x=>({tk:x.ticker,nom:x.nom,s:SC[x.ticker][0]})).sort((a,b)=>b.s-a.s),
     L=byC(RKC),top=L.slice(0,5),low=L.slice(Math.max(5,L.length-5)).reverse(),row=x=>`<div class="rr" data-tk="${esc(x.tk)}"><span>${esc(x.nom)}</span><b class="${x.s==null?'':zcls(x.s)}">${x.s??'–'}</b></div>`,
-    pend=W.filter(x=>rkCat(x.ticker)&&!rkOk(x.ticker)).length;
+    pend=WF().filter(x=>rkCat(x.ticker)&&!rkOk(x.ticker)).length;
   box.innerHTML=`<details${op?' open':''}><summary>🏁 Classement · Fenêtre d’entrée <small>${RKB?'· analyse '+RKD+'/'+RKT+'…':pend?'· '+pend+' à analyser':''}</small></summary><div class="rkc">${cats.map(c=>`<button data-c="${c}" class="${c===RKC?'on':''}">${c} <small>${byC(c).length}</small></button>`).join('')}</div>`+(RKA?rkAll(RKC,row):L.length?`<div class="rkg"><div><h4>Indicateur le plus élevé</h4>${top.map(row).join('')}</div><div><h4>Indicateur le plus bas</h4>${low.length?low.map(row).join(''):'<div class="sub2">–</div>'}</div></div>`:`<div class="sub2">${RKB?'Analyse en cours…':'Aucune note disponible pour cette catégorie.'}</div>`)+`<button class="rkall">${RKA?'Réduire le classement':'Voir toutes les valeurs ('+W.filter(x=>rkCat(x.ticker)===RKC).length+')'}</button></details>`}
 document.addEventListener('click',e=>{if(e.target.closest('#rk .rkall')){RKA=!RKA;rkRender();return}const s=e.target.closest('#rk [data-s]');if(s){RKS=s.dataset.s;LS.s('wl_rks',RKS);rkRender();return}const b=e.target.closest('#rk .rkc button[data-c]');if(b){RKC=b.dataset.c;LS.s('wl_rkc',RKC);rkRender();return}const r=e.target.closest('#rk .rr');if(r)openChart(r.dataset.tk)});
 document.addEventListener('toggle',e=>{if(e.target.closest&&e.target.closest('#rk'))LS.s('wl_rko',e.target.open?1:0)},true);
@@ -1444,8 +1445,21 @@ async function rkRun(){secRun();if(RKB||!URL_()||!W.length)return;const hOk=tk=>
   await wk();LS.s('wl_sc6',SC);LS.s('wl_al',ALS);RKB=false;ALSIG=null;alRender();rkRender();if(sec)render()}
 setTimeout(rkRun,6000);setInterval(()=>{if(!document.hidden)rkRun()},18e5);
 /* ---------- Calendrier des résultats & actualités des valeurs de la watchlist ---------- */
+/* ---------- Filtre des onglets : groupe / secteur / zone ---------- */
+let TF={d:'all',v:''};
+const sectOf=tk=>secOf(tk)||'Secteur inconnu',
+  WF=()=>W.filter(w=>TF.d==='all'||!TF.v||(TF.d==='grp'?(w.groupes||[]).includes(TF.v):TF.d==='sec'?sectOf(w.ticker)===TF.v:zoneOf(w.ticker)===TF.v)),
+  TFK=()=>TF.d+'|'+TF.v;
+function tfVals(){return TF.d==='grp'?allG():[...new Set(W.map(w=>TF.d==='sec'?sectOf(w.ticker):zoneOf(w.ticker)))].sort((a,b)=>a.localeCompare(b,'fr'))}
+function tfRender(){const b=$('#wtf');if(!b)return;if(TF.v&&!tfVals().includes(TF.v))TF.v='';
+  const h=[['all','Tout'],['grp','Groupe'],['sec','Secteur'],['zone','Zone']].map(([k,l])=>`<button data-f="${k}" class="${k===TF.d?'on':''}">${l}</button>`).join('')
+    +(TF.d!=='all'?`<select class="nwsel" data-fv><option value="">${TF.d==='grp'?'Tous les groupes':TF.d==='sec'?'Tous les secteurs':'Toutes les zones'}</option>${tfVals().map(v=>`<option value="${esc(v)}"${v===TF.v?' selected':''}>${esc(v)}</option>`).join('')}</select>`:'');
+  if(b._h!==h){b._h=h;b.innerHTML=h}}
+function tfApply(){tfRender();ALSIG=null;alRender();rkRender();calRender();nwRender()}
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('#wtf [data-f]');if(!t)return;TF={d:t.dataset.f,v:''};tfApply()});
+document.addEventListener('change',e=>{const t=e.target.closest&&e.target.closest('#wtf [data-fv]');if(!t)return;TF.v=t.value;tfApply()});
 let CAL=LS.g('wl_cal')||{},NW=LS.g('wl_nw')||{},CALB=false,NWB=false,CALMORE=false,NWMORE=false,NWF='all',NWERR=false;
-const earnTks=()=>W.filter(w=>!isCrypto(w.ticker)&&!/^\^/.test(w.ticker)),spDays=d=>Math.round((Date.parse(d+'T12:00:00')-Date.now())/864e5),
+const earnAll=()=>W.filter(w=>!isCrypto(w.ticker)&&!/^\^/.test(w.ticker)),earnTks=()=>WF().filter(w=>!isCrypto(w.ticker)&&!/^\^/.test(w.ticker)),spDays=d=>Math.round((Date.parse(d+'T12:00:00')-Date.now())/864e5),
   agoTx=ts=>{const m=Math.max(1,Math.round((Date.now()/1e3-ts)/60));return m<60?m+' min':m<1440?Math.round(m/60)+' h':Math.round(m/1440)+' j'};
 function setBox(box,h){if(box._h!==h){box._h=h;box.innerHTML=h}}
 function calItems(){const up=[],last=[];
@@ -1466,10 +1480,10 @@ function calRender(){const box=$('#cal');if(!box)return;const T=earnTks();if(!T.
     if(last.length)h+='<h4 class="ch">Derniers résultats publiés · écart au BPA attendu</h4>'+sl.map(rowL).join('');
     if(up.length>6||last.length>6)h+=`<button class="rkall" data-calmore>${CALMORE?'Réduire':'Tout voir'}</button>`}
   setBox(box,h+'</details>')}
-async function calRun(){if(CALB||!URL_())return;const todo=earnTks().filter(w=>{const c=CAL[w.ticker];return!c||Date.now()-c.at>(c.E&&c.E.ok?432e5:36e5)}).map(w=>w.ticker);if(!todo.length)return;CALB=true;
+async function calRun(){if(CALB||!URL_())return;const todo=earnAll().filter(w=>{const c=CAL[w.ticker];return!c||Date.now()-c.at>(c.E&&c.E.ok?432e5:36e5)}).map(w=>w.ticker);if(!todo.length)return;CALB=true;
   try{let n=0;while(todo.length){await bgWait();const tk=todo.shift(),E=await anEarn(tk);CAL[tk]={at:Date.now(),E};if(++n%3===0){LS.s('wl_cal',CAL);calRender()}await bgSleep(500)}}catch(e){}
   LS.s('wl_cal',CAL);CALB=false;calRender()}
-function nwRender(){const box=$('#nw');if(!box)return;const T=W.filter(w=>!/^\^/.test(w.ticker));if(!T.length){setBox(box,'');return}
+function nwRender(){const box=$('#nw');if(!box)return;const T=WF().filter(w=>!/^\^/.test(w.ticker));if(!T.length){setBox(box,'');return}
   const op=LS.g('wl_nwo')!==0,M=new Map();
   T.forEach(w=>{const c=NW[w.ticker];if(!c||!Array.isArray(c.L))return;c.L.forEach(a=>{if(!a||!a.t||!a.u)return;const k=a.u,o=M.get(k)||{t:a.t,p:a.p,u:a.u,ts:a.ts||0,n:[]};if(!o.n.includes(w.ticker))o.n.push(w.ticker);M.set(k,o)})});
   const all=[...M.values()].sort((a,b)=>b.ts-a.ts),names=[...new Set(all.flatMap(a=>a.n))].sort((a,b)=>nmW(a).localeCompare(nmW(b),'fr'));
@@ -1497,10 +1511,10 @@ document.addEventListener('toggle',e=>{const d=e.target.closest&&e.target.closes
 setTimeout(calRun,3500);setTimeout(nwRun,2500);setInterval(()=>{if(!document.hidden){calRun();nwRun()}},3e5);
 /* ---------- Onglets du haut : alertes / classement / résultats / actualités ---------- */
 const WT=[['al','🔔 Alertes'],['rk','🏁 Classement'],['cal','📅 Résultats'],['nw','📰 Actualités']];
-function wtSet(k){if(!WT.some(x=>x[0]===k))k='al';document.body.dataset.wt=k;LS.s('wl_tab',k);const b=$('#wtabs');if(b)b.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.t===k))}
+function wtSet(k){tfRender();if(!WT.some(x=>x[0]===k))k='';document.body.dataset.wt=k;const b=$('#wtabs');if(b)b.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.t===k))}
 (function(){const b=$('#wtabs');if(!b)return;b.innerHTML=WT.map(x=>`<button data-t="${x[0]}">${x[1]}</button>`).join('');
-  b.addEventListener('click',e=>{const t=e.target.closest('button[data-t]');if(t)wtSet(t.dataset.t)});
-  wtSet(LS.g('wl_tab')||'al');
+  b.addEventListener('click',e=>{const t=e.target.closest('button[data-t]');if(t)wtSet(document.body.dataset.wt===t.dataset.t?'':t.dataset.t)});
+  wtSet('');tfRender();
   /* chaque onglet affiche son contenu en entier : les cadres repliables restent toujours ouverts */
   const open=()=>document.querySelectorAll('#al>details,#rk>details,#cal>details,#nw>details').forEach(d=>{if(!d.open)d.open=true});
   const mo=new MutationObserver(open);['al','rk','cal','nw'].forEach(i=>{const n=document.getElementById(i);if(n)mo.observe(n,{childList:true})});open()})();
