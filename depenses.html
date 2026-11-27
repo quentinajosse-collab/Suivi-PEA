@@ -384,6 +384,16 @@ input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--lin
 dialog{background:radial-gradient(circle at 8% 8%,rgba(2,132,199,.10) 0%,transparent 45%),radial-gradient(circle at 92% 18%,rgba(124,58,237,.08) 0%,transparent 45%),radial-gradient(circle at 15% 92%,rgba(13,148,136,.08) 0%,transparent 45%),linear-gradient(180deg,#f8fafc 0%,#eef2f7 100%)}
 .ac,.fk2>div,#tbar,.ob,.nv,.rk details,.rkb{background:transparent;border:1px solid rgba(49,51,63,.2);border-radius:.5rem;box-shadow:none}
 .ac .ac{border:0}
+.mqs{margin:12px 0 0}.mqh1{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.mqh1 b{font-size:1.15rem;letter-spacing:-.01em}.mqh1 span{color:var(--mute);font-size:12px;white-space:nowrap}
+.mqs .sub2{margin:4px 0 0;font-size:11.5px;line-height:1.45}.mqs .sub2 b.up{color:var(--up)}.mqs .sub2 b.am{color:var(--amb)}.mqs .sub2 b.dn{color:var(--dn)}
+.mqg{display:grid;gap:8px;margin-top:10px}
+.mqc{min-width:0;background:rgba(255,255,255,.6);border:1px solid rgba(49,51,63,.14);border-radius:14px;padding:11px 11px 9px;box-shadow:0 1px 6px rgba(15,23,42,.04)}
+.mqt{font-weight:700;font-size:12.5px;line-height:1.25}
+.mqh{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px 6px;margin:5px 0 2px}
+.mqv b{font-size:1.1rem;font-weight:800;letter-spacing:-.02em}.mqv small{color:var(--mute);font-size:10px;margin-left:4px}
+.mqb{border:1.5px solid;border-radius:999px;padding:1px 8px;font-size:10.5px;font-weight:700;line-height:1.3;text-align:center}
+.mqn{color:var(--mute);font-size:10.5px;line-height:1.35;margin-top:3px}
+.mqc .cw{margin:0 -2px}
 .wtabs{display:flex;gap:6px;overflow-x:auto;margin:10px 0 0;padding-bottom:2px}.wtabs button{flex:1 0 auto;padding:9px 12px;border-radius:999px;border:1px solid var(--line);background:var(--alt);color:var(--ink);font:inherit;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer}.wtabs button.on{background:var(--acc);border-color:var(--acc);color:#fff}#al,#rk,#rkh,#cal,#nw{display:none}body[data-wt=al] #al,body[data-wt=rk] #rk,body[data-wt=rk] #rkh,body[data-wt=cal] #cal,body[data-wt=nw] #nw{display:block}.rk>details>summary{pointer-events:none;cursor:default}.rkb{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}#rkh:empty{display:none}#rk .wsec{margin-top:0}body[data-wt=""] #wtf{display:none}#wtf{align-items:center;flex-wrap:wrap}#wtf .nwsel{flex:1 1 100%;margin:0}
 </style>
 </head>
@@ -1415,6 +1425,49 @@ function foCombo(items,fB,fG,o){o=o||{};const L=items.filter(x=>fnn(x.v));if(!L.
     if(lab)g+=`<text x="${q[0].toFixed(1)}" y="${(q[1]-9).toFixed(1)}" font-size="9.5" font-weight="700" text-anchor="middle" fill="${q[2]<0?'var(--dn)':'var(--up)'}" stroke="rgba(248,250,252,.9)" stroke-width="3" paint-order="stroke">${esc(fG(q[2],true))}</text>`});
   items.forEach((x,k)=>{g+=`<rect x="${(4+k*bw).toFixed(1)}" y="0" width="${bw.toFixed(1)}" height="${Hh}" fill="transparent" data-tip="${esc(x.l+' : '+(fnn(x.v)?fB(x.v):'donnée indisponible')+(fnn(x.g)?' · croissance '+fG(x.g):''))}"/>`});
   return`<div class="lgd fcl"><span><i style="color:${c[0]}">■</i> ${esc(o.bl||'Valeur')}</span><span><i style="color:${FGR}">●</i> Croissance sur un an (échelle de droite)</span></div><div class="cw fcw"><svg viewBox="0 0 ${Wd} ${Hh}" width="100%" height="${Hh}" style="display:block;overflow:visible">${g}</svg><div class="ctip"></div></div>`}
+
+/* ---------- Chiffres de l'entreprise : cartes (titre, valeur, pastille d'appréciation, barres colorées, phrase d'explication) ---------- */
+function foMini(items,Wd,o){const L=items.filter(x=>fnn(x.v));if(!L.length)return'';
+  const Hh=o.H||116,pt=12,pb=18,n=items.length,bw=(Wd-8)/n,vs=L.map(x=>x.v),dm=Math.min(0,...vs),dM=Math.max(0,...vs),raw=(dM-dm)/3||1,p=Math.pow(10,Math.floor(Math.log10(raw))),m=raw/p,
+    st=(m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p,tmin=Math.floor(dm/st+1e-9)*st;let tmax=Math.ceil(dM/st-1e-9)*st;if(tmax<=tmin)tmax=tmin+st;
+  const sp=tmax-tmin,Y=v=>pt+(tmax-v)/sp*(Hh-pt-pb),y0=Y(0),K=Math.min(8,Math.round(sp/st));let g='';
+  for(let k=0;k<=K;k++){const t=tmin+k*st,y=Y(t);g+=`<line x1="4" x2="${Wd-4}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="${Math.abs(t)<st/1e3?'rgba(100,116,139,.5)':FGRID}"${Math.abs(t)<st/1e3?'':' stroke-dasharray="3 4"'}/><text x="4" y="${(y-2.5).toFixed(1)}" font-size="8.5" fill="var(--mute)">${esc(o.ft(Math.abs(t)<st/1e3?0:t))}</text>`}
+  items.forEach((x,k)=>{const cx=4+k*bw+bw/2;g+=`<text x="${cx.toFixed(1)}" y="${Hh-5}" font-size="9.5" text-anchor="middle" fill="var(--mute)">${esc(x.l)}</text>`;
+    if(!fnn(x.v))return;const yv=Y(x.v),top=Math.min(yv,y0),h=Math.max(2,Math.abs(yv-y0)),w=Math.min(bw*.58,34);
+    g+=`<rect x="${(cx-w/2).toFixed(1)}" y="${top.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="${o.col(x.v,k)}"/>`});
+  items.forEach((x,k)=>{g+=`<rect x="${(4+k*bw).toFixed(1)}" y="0" width="${bw.toFixed(1)}" height="${Hh}" fill="transparent" data-tip="${esc(x.l+' : '+(fnn(x.v)?o.fv(x.v):'donnée indisponible'))}"/>`});
+  return`<div class="cw fcw"><svg viewBox="0 0 ${Wd} ${Hh}" width="100%" height="${Hh}" style="display:block;overflow:visible">${g}</svg><div class="ctip"></div></div>`}
+function foCards(S,I,sy){
+  const BL='#0e6a99',GR='#1f7a3a',OR='#c2650a',RD='#c53030',cc=I.fcur||sy,
+    n1=nfr(0,1),pc0=v=>nf(0).format(v*100)+' %',pc1=v=>nf(1).format(v*100)+' %',mo=v=>fs(v)+' '+sy,ps=v=>nfr(2,2).format(v)+' '+sy,rx=v=>nfr(1,1).format(v)+'x',
+    cagr=a=>{const ix=a.map((v,i)=>fnn(v)?i:-1).filter(i=>i>=0);if(ix.length<2)return null;const i0=ix[0],i1=ix[ix.length-1];return a[i0]>0&&a[i1]>0?Math.pow(a[i1]/a[i0],1/(i1-i0))-1:null},
+    gBadge=a=>{const g=cagr(a);if(g==null)return null;return[(g<0?'−':'+')+nf(1).format(Math.abs(g)*100)+' %/an',g>=.03?GR:g>-.03?OR:RD]},
+    neu=v=>v<0?RD:BL,hi=(lo,mid,lab)=>({col:v=>v<lo?RD:v<mid?OR:GR,bd:v=>v<lo?[lab[0],RD]:v<mid?[lab[1],OR]:[lab[2],GR]}),
+    lo=(a,b,lab)=>({col:v=>v<=a?GR:v<=b?OR:RD,bd:v=>v<=a?[lab[0],GR]:v<=b?[lab[1],OR]:[lab[2],RD]}),
+    hasCash=S.Y.some(x=>fnn(x.cash)),
+    nd=S.Y.map(x=>fnn(x.ebitda)&&x.ebitda>0&&fnn(x.debt)?(x.debt-(hasCash&&fnn(x.cash)?x.cash:0))/x.ebitda:null),
+    om=hi(.05,.15,['Faible','Correcte','Très bonne']),nm=hi(.03,.10,['Faible','Correcte','Très bonne']),roe=hi(0,.15,['Faible','Correcte','Très bonne']),
+    de=lo(1,2,['Faible','Correcte','Élevée']),cv=hi(2,5,['Fragile','Correcte','Tranquille']),py=lo(.6,.8,['Soutenable','Élevé','Fragile']),
+    nds={col:v=>v<=2.5?GR:v<=4?OR:RD,bd:v=>v<=0&&hasCash?['Plus de trésorerie que de dettes',GR]:v<=2.5?['Confortable',GR]:v<=4?['Correcte',OR]:['Lourde',RD]},
+    D=[
+    {t:'Chiffre d’affaires',a:S.rev,fv:mo,ft:fs,col:neu,bd:()=>gBadge(S.rev),n:'Les ventes de l’entreprise. Bon signe : elles montent avec les années.'},
+    {t:'Bénéfice par action (BPA)',a:S.eps,fv:ps,ft:v=>n1.format(v),col:neu,bd:()=>gBadge(S.eps),n:'Le bénéfice qui revient à une action. Bon signe : il monte régulièrement.'},
+    {t:'Free cash flow par action',a:S.fcfps,fv:ps,ft:v=>n1.format(v),col:neu,bd:()=>gBadge(S.fcfps),n:'L’argent qui reste vraiment après les investissements. C’est lui qui paie le dividende.'},
+    {t:'Marge d’exploitation',a:S.om,fv:pc1,ft:pc0,col:om.col,bd:om.bd,n:'Sur 100 € de ventes, ce qui reste après les frais du métier. Plus de 15 % : très bien.'},
+    {t:'Marge nette',a:S.nm,fv:pc1,ft:pc0,col:nm.col,bd:nm.bd,n:'Sur 100 € de ventes, ce qui reste au final, impôts et intérêts payés. Plus de 10 % : très bien.'},
+    {t:'Rentabilité des fonds propres',a:S.roe,fv:pc1,ft:pc0,col:roe.col,bd:roe.bd,n:'Ce que rapporte chaque année l’argent des actionnaires (ROE). Plus de 15 % : très bien.'},
+    {t:hasCash?'Dette nette / EBITDA':'Dette / EBITDA',a:nd,fv:rx,ft:v=>n1.format(v)+'x',col:nds.col,bd:nds.bd,big:(v)=>v<=0&&hasCash?'Pas de dette nette':rx(v),n:'Le nombre d’années de résultats pour rembourser la dette. Moins de 2,5 : confortable. Plus de 4 : lourd.'},
+    {t:'Dette / capitaux propres',a:S.de,fv:rx,ft:v=>n1.format(v)+'x',col:de.col,bd:de.bd,n:'La dette rapportée à l’argent des actionnaires. Moins de 1 : solide. Plus de 2 : lourd.'},
+    {t:'Couverture des intérêts',a:S.cov,fv:rx,ft:v=>n1.format(v)+'x',col:cv.col,bd:cv.bd,n:'Combien de fois le résultat paie les intérêts de la dette. Plus de 5 : tranquille. Moins de 2 : fragile.'},
+    {t:'Part du bénéfice versée en dividendes',a:S.pay,fv:pc1,ft:pc0,col:py.col,bd:py.bd,n:'La part du bénéfice reversée aux actionnaires. Moins de 60 % : soutenable. Plus de 80 % : fragile.'},
+    {t:'Part du free cash flow versée en dividendes',a:S.payF,fv:pc1,ft:pc0,col:py.col,bd:py.bd,n:'La part de l’argent libre reversée aux actionnaires. Moins de 60 % : soutenable. Plus de 80 % : fragile.'}];
+  const e=document.getElementById('fon'),Cw=Math.max(300,(e&&e.clientWidth)||340),cols=Cw>=320?2:1,Wd=Math.max(110,Math.round((Cw-(cols-1)*8)/cols-26));
+  const html=D.map(d=>{const items=S.Y.map((x,i)=>({l:S.lab(x),v:d.a[i]})),ix=d.a.map((v,i)=>fnn(v)?i:-1).filter(i=>i>=0);if(!ix.length)return'';
+    const li=ix[ix.length-1],lv=d.a[li],b=d.bd(lv),big=d.big?d.big(lv):d.fv(lv);
+    return`<div class="mqc"><div class="mqt">${esc(d.t)}</div><div class="mqh"><div class="mqv"><b>${esc(big)}</b><small>en ${esc(S.lab(S.Y[li]))}</small></div>${b?`<span class="mqb" style="color:${b[1]};border-color:${b[1]}">${esc(b[0])}</span>`:''}</div>${foMini(items,Wd,{ft:d.ft,fv:d.fv,col:d.col})}<div class="mqn">${esc(d.n)}</div></div>`}).join('');
+  if(!html)return'';
+  const y0=S.lab(S.Y[0]),y1=S.lab(S.Y[S.Y.length-1]);
+  return`<div class="mqs"><div class="mqh1"><b>Les comptes de l’entreprise</b><span>${esc(mY(Date.now()))}</span></div><div class="sub2">Les chiffres publiés de ${esc(y0)} à ${esc(y1)}, en ${esc(cc)}. Couleurs : <b class="up">vert = bon signe</b>, <b class="am">orange = correct</b>, <b class="dn">rouge = à surveiller</b>.</div><div class="mqg" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${html}</div></div>`}
 function renderFond(){const A=ANA,box=$('#fon');if(!box||!A||!CUR||CUR.tk!==A.tk)return;
   const B=A.B,FD=B.FD,ok=!!(FD&&FD.ok&&!FD.none),st=ok&&FD.st||{},I=ok&&FD.info||{},F=A.F,S=ok?foSeries(FD):null,p=A.p,
     sy=(()=>{const c=I.fcur||curOf(A.tk);return CSM[c]||c||''})(),nomA=(W.find(x=>x.ticker===A.tk)||{}).nom||A.tk,
@@ -1452,10 +1505,7 @@ function renderFond(){const A=ANA,box=$('#fon');if(!box||!A||!CUR||CUR.tk!==A.tk
   /* nombre d'actions + comptes */
   if(ok){const sh=S.shs.map((v,i)=>v!=null?[Date.parse(S.Y[i].y+'T12:00:00'),v]:null).filter(Boolean);
     h+=card('Nombre d’actions en circulation',sh.length>=2?svgChart({W:anW(),H:190,S:[{n:'Actions',p:sh,c:'var(--acc)',w:2,area:true}],fy:fs,tf:v=>fV(v),marks:sh.map(q=>({t:q[0],v:q[1],c:'var(--acc)',r:3.5}))})+`<div class="sub2">Nombre moyen d’actions (dilué) de chaque exercice : ${sh[sh.length-1][1]<sh[0][1]?'en baisse (rachats d’actions)':'en hausse (émissions d’actions)'} de ${nf(1).format(Math.abs(sh[sh.length-1][1]/sh[0][1]-1)*100)} % sur la période.</div>`:'<div class="sub2">Historique du nombre d’actions indisponible.</div>')
-    const n=S.Y.length;
-    h+=card('Finances',(n?`<div class="sub2" style="margin-top:0">${n} exercice${n>1?'s':''} annuel${n>1?'s':''} fournis par Yahoo (${S.lab(S.Y[0])}${n>1?' à '+S.lab(S.Y[n-1]):''}), montants en ${esc(I.fcur||sy)}.</div>`:'')+cb('Chiffre d’affaires et croissance',S.rev,fMo,{g:['#0284c7','#7dd3fc'],bl:'Chiffre d’affaires'})+cb('Flux de trésorerie disponible par action et croissance',S.fcfps,fPS,{g:['#0d9488','#99f6e4'],bl:'Flux de trésorerie par action'})+cb('Bénéfice par action (dilué) et croissance',S.eps,fPS,{g:['#7c3aed','#c4b5fd'],bl:'Bénéfice par action'}))
-    h+=card('Rentabilité',ch('Marge opérationnelle',S.om,fPct(false),{g:['#0d9488','#99f6e4']})+ch('Marge nette',S.nm,fPct(false),{g:['#0284c7','#7dd3fc']})+ch('Rentabilité des capitaux propres',S.roe,fPct(false),{g:['#7c3aed','#c4b5fd']}))
-    h+=card('Santé financière',ch('Ratio de distribution (dividendes / bénéfice net)',S.pay,fPct(false),{g:['#f59e0b','#fde68a']})+ch('Ratio de distribution du flux de trésorerie',S.payF,fPct(false),{g:['#f59e0b','#fde68a']})+ch('Couverture des intérêts (résultat opérationnel / intérêts)',S.cov,fRat,{g:['#0d9488','#99f6e4']})+ch('Dette / capitaux propres',S.de,fRat,{g:['#64748b','#cbd5e1']})+ch('Dette / EBITDA',S.dE,fRat,{g:['#64748b','#cbd5e1']}))}
+    h+=foCards(S,I,sy)}
   /* valorisation : jauges et prix juste, PER passé, avis des analystes */
   h+=valoHtml(A);
   if(ok){const sameCur=!(I.fcur&&I.cur)||I.fcur===I.cur,pe=sameCur?foPer(S,B.H.D):[],pp=S.Y.map((x,i)=>pe[i]!=null?[Date.parse(x.y+'T12:00:00'),pe[i]]:null).filter(Boolean);
@@ -2153,14 +2203,22 @@ function cashflow(L){
 
 /* ---------- Dépenses récurrentes (modifiables sur le téléphone) ---------- */
 function vRec(){const R=D.recurrentes,c=R.filter(r=>r.type==="Charge").reduce((a,r)=>a+r.montant,0),v=R.filter(r=>r.type==="Revenu").reduce((a,r)=>a+r.montant,0),
- ls=[...(D.salaires||[])].filter(s=>s.date).sort((x,y)=>x.date<y.date?1:-1)[0],sv=ls?Math.max(0,(ls.net||0)-(ls.impot||0)):0,base=v>0?v:sv,vir=base-c,
+ ls=[...(D.salaires||[])].filter(s=>s.date).sort((x,y)=>x.date<y.date?1:-1)[0],sv=ls?Math.max(0,(ls.net||0)-(ls.impot||0)):0,
+ so=+((D.rec||{}).solde)||0,hasSo=so!==0,base=hasSo?so:(v>0?v:sv),vir=base-c,
  srcTxt=v>0?"revenus récurrents saisis ci-dessous":(ls?"dernier salaire reçu ("+mlabel(ls.date.slice(0,7))+", net après impôts)":"aucun salaire connu");
+ const soldeCard=`<div class="card" style="margin-top:0"><div class="sh">💶 Somme sur le compte du salaire</div><label>Montant actuellement sur le compte (€)</label><input type="number" step="0.01" inputmode="decimal" data-d="rec.solde" value="${hasSo?so:""}" placeholder="${base>0?Math.round(base):"ex. 2500"}"><div class="d" style="margin-top:6px">Saisis le solde juste avant le passage des prélèvements du mois. Vide : on utilise le salaire (${srcTxt}).</div></div>`,
+ kp=hasSo
+  ?`<div class="kpis k3" style="margin-top:10px"><div class="kpi" style="--c:var(--bleu)"><span>Somme sur le compte</span><b>${eur2(so)}</b></div><div class="kpi" style="--c:var(--rouge)"><span>Prélèvements du mois</span><b>${eur2(c)}</b></div><div class="kpi" style="--c:var(${vir>=0?"--vert":"--rouge"})"><span>${vir>=0?"Virement à faire vers l'autre compte":"Il manque sur le compte"}</span><b>${eur2(Math.abs(vir))}</b></div></div>
+ <div class="d" style="margin:6px 4px 12px">${vir>=0?`Sur les ${eur2(so)} du compte, ${eur2(c)} restent pour les prélèvements : tu peux virer ${eur2(vir)} vers l'autre compte (loisirs, épargne…).`:`Les prélèvements du mois (${eur2(c)}) dépassent la somme sur le compte : il manque ${eur2(-vir)} pour tous les couvrir, rien à virer.`}</div>`
+  :`<div class="kpis k3" style="margin-top:10px"><div class="kpi" style="--c:var(--rouge)"><span>Montant à laisser sur le compte</span><b>${eur2(c)}</b></div><div class="kpi" style="--c:var(--bleu)"><span>Salaire pris en compte</span><b>${eur2(base)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Virement possible vers l'autre compte</span><b>${eur2(vir)}</b></div></div>
+ <div class="d" style="margin:6px 4px 12px">Les prélèvements restent sur le compte du salaire : tu y laisses le montant des charges et tu peux virer le reste (loisirs, épargne…). Salaire retenu : ${srcTxt}.</div>`;
  return`<button id="bAddRec" style="width:100%;margin-bottom:12px">➕ Ajouter une récurrence</button>
- <div class="kpis"><div class="kpi" style="--c:var(--rouge)"><span>Charges / mois</span><b>${eur2(c)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Revenus / mois</span><b>${eur2(v)}</b></div>
+ ${soldeCard}
+ <div class="kpis" style="margin-top:10px"><div class="kpi" style="--c:var(--rouge)"><span>Charges / mois</span><b>${eur2(c)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Revenus / mois</span><b>${eur2(v)}</b></div>
  <div class="kpi" style="--c:var(--bleu)"><span>Solde / mois</span><b>${eur2(v-c)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Charges / an</span><b>${eur2(c*12)}</b></div></div>
- <div class="kpis k3" style="margin-top:10px"><div class="kpi" style="--c:var(--rouge)"><span>Montant à laisser sur le compte</span><b>${eur2(c)}</b></div><div class="kpi" style="--c:var(--bleu)"><span>Salaire pris en compte</span><b>${eur2(base)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Virement possible vers l'autre compte</span><b>${eur2(vir)}</b></div></div>
- <div class="d" style="margin:6px 4px 12px">Les prélèvements restent sur le compte du salaire : tu y laisses le montant des charges et tu peux virer le reste (loisirs, épargne…). Salaire retenu : ${srcTxt}.</div>
+ ${kp}
  ${card("rec-list","Prélèvements simulés · touche une ligne pour la modifier",`<div class="lst">${R.length?R.map((r,i)=>`<div class="op" data-rec="${i}"><div class="m"><b>${esc(r.libelle)}</b><small>${esc(r.categorie||"")} · ${r.type==="Revenu"?"Revenu":"Charge"}${r.groupe?" · 🧳 "+esc(r.groupe):""}</small></div><span class="am ${r.type==="Revenu"?"pos":"neg"}">${eur2(r.montant)}</span><span style="color:var(--mut)">✎</span></div>`).join(""):'<div class="empty">Aucune récurrence</div>'}</div>`)}`}
+
 
 /* ---------- Suivi crédit (tous les prêts regroupés) ---------- */
 function pmt(c,t,n){const i=t/1200;return i>0?c*i/(1-Math.pow(1+i,-n)):c/n}
@@ -2256,7 +2314,7 @@ function vBien(b,L,bi,extra){
  <button type="button" class="sec" id="bEdBien" data-bi="${bi}" style="width:100%">✏️ Modifier le bien${L.length?"":" · associer des crédits"}</button>`)}
 document.addEventListener("click",e=>{const tr=e.target.closest&&e.target.closest("[data-tr]");if(tr&&!UI.selMode)openTr(+tr.dataset.tr);
  const lr=e.target.closest&&e.target.closest("[data-lv]");if(lr)openLv(+lr.dataset.lv);const la=e.target.closest&&e.target.closest("[data-lvadd]");if(la)openLv(-1,la.dataset.lvadd,la.dataset.lvtyp||undefined);if(e.target.id==="bAddRet")openRet(-1);if(e.target.id==="bEdBien")openBien(+e.target.dataset.bi);if(e.target.closest&&e.target.closest("[data-lvtaux]"))openLv(-1,null,"taux");
- if(e.target.id==="bLinkSal")linkAllSal();});
+ });
 function vCred(){
  const B=biens();
  if(!B.length&&!D.prets.length)return'<div class="card" style="margin-top:0"><div class="empty">Aucun bien immobilier<br>Appuie sur + pour ajouter un bien : tu y associes ses crédits (existants ou nouveaux).</div></div>';
@@ -2343,9 +2401,6 @@ function salOp(s){const amt=salAmt(s);return D.depenses.find(x=>!x.lien&&x.date=
 function linkSal(s){const m=salOp(s),lien=(m&&m.lien)||"s"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);s.lien=lien;
  if(m)m.lien=lien;else D.depenses.push({date:s.date,libelle:!s.type||s.type==="Salaire"?"Salaire":s.type,categorie:"Salaire",montant:salAmt(s),sens:"Revenu",lien})}
 const salPending=()=>D.salaires.filter(s=>s.date&&!s.lien&&(+s.net||0)>0);
-function salLink(){const P=salPending();if(!P.length)return"";const m=P.filter(salOp).length;
- return card("sal-link","🔗 Salaires non reliés aux dépenses · "+P.length,`<div class="d" style="margin:0 0 8px">${P.length} salaire${P.length>1?"s":""} du suivi n'a pas de revenu correspondant dans la Vue d'ensemble : ${m} semble déjà exister (il sera simplement relié), ${P.length-m} sera créé en revenu « Salaire ». Les nouveaux salaires saisis ici sont désormais reliés automatiquement.</div><button id="bLinkSal" style="width:100%">Relier maintenant</button>`,"margin-top:0")}
-function linkAllSal(){const P=salPending(),m=P.filter(salOp).length;if(!P.length||!confirm("Relier "+P.length+" salaire(s) aux dépenses ?\n"+m+" revenu(s) existant(s) reconnu(s), "+(P.length-m)+" revenu(s) créé(s)."))return;P.forEach(linkSal);save();render()}
 function vSal(){
  const cy=TODAY().slice(0,4);
  const all=D.salaires.map((s,i)=>({...s,i})).filter(s=>s.date).sort((a,b)=>a.date.localeCompare(b.date));
@@ -2361,7 +2416,7 @@ function vSal(){
  const ev=p=>p==null?"":` (<span class="${p>=0?"pos":"neg"}">${p>=0?"+":""}${p.toFixed(1).replace(".",",")} %</span>)`,evI=p=>p==null?"":` (<span class="${p>=0?"neg":"pos"}">${p>=0?"+":""}${p.toFixed(1).replace(".",",")} %</span>)`;
  const yrT=`<div class="tw"><table class="rc"><thead><tr><th>Année</th><th>Brut</th><th>Net avant impôts</th><th>Impôt payé</th><th>Net après impôts</th></tr></thead><tbody>${YR.slice().reverse().map(r=>{const d=r.d||{};return`<tr><th>${r.y}<div class="d">${r.c} vers.</div></th><td style="color:var(--violet);font-weight:700">${r.b>0?eur(r.b):"—"}${r.b>0?`<div class="d">${eur(r.moyB)}/mois${ev(d.mb)}</div>`:""}</td><td style="color:var(--bleu);font-weight:700">${eur(r.n)}<div class="d">${eur(r.moy)}/mois${ev(d.mn)}</div></td><td style="color:var(--orange);font-weight:700">${eur(r.im)}<div class="d">${eur(r.moyIm)}/mois${evI(d.mi)}</div></td><td class="pos">${eur(r.ap)}<div class="d">${eur(r.moyAp)}/mois${ev(d.ma)}</div></td></tr>`}).join("")}</tbody></table></div>`;
  const hist=L.slice().reverse().map(s=>`<div class="op" data-sal="${s.i}"><div class="m"><b>${esc(s.employeur)}</b><small>${fdy(s.date)} · ${esc(s.type)}${s.notes?` · ${esc(s.notes)}`:""}</small><div class="tri"><div style="--c:var(--violet)"><small>Brut</small><b>${s.brut>0?eur2(s.brut):"—"}</b></div><div style="--c:var(--bleu)"><small>Net av. impôts</small><b>${eur2(s.net)}</b></div><div style="--c:var(--orange)"><small>Impôt</small><b>${s.impot>0?"−"+eur2(s.impot):"0 €"}</b></div><div class="nt" style="--c:var(--vert)"><small>Net après</small><b>${eur2(s.net-(s.impot||0))}</b></div></div></div><span style="color:var(--mut)">✎</span></div>`).join("");
- return`${salLink()}<div class="card" style="margin-top:0"><div class="sh">🗓️ Période affichée</div><label>Année</label><select id="sSel"><option value="all">Toutes les années</option>${ysel.map(y=>`<option value="${y}" ${y===salY?"selected":""}>${y}</option>`).join("")}</select></div>
+ return`<div class="card" style="margin-top:0"><div class="sh">🗓️ Période affichée</div><label>Année</label><select id="sSel"><option value="all">Toutes les années</option>${ysel.map(y=>`<option value="${y}" ${y===salY?"selected":""}>${y}</option>`).join("")}</select></div>
  <div class="kpis k3"><div class="kpi" style="--c:var(--violet)"><span>Salaire brut</span><b>${brut>0?eur(brut):"—"}</b></div><div class="kpi" style="--c:var(--bleu)"><span>Net avant impôts</span><b>${eur(net)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Impôt payé</span><b>${eur(imp)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Net après impôts</span><b>${eur(net-imp)}</b></div>
  <div class="kpi" style="--c:var(--rouge)"><span>Taux d'impôt moyen</span><b>${rate(imp,net)}</b></div>
  <div class="kpi" style="--c:var(--bleu)"><span>Versements</span><b>${L.length}</b></div></div>
@@ -2646,7 +2701,7 @@ function fromXml(raw){const doc=new DOMParser().parseFromString(raw,"application
  for(const[k,[par,ch]]of Object.entries(SEC)){p[k]=[...doc.querySelectorAll(`${par} > ${ch}`)].map(el=>{const r={};for(const a of el.attributes){r[a.name]=NUM.has(a.name)?(parseFloat(a.value)||0):a.value}return r})}return p}
 function toCsv(){const q=v=>'"'+String(v).replace(/"/g,'""')+'"';return"\uFEFFDate;Libelle;Categorie;Montant;Sens;Groupe\n"+D.depenses.map(o=>[o.date,q(o.libelle),q(o.categorie),String(o.montant).replace(".",","),o.sens,q(o.groupe||"")].join(";")).join("\n")}
 function norm(p){const n=x=>parseFloat(x)||0;
- return{sante:p.sante,fisc:p.fisc,retraits_epargne:p.retraits_epargne,solde_epargne:p.solde_epargne,mouvements_epargne:p.mouvements_epargne,releves_epargne:p.releves_epargne,transferts:p.transferts,livrets_lignes:p.livrets_lignes,version:1,exporte_le:p.exporte_le||"",
+ return{sante:p.sante,fisc:p.fisc,rec:p.rec,retraits_epargne:p.retraits_epargne,solde_epargne:p.solde_epargne,mouvements_epargne:p.mouvements_epargne,releves_epargne:p.releves_epargne,transferts:p.transferts,livrets_lignes:p.livrets_lignes,version:1,exporte_le:p.exporte_le||"",
  groupes:p.groupes?p.groupes.map(g=>({nom:String(g&&g.nom!=null?g.nom:g)})).filter(g=>g.nom):undefined,
  depenses:(p.depenses||[]).filter(o=>o.date).map(o=>({date:String(o.date).slice(0,10),libelle:String(o.libelle??""),categorie:String(o.categorie??"Divers"),montant:n(o.montant),sens:o.sens||(REV.includes(o.categorie)?"Revenu":"Dépense"),...(o.lien?{lien:String(o.lien)}:{}),...(o.groupe?{groupe:String(o.groupe)}:{}),...(o.compte?{compte:String(o.compte)}:{})})),
  recurrentes:(p.recurrentes||[]).map(r=>({libelle:String(r.libelle??""),categorie:String(r.categorie??""),montant:n(r.montant),type:r.type||"Charge",...(r.groupe?{groupe:String(r.groupe)}:{})})),
@@ -2687,7 +2742,7 @@ $("#file").onchange=async e=>{const files=[...e.target.files];e.target.value="";
   if(low.endsWith(".xlsx")||low.endsWith(".xlsm"))p=fromRows(await readXlsx(await f.arrayBuffer()));
   else{const raw=await f.text();p=norm(low.endsWith(".xml")||raw.trim().startsWith("<")?fromXml(raw):JSON.parse(raw));p.exporte_le=p.exporte_le||""}
   for(const k of Object.keys(SEC))if(p[k]&&(p[k].length||low.match(/\.(json|xml)$/))){if(k==="depenses")p[k]=p[k].filter(o=>o.date);nd[k]=p[k];log.push(`${f.name} → ${p[k].length} ${k}`)}
-  if(p.sante)nd.sante=p.sante;if(p.sgroupes)nd.sgroupes=p.sgroupes;if(p.fisc)nd.fisc=p.fisc;["immo","biens","retraits_epargne","solde_epargne","mouvements_epargne","releves_epargne","transferts","livrets_lignes"].forEach(k=>{if(p[k]!==undefined)nd[k]=p[k]});
+  if(p.sante)nd.sante=p.sante;if(p.sgroupes)nd.sgroupes=p.sgroupes;if(p.fisc)nd.fisc=p.fisc;if(p.rec)nd.rec=p.rec;["immo","biens","retraits_epargne","solde_epargne","mouvements_epargne","releves_epargne","transferts","livrets_lignes"].forEach(k=>{if(p[k]!==undefined)nd[k]=p[k]});
   if(p.exporte_le)nd.exporte_le=p.exporte_le}catch(err){log.push(`${f.name} : ${err.message}`)}}
  if(!log.some(l=>l.includes("→")))return alert(log.join("\n"));
  if(!confirm("Remplacer les données du téléphone par :\n"+log.join("\n")))return;
