@@ -126,14 +126,16 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .hero::after{left:-80px;bottom:-110px;width:280px;height:240px;background:radial-gradient(closest-side,rgba(14,165,233,.28),rgba(20,184,166,.12) 60%,transparent 75%)}
 .hero{text-align:center}
 .hh{display:flex;flex-direction:column;align-items:center;gap:12px}
-.hero .sw{display:inline-flex}
+.swr{display:flex;justify-content:flex-end;margin:-4px 2px 14px}
+.swr .sw{display:inline-flex;box-shadow:0 2px 8px rgba(15,23,42,.05)}
+.swr .sw button{padding:7px 22px}
 .hero .n{margin-left:auto;margin-right:auto}
 .hl{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
 .hl i{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.22);animation:hlp 2.4s ease-in-out infinite}
 @keyframes hlp{50%{box-shadow:0 0 0 6px rgba(34,197,94,.08)}}
-.hero .sw{margin:0;background:#eef2f7;border:1px solid var(--line)}
-.hero .sw button{color:var(--mut)}
-.hero .sw button.on{background:linear-gradient(135deg,#0284c7,#7c3aed);color:#fff;box-shadow:0 4px 12px -2px rgba(79,70,229,.45)}
+.swr .sw{margin:0;background:#eef2f7;border:1px solid var(--line)}
+.swr .sw button{color:var(--mut)}
+.swr .sw button.on{background:linear-gradient(135deg,#0284c7,#7c3aed);color:#fff;box-shadow:0 4px 12px -2px rgba(79,70,229,.45)}
 .hero .n{font-size:clamp(2.6rem,12.5vw,3.9rem);font-weight:800;letter-spacing:-.045em;line-height:1.05;margin:14px auto 0;font-variant-numeric:tabular-nums;background:linear-gradient(115deg,#0f172a 0%,#1e40af 48%,#7c3aed 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;width:fit-content;max-width:100%}
 .hero .n .cu{font-size:.52em;font-weight:700;margin-left:.14em;-webkit-text-fill-color:#94a3b8;color:#94a3b8}
 .hf{display:flex;align-items:center;justify-content:center;gap:8px 10px;flex-wrap:wrap;margin-top:12px}
@@ -152,7 +154,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 <div id="stage">
   <div id="home"><div class="w">
     <div class="top"><div class="ttl"><div class="ey"><i></i>Vue d’ensemble</div><h1>Mon patrimoine</h1><div class="dtp" id="date"></div></div><div class="dpk"><label for="asof">📅 État au</label><input type="date" id="asof"><button id="asoft" type="button">Aujourd’hui</button></div></div>
-    <div class="hero"><div class="hh"><div class="sw" id="sw"><button data-m="brut">Brut</button><button data-m="net">Net</button></div><span class="hl"><i></i><span id="hl">Patrimoine brut</span></span></div><div class="n" id="tot">–</div><div class="hf"><div class="tr" id="trend" hidden></div><small id="totsub"></small></div></div>
+    <div class="hero"><div class="hh"><span class="hl"><i></i><span id="hl">Patrimoine brut</span></span></div><div class="n" id="tot">–</div><div class="hf"><div class="tr" id="trend" hidden></div><small id="totsub"></small></div></div>
+    <div class="swr"><div class="sw" id="sw"><button data-m="brut">Brut</button><button data-m="net">Net</button></div></div>
     <div class="cd" id="asb" hidden></div>
     <div class="cd" id="evo"></div>
     <div class="cd" id="rep"></div>
