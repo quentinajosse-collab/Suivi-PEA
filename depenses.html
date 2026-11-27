@@ -1911,7 +1911,7 @@ const PAL=["#0284c7","#7c3aed","#0d9488","#f97316","#dc2626","#ca8a04","#db2777"
 const SEC={depenses:["Depenses","Depense"],recurrentes:["Recurrentes","Recurrente"],salaires:["Salaires","Salaire"],prets:["Prets","Pret"],interessement:["Interessements","Interessement"],groupes:["Groupes","Groupe"]};
 const NUM=new Set(["montant","net","brut","impot","capital","taux","duree","assurance","premiere_reelle"]);
 const VER="26.8-c",KEY="depenses_v1",FKEY="depenses_fold";
-const MOD=new URLSearchParams(location.search).get("m")||"",MODT={dep:["home","ana","rec"],immo:["cred"],epargne:["ov","pos","cla","int","ehs"],livrets:["liv","hst","lvi"],salaire:["sal","tax"],sante:["sante"]},TKEY="depenses_tab"+(MOD?"_"+MOD:""),TIDS=MODT[MOD]||["home","ana","rec","cred","sal","tax","int","ov","pos","cla","ehs","cpt","ret","sante","data"];
+const MOD=new URLSearchParams(location.search).get("m")||"",MODT={dep:["home","ana","rec"],immo:["cred"],epargne:["ov","pos","cla","int","ehs"],livrets:["liv","hst","lvi"],salaire:["sal","tax","simsal"],sante:["sante"]},TKEY="depenses_tab"+(MOD?"_"+MOD:""),TIDS=MODT[MOD]||["home","ana","rec","cred","sal","tax","simsal","int","ov","pos","cla","ehs","cpt","ret","sante","data"];
 let D=load(),tab=loadTab(),per="m:"+TODAY().slice(0,7),gran="jour",q="",sens="Dépense";
 let FOLD=(()=>{try{return JSON.parse(localStorage.getItem(FKEY))||{}}catch(e){return{}}})();
 function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.depenses)return r}catch(e){}return{version:1,depenses:[],recurrentes:[],salaires:[],prets:[]}}
@@ -2384,7 +2384,7 @@ function taxEst(y,noOv){
  S=D.salaires.filter(s=>s.date&&s.date.startsWith(y)),recu=sum(S,"net"),imp=sum(S,"impot"),mr=new Set(S.map(s=>s.date.slice(0,7))).size,prev={};
  D.salaires.forEach(s=>{if(s.date&&s.date.slice(0,4)<y){const a=s.date.slice(0,4),p=prev[a]??={n:0,m:new Set()};p.n+=s.net;p.m.add(s.date.slice(5,7))}});
  const pm=Object.values(prev).map(p=>p.n/p.m.size),moy=mr?recu/mr:(pm.length?pm.reduce((a,b)=>a+b,0)/pm.length:0),
- rest=y===cy?Math.max(0,12-mr):0,ov=!noOv&&y===cy&&F.ca>0,pr=ov?Math.max(0,F.ca-recu):rest*moy,proj=ov?F.ca:recu+pr,R=irCalc(proj*ratio,parts,B,F.ded!==false),reste=Math.max(0,R.ir-imp),prNet=Math.max(0,pr-reste);
+ rest=y===cy?Math.max(0,12-mr):0,ov=false,pr=rest*moy,proj=recu+pr,R=irCalc(proj*ratio,parts,B,F.ded!==false),reste=Math.max(0,R.ir-imp),prNet=Math.max(0,pr-reste);
  return{recu,imp,rest,moy,pr,prNet,proj,netAp:Math.max(0,proj-R.ir),ir:R.ir,reste,taux:proj>0?R.ir/proj:0,tauxR:pr>0?Math.min(1,reste/(pr*ratio)):null,np:pm.length}}
 function taxCard(y){const t=taxEst(y);if(!(t.proj>0))return"";
  const k=(l,v,c,w)=>`<div class="kpi${w?" wide":""}" style="--c:var(--${c})"><span>${l}</span><b>${v}</b></div>`,cy=y===TODAY().slice(0,4);
@@ -2572,15 +2572,36 @@ function irCalc(net,parts,B,ded){const ab=ded===false?0:Math.min(Math.max(net*.1
  return{rev,ir,tmi,taux:net>0?ir/net:0}}
 function vTax(){
  const F=D.fisc||{},parts=F.parts>0?F.parts:1,ratio=F.ratio>0?F.ratio:1.03,B=BAR[F.bar]||BAR["2025"],ded=F.ded!==false,cy=TODAY().slice(0,4),
- auto=Math.round(taxEst(cy,1).proj),ca=F.ca>0?F.ca:auto,
+ ca=Math.round(taxEst(cy,1).proj),
  R=irCalc(ca*ratio,parts,B,ded),taux=ca>0?R.ir/ca:0,mb=ca/12,mn=(ca-R.ir)/12;
- return`${card("t-set","Simulateur d'impôts",`<label>Salaire net avant impôts annuel (€) — vide = estimé d'après mes salaires</label><input type="number" step="1" inputmode="decimal" data-d="fisc.ca" value="${F.ca>0?F.ca:""}" placeholder="${auto||""}">
+ return`${card("t-set","Simulateur d'impôts",`<div class="kpis" style="margin:0 0 8px"><div class="kpi wide" style="--c:var(--bleu)"><span>Net avant impôts estimé en ${cy} (versements de l'année étendus sur 12 mois)</span><b>${ca>0?eur(ca):"—"}</b></div></div>
  <label>Nombre de parts</label><input type="number" step="0.5" min="1" inputmode="decimal" data-d="fisc.parts" value="${parts}">
  <label style="display:flex;align-items:center;gap:10px;margin-top:12px;font-size:.85rem;color:var(--txt)"><input type="checkbox" data-d="fisc.ded" ${ded?"checked":""} style="width:22px;height:22px;padding:0;flex:none"> Déduction fiscale de 10 %</label>
  <div class="d" style="margin-top:8px">Estimation simplifiée (sans crédits ni réductions d'impôt, ni revenus du capital). Net imposable ≈ net avant impôts × ${String(ratio).replace(".",",")}.</div>`,"margin-top:0")}
  ${ca>0?`<div class="kpis k3"><div class="kpi" style="--c:var(--bleu)"><span>Net avant impôts / mois</span><b>${eur(mb)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Taux d'imposition</span><b>${fp(taux*100)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Net après impôts / mois</span><b>${eur(mn)}</b></div></div>`:'<div class="card"><div class="empty">Saisis un salaire net avant impôts annuel, ou ajoute des salaires dans Suivi Salaire.</div></div>'}`}
+/* ---------- Simulateur de salaire : brut → net avant impôts → net après impôts (+ remboursements non imposables, ex. Navigo) ---------- */
+function vSimSal(){
+ const S=D.sim||{},H=D.salaires.filter(s=>s.date&&s.brut>0&&s.net>0).sort((a,b)=>a.date<b.date?1:-1).slice(0,12),
+  sb=H.reduce((a,s)=>a+s.brut,0),sn=H.reduce((a,s)=>a+s.net,0),si=H.reduce((a,s)=>a+(s.impot||0),0),
+  cotA=sb>0?Math.round((1-sn/sb)*1000)/10:22,tauxA=sn>0?Math.round(si/sn*1000)/10:0,
+  per=S.per==="y"?"y":"m",cot=S.cot>0?S.cot:cotA,taux=S.taux>0?S.taux:tauxA,remb=S.remb>0?S.remb:0,brut=S.brut>0?S.brut:0,
+  bM=per==="y"?brut/12:brut,nI=bM*(1-cot/100),cotM=bM-nI,nA=nI+remb,imp=nI*taux/100,nP=nA-imp,
+  y=v=>eur2(v*12),m=v=>eur2(v),
+  row=(l,a,b,cls,bold)=>`<tr><th${bold?' style="font-weight:800"':""}>${l}</th><td class="${cls||""}"${bold?' style="font-weight:800"':""}>${a}</td><td class="${cls||""}"${bold?' style="font-weight:800"':""}>${b}</td></tr>`;
+ return`${card("ss-in","Simulateur de salaire",`<label>Salaire brut (€)</label><input type="number" step="0.01" inputmode="decimal" data-d="sim.brut" value="${brut||""}" placeholder="ex. 3500">
+ <select data-d="sim.per" style="margin-top:6px"><option value="m" ${per==="m"?"selected":""}>Brut mensuel</option><option value="y" ${per==="y"?"selected":""}>Brut annuel</option></select>
+ <label>Taux de cotisations salariales (%)</label><input type="number" step="0.1" min="0" inputmode="decimal" data-d="sim.cot" value="${S.cot>0?S.cot:""}" placeholder="${String(cotA).replace(".",",")}">
+ <div class="d" style="margin-top:4px">Du brut au net avant impôts. Vide : ${sb>0?"estimé d'après tes dernières fiches de paie ("+String(cotA).replace(".",",")+" %)":"22 % par défaut (environ 25 % pour un cadre)"}.</div>
+ <label>Taux d'imposition (prélèvement à la source, %)</label><input type="number" step="0.1" min="0" inputmode="decimal" data-d="sim.taux" value="${S.taux>0?S.taux:""}" placeholder="${String(tauxA).replace(".",",")}">
+ <div class="d" style="margin-top:4px">Appliqué au net imposable (hors remboursements). Vide : ${sn>0?"taux moyen de tes versements ("+String(tauxA).replace(".",",")+" %)":"0 %"}.</div>
+ <label>Remboursement non imposable par mois (€) — ex. Navigo</label><input type="number" step="0.01" min="0" inputmode="decimal" data-d="sim.remb" value="${S.remb>0?S.remb:""}" placeholder="0">
+ <div class="d" style="margin-top:4px">Ajouté au net à payer, mais sans cotisations ni impôt (par exemple le remboursement de ton abonnement de transport).</div>`,"margin-top:0")}
+ ${brut>0?`<div class="kpis k3"><div class="kpi" style="--c:var(--bleu)"><span>Net avant impôts / mois</span><b>${eur2(nA)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Impôt / mois</span><b>${eur2(imp)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Net après impôts / mois</span><b>${eur2(nP)}</b></div></div>
+ ${card("ss-out","Détail du calcul",`<div style="overflow-x:auto"><table class="rc"><thead><tr><th></th><th>Par mois</th><th>Par an</th></tr></thead><tbody>
+ ${row("Salaire brut",m(bM),y(bM),"",0)}${row("− Cotisations ("+fp(cot)+")","−"+m(cotM),"−"+y(cotM),"neg",0)}${row("= Net imposable",m(nI),y(nI),"",0)}${remb>0?row("+ Remboursement non imposable",m(remb),y(remb),"pos",0):""}${row("= Net avant impôts",m(nA),y(nA),"",1)}${row("− Impôt ("+fp(taux)+")","−"+m(imp),"−"+y(imp),"neg",0)}${row("= Net après impôts",m(nP),y(nP),"pos",1)}</tbody></table></div>
+ <div class="d" style="margin-top:8px">Estimation simplifiée : l'impôt est calculé sur le net imposable, sans les remboursements non imposables. Le net imposable réel peut différer légèrement (CSG non déductible, mutuelle, tickets restaurant…).</div>`)}`:'<div class="card"><div class="empty">Saisis un salaire brut pour calculer le net avant et après impôts.</div></div>'}`}
 /* Ordre des onglets : … Suivi Salaire · Prime · Simulateur d'impôts · Santé (tout à droite) · Données */
-const TABS=[["home","🏠","Vue d'ensemble",vHome],["ana","📊","Analyse",vAna],["rec","🧮","Simulation de dépenses",vRec],["cred","🏦","Suivi Crédit",vCred],["sal","💼","Suivi Salaire",vSal],["ov","🏠","Vue d'ensemble",vOv],["pos","📊","Positions",vPos],["cla","🏆","Classement par gain",vCla],["int","📜","Versements & retraits",vMvt],["ehs","🧾","Historique",vEhs],["tax","🧾","Simulateur d'impôts",vTax],["sante","🩺","Santé",vSante],["data","🔄","Données",vData],["liv","🐖","Tableau de bord",vLiv],["hst","📜","Historique",vHst],["lvi","📝","Taux & intérêts",vLvi]];
+const TABS=[["home","🏠","Vue d'ensemble",vHome],["ana","📊","Analyse",vAna],["rec","🧮","Simulation de dépenses",vRec],["cred","🏦","Suivi Crédit",vCred],["sal","💼","Suivi Salaire",vSal],["ov","🏠","Vue d'ensemble",vOv],["pos","📊","Positions",vPos],["cla","🏆","Classement par gain",vCla],["int","📜","Versements & retraits",vMvt],["ehs","🧾","Historique",vEhs],["tax","🧾","Simulateur d'impôts",vTax],["simsal","🧮","Simulateur de salaire",vSimSal],["sante","🩺","Santé",vSante],["data","🔄","Données",vData],["liv","🐖","Tableau de bord",vLiv],["hst","📜","Historique",vHst],["lvi","📝","Taux & intérêts",vLvi]];
 /* Limite chaque liste et chaque tableau à 5 lignes visibles, le reste défile */
 function fitLists(){
  document.querySelectorAll(".lst").forEach(l=>{l.style.maxHeight="";if(!l.offsetParent)return;const k=l.children[5];if(k)l.style.maxHeight=(k.offsetTop+1)+"px"});
@@ -2701,7 +2722,7 @@ function fromXml(raw){const doc=new DOMParser().parseFromString(raw,"application
  for(const[k,[par,ch]]of Object.entries(SEC)){p[k]=[...doc.querySelectorAll(`${par} > ${ch}`)].map(el=>{const r={};for(const a of el.attributes){r[a.name]=NUM.has(a.name)?(parseFloat(a.value)||0):a.value}return r})}return p}
 function toCsv(){const q=v=>'"'+String(v).replace(/"/g,'""')+'"';return"\uFEFFDate;Libelle;Categorie;Montant;Sens;Groupe\n"+D.depenses.map(o=>[o.date,q(o.libelle),q(o.categorie),String(o.montant).replace(".",","),o.sens,q(o.groupe||"")].join(";")).join("\n")}
 function norm(p){const n=x=>parseFloat(x)||0;
- return{sante:p.sante,fisc:p.fisc,rec:p.rec,retraits_epargne:p.retraits_epargne,solde_epargne:p.solde_epargne,mouvements_epargne:p.mouvements_epargne,releves_epargne:p.releves_epargne,transferts:p.transferts,livrets_lignes:p.livrets_lignes,version:1,exporte_le:p.exporte_le||"",
+ return{sante:p.sante,fisc:p.fisc,rec:p.rec,sim:p.sim,retraits_epargne:p.retraits_epargne,solde_epargne:p.solde_epargne,mouvements_epargne:p.mouvements_epargne,releves_epargne:p.releves_epargne,transferts:p.transferts,livrets_lignes:p.livrets_lignes,version:1,exporte_le:p.exporte_le||"",
  groupes:p.groupes?p.groupes.map(g=>({nom:String(g&&g.nom!=null?g.nom:g)})).filter(g=>g.nom):undefined,
  depenses:(p.depenses||[]).filter(o=>o.date).map(o=>({date:String(o.date).slice(0,10),libelle:String(o.libelle??""),categorie:String(o.categorie??"Divers"),montant:n(o.montant),sens:o.sens||(REV.includes(o.categorie)?"Revenu":"Dépense"),...(o.lien?{lien:String(o.lien)}:{}),...(o.groupe?{groupe:String(o.groupe)}:{}),...(o.compte?{compte:String(o.compte)}:{})})),
  recurrentes:(p.recurrentes||[]).map(r=>({libelle:String(r.libelle??""),categorie:String(r.categorie??""),montant:n(r.montant),type:r.type||"Charge",...(r.groupe?{groupe:String(r.groupe)}:{})})),
@@ -2742,7 +2763,7 @@ $("#file").onchange=async e=>{const files=[...e.target.files];e.target.value="";
   if(low.endsWith(".xlsx")||low.endsWith(".xlsm"))p=fromRows(await readXlsx(await f.arrayBuffer()));
   else{const raw=await f.text();p=norm(low.endsWith(".xml")||raw.trim().startsWith("<")?fromXml(raw):JSON.parse(raw));p.exporte_le=p.exporte_le||""}
   for(const k of Object.keys(SEC))if(p[k]&&(p[k].length||low.match(/\.(json|xml)$/))){if(k==="depenses")p[k]=p[k].filter(o=>o.date);nd[k]=p[k];log.push(`${f.name} → ${p[k].length} ${k}`)}
-  if(p.sante)nd.sante=p.sante;if(p.sgroupes)nd.sgroupes=p.sgroupes;if(p.fisc)nd.fisc=p.fisc;if(p.rec)nd.rec=p.rec;["immo","biens","retraits_epargne","solde_epargne","mouvements_epargne","releves_epargne","transferts","livrets_lignes"].forEach(k=>{if(p[k]!==undefined)nd[k]=p[k]});
+  if(p.sante)nd.sante=p.sante;if(p.sgroupes)nd.sgroupes=p.sgroupes;if(p.fisc)nd.fisc=p.fisc;if(p.rec)nd.rec=p.rec;if(p.sim)nd.sim=p.sim;["immo","biens","retraits_epargne","solde_epargne","mouvements_epargne","releves_epargne","transferts","livrets_lignes"].forEach(k=>{if(p[k]!==undefined)nd[k]=p[k]});
   if(p.exporte_le)nd.exporte_le=p.exporte_le}catch(err){log.push(`${f.name} : ${err.message}`)}}
  if(!log.some(l=>l.includes("→")))return alert(log.join("\n"));
  if(!confirm("Remplacer les données du téléphone par :\n"+log.join("\n")))return;
@@ -2773,7 +2794,7 @@ function fillRec(on){const R=D.recurrentes.map((r,i)=>({r,i})).sort((a,b)=>a.r.l
  $("#fRec").innerHTML='<option value="">— Saisie libre —</option>'+R.map(x=>`<option value="${x.i}">${esc(x.r.libelle)} · ${eur2(x.r.montant)}${x.r.type==="Revenu"?" (revenu)":""}</option>`).join("")}
 function fillGrp(cur){const L=grpNames();$("#fGrpW").classList.toggle("hide",!L.length);$("#fGrp").innerHTML='<option value="">— Aucun —</option>'+L.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");$("#fGrp").value=cur&&L.includes(cur)?cur:""}
 /* Barre fixe en bas (comme PEA / CTO) : une ou deux actions selon l'onglet */
-function barSet(){const B=$("#opsbar"),a=$("#fabA"),b=$("#fabB"),hid=["sante","tax","sal"].includes(tab);B.style.display=hid?"none":"";if(hid)return;
+function barSet(){const B=$("#opsbar"),a=$("#fabA"),b=$("#fabB"),hid=["sante","tax","sal","simsal"].includes(tab);B.style.display=hid?"none":"";if(hid)return;
  let A,C=null;
  if(tab==="liv"||tab==="lvi"||tab==="hst")A=["➕ Nouvelle ligne",()=>openLv(-1)];
  else if(["int","pos","ov","cla","ehs"].includes(tab))A=["➕ Nouveau versement",()=>openInt(-1)];
