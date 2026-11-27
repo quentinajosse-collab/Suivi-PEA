@@ -12,7 +12,7 @@
 <title>Mon Patrimoine</title>
 <style>
 :root{--bg:#f4f7fb;--card:#fff;--txt:#0f172a;--mut:#64748b;--line:#e2e8f0;--acc:#0284c7;--up:#0d7a4e;--dn:#c23b32}
-@media(prefers-color-scheme:dark){:root{--bg:#0b1220;--card:#131c2e;--txt:#e5edf8;--mut:#94a3b8;--line:#243049}}
+:root{color-scheme:light}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--txt);font:15px/1.4 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
@@ -99,10 +99,12 @@ dialog .hint{color:var(--mut);font-size:12px;margin:6px 0 0}
 #tbw th:first-child,#tbw td:first-child{text-align:left}
 #tbw tr:last-child td{border-bottom:0}
 #evo svg{width:100%;height:auto;display:block;touch-action:pan-y;margin-top:6px}
-#evt{text-align:center;line-height:1.35;position:absolute;pointer-events:none;background:var(--txt);color:var(--bg);font-size:12px;padding:5px 8px;border-radius:8px;white-space:nowrap;display:none;transform:translate(-50%,0);z-index:2}
+#evt{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:62px;margin-top:8px;padding:6px 10px;border-radius:12px;background:color-mix(in srgb,var(--mut) 9%,transparent);text-align:center;font-size:13px;line-height:1.3;font-variant-numeric:tabular-nums}#evt .evd{font-size:11.5px;color:var(--mut)}#evt b{font-size:16px}#evt>span:last-child:not(.evd){font-size:12px}
 
+/* Graphiques sans carte blanche : fondus dans le fond, comme au PEA / CTO */
+#evo,#rep{background:transparent;box-shadow:none;border:1px solid rgba(49,51,63,.2);border-radius:.5rem}
 /* Fond identique aux modules PEA / CTO / Crypto (mode clair) */
-@media(prefers-color-scheme:light),(prefers-color-scheme:no-preference){body{background:radial-gradient(circle at 8% 8%,rgba(2,132,199,.10) 0%,transparent 45%),radial-gradient(circle at 92% 18%,rgba(124,58,237,.08) 0%,transparent 45%),radial-gradient(circle at 15% 92%,rgba(13,148,136,.08) 0%,transparent 45%),linear-gradient(180deg,#f8fafc 0%,#eef2f7 100%);background-attachment:fixed}}
+body{background:radial-gradient(circle at 8% 8%,rgba(2,132,199,.10) 0%,transparent 45%),radial-gradient(circle at 92% 18%,rgba(124,58,237,.08) 0%,transparent 45%),radial-gradient(circle at 15% 92%,rgba(13,148,136,.08) 0%,transparent 45%),linear-gradient(180deg,#f8fafc 0%,#eef2f7 100%);background-attachment:fixed}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 @media(orientation:landscape) and (max-height:520px){nav{gap:0;padding-top:calc(4px + env(safe-area-inset-top));padding-bottom:calc(40px + env(safe-area-inset-bottom))}nav button{padding:4px 2px}nav button b{font-size:17px}}
 </style>
@@ -240,6 +242,7 @@ function go(id,sub,reset){
   if(/^cto\d+$/.test(id)&&MODS.some(m=>m.id==='cto')){sub=sub||id;id='cto'}
   document.querySelectorAll('iframe').forEach(f=>{if(f.dataset.pre)return;const m=MODS.find(x=>x.id===f.dataset.id);if(!m||m.src!==f.dataset.base||(/^ctos?\.html/.test(m.src)&&f.dataset.cry!==cryAcc()))f.remove()});
   if(!MODS.some(m=>m.id===id))id='home';
+  if(reset)try{(id==='depenses'?['depenses_tab_dep']:['salaire','epargne','immo','livrets','sante'].includes(id)?['depenses_tab_'+id]:id==='watchlist'?['wl_wt','wl_open']:['tab_'+id]).forEach(k=>sessionStorage.removeItem(k))}catch(e){}
   cur=id;if(location.hash!=='#'+id)history.replaceState(null,'','#'+id);
   const m=MODS.find(x=>x.id===id);
   nav.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));
@@ -357,21 +360,25 @@ function drawEvo(all,pf,ff){
   const shortY=['1m','1h','1j','7j','ytd'].includes(EVR)||(EVR==='perso'&&cSpan<=200),plab=d=>d.length>10?(EVR==='1h'?d.slice(11,16):EVR==='1j'?d.slice(11,13)+' h':(+d.slice(8,10))+' '+MOIS[+d.slice(5,7)-1]+' '+d.slice(11,13)+' h'):d.length>=10?(+d.slice(8,10))+' '+MOIS[+d.slice(5,7)-1]+(shortY?'':' '+d.slice(2,4)):mlab(d);
   const tl=(d,i)=>{if(d.length>10){const mn=d.slice(14,16);return (+d.slice(8,10))+' '+MOIS[+d.slice(5,7)-1]+' · '+d.slice(11,13)+(mn==='00'?' h':':'+mn)}return(i===pts.length-1&&d>=tdI)?'Aujourd’hui':plab(d)};
   if(pts.length<2){el.innerHTML=`<div class="hd"><h2>📈 Évolution du patrimoine</h2></div><div class="sub" style="margin-top:6px">Pas encore assez de données : ouvre le PEA et les CTO une fois (cours en ligne), l’historique se construit ensuite tout seul.</div>${rg}${rc}`;bind();return}
-  const W=600,H=230,pl=50,pr=10,pt=12,pb=pts[0][0].length>10?38:24,vs=pts.map(x=>x[1]);const mn=Math.min(...vs),mx=Math.max(...vs);let lo=mn,hi=mx;const sp0=(hi-lo)||Math.abs(hi)*.1||1,rs=sp0/4,mg=Math.pow(10,Math.floor(Math.log10(rs))),nr=rs/mg,stp=(nr<=1?1:nr<=2?2:nr<=2.5?2.5:nr<=5?5:10)*mg;lo=Math.floor(lo/stp)*stp;hi=Math.ceil(hi/stp)*stp;if(mn>=0&&lo<0)lo=0;if(hi===lo)hi=lo+stp;const TK=[];for(let v=lo;v<=hi+stp/1e3;v+=stp)TK.push(v);
-  const X=i=>pl+i*(W-pl-pr)/(pts.length-1),Y=v=>pt+(hi-v)/(hi-lo)*(H-pt-pb),d=smooth(pts.map((q,i)=>[X(i),Y(q[1])])),
+  const W=600,H=230,pr=10,pt=12,pb=pts[0][0].length>10?38:24,vs=pts.map(x=>x[1]);const mn=Math.min(...vs),mx=Math.max(...vs);let lo=mn,hi=mx;const sp0=(hi-lo)||Math.abs(hi)*.1||1,rs=sp0/4,mg=Math.pow(10,Math.floor(Math.log10(rs))),nr=rs/mg,stp=(nr<=1?1:nr<=2?2:nr<=2.5?2.5:nr<=5?5:10)*mg;lo=Math.floor(lo/stp)*stp;hi=Math.ceil(hi/stp)*stp;if(mn>=0&&lo<0)lo=0;if(hi===lo)hi=lo+stp;const TK=[];for(let v=lo;v<=hi+stp/1e3;v+=stp)TK.push(v);
+  const pl=Math.max(50,Math.ceil(Math.max(...TK.map(v=>cmpT(v,stp).length))*6.8)+12),X=i=>pl+i*(W-pl-pr)/(pts.length-1),Y=v=>pt+(hi-v)/(hi-lo)*(H-pt-pb),d=smooth(pts.map((q,i)=>[X(i),Y(q[1])])),
     d0=vs[0],dl=vs[vs.length-1]-d0,dp=d0>0?dl/d0*100:null,col=dl>=0?'var(--up)':'var(--dn)',
     gl=TK.map(v=>{const yy=Y(v);return`<line x1="${pl}" x2="${W-pr}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="var(--line)" stroke-dasharray="3 3"/><text x="${pl-6}" y="${(yy+4).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--mut)">${cmpT(v,stp)}</text>`}).join(''),
     xl=(()=>{const hr=pts[0][0].length>10,n=Math.min(pts.length,5),ix=[...new Set(Array.from({length:n},(_,k)=>Math.round(k*(pts.length-1)/(n-1||1))))];let pd='';return ix.map(i=>{const d=pts[i][0],an=i===0?'start':i===pts.length-1?'end':'middle',x=X(i).toFixed(1);if(!hr)return`<text x="${x}" y="${H-6}" text-anchor="${an}" font-size="11" fill="var(--mut)">${plab(d)}</text>`;const mn=d.slice(14,16),l1=d.slice(11,13)+(mn==='00'?' h':':'+mn),dd=d.slice(0,10),l2=dd!==pd?(+d.slice(8,10))+' '+MOIS[+d.slice(5,7)-1]:'';pd=dd;return`<text x="${x}" y="${H-20}" text-anchor="${an}" font-size="11" fill="var(--mut)">${l1}</text>`+(l2?`<text x="${x}" y="${H-6}" text-anchor="${an}" font-size="11" font-weight="700" fill="var(--mut)">${l2}</text>`:'')}).join('')})();
   el.innerHTML=`<div class="hd"><div><h2>📈 Évolution du patrimoine</h2><div class="sub"><b class="${dl>=0?'up':'dn'}">${dl<0?'−':'+'}${eur2(Math.abs(dl))}${dp==null?'':' ('+(dp<0?'−':'+')+Math.abs(dp).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' %)'}</b> sur la période</div></div></div>
+    <div id="evt" aria-live="polite"></div>
     <svg id="evs" viewBox="0 0 ${W} ${H}" role="img" aria-label="Évolution du patrimoine"><defs><linearGradient id="evg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" style="stop-color:${col};stop-opacity:.34"/><stop offset="1" style="stop-color:${col};stop-opacity:0"/></linearGradient></defs>${gl}${xl}
     <path d="${d}L${X(pts.length-1).toFixed(1)} ${H-pb}L${pl} ${H-pb}Z" fill="url(#evg)"/><path d="${d}" fill="none" stroke="${col}" stroke-width="7" opacity=".14" stroke-linejoin="round" stroke-linecap="round"/><path d="${d}" fill="none" stroke="${col}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${X(pts.length-1).toFixed(1)}" cy="${Y(vs[vs.length-1]).toFixed(1)}" r="9" fill="${col}" opacity=".18"/><circle cx="${X(pts.length-1).toFixed(1)}" cy="${Y(vs[vs.length-1]).toFixed(1)}" r="4.2" fill="${col}" stroke="var(--card)" stroke-width="2"/>
-    <line id="evl" y1="${pt}" y2="${H-pb}" stroke="var(--mut)" stroke-dasharray="3 3" style="display:none"/><circle id="evc" r="4.5" fill="${col}" stroke="var(--card)" stroke-width="2" style="display:none"/></svg><div id="evt"></div>${rg}${rc}`;
+    <line id="evl" y1="${pt}" y2="${H-pb}" stroke="var(--mut)" stroke-dasharray="3 3" style="display:none"/><circle id="evc" r="4.5" fill="${col}" stroke="var(--card)" stroke-width="2" style="display:none"/></svg>${rg}${rc}`;
   bind();
-  const sv=$('#evs'),tp=$('#evt'),ln=$('#evl'),ci=$('#evc'),mv=e=>{const r=sv.getBoundingClientRect(),i=Math.max(0,Math.min(pts.length-1,Math.round(((e.clientX-r.left)/r.width*W-pl)/((W-pl-pr)/(pts.length-1)))));
+  const sv=$('#evs'),tp=$('#evt'),ln=$('#evl'),ci=$('#evc'),read=i=>{
+    const vd=pts[i][1]-pts[0][1],vq=pts[0][1]>0?vd/pts[0][1]*100:null,vc=vd>=0?'var(--up)':'var(--dn)';
+    tp.innerHTML=`<span class="evd">${tl(pts[i][0],i)}</span> <b>${eur2(pts[i][1])}</b>`+(i>0?` <span style="color:${vc};font-weight:700">${vd<0?'−':'+'}${eur2(Math.abs(vd))}${vq==null||!isFinite(vq)?'':' ('+(vq<0?'−':'+')+Math.abs(vq).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' %)'}</span>`:'');};
+  read(pts.length-1);
+  const mv=e=>{const r=sv.getBoundingClientRect(),i=Math.max(0,Math.min(pts.length-1,Math.round(((e.clientX-r.left)/r.width*W-pl)/((W-pl-pr)/(pts.length-1)))));
     const x=X(i),y=Y(pts[i][1]);ln.setAttribute('x1',x);ln.setAttribute('x2',x);ci.setAttribute('cx',x);ci.setAttribute('cy',y);ln.style.display=ci.style.display='';
-    const vd=pts[i][1]-pts[0][1],vq=pts[0][1]>0?vd/pts[0][1]*100:null,vc=vd>=0?'#86efac':'#fca5a5';
-    tp.innerHTML=`${tl(pts[i][0],i)} · <b>${eur2(pts[i][1])}</b>`+(i>0?`<br><span style="color:${vc};font-weight:700">${vd<0?'−':'+'}${eur2(Math.abs(vd))}${vq==null||!isFinite(vq)?'':' ('+(vq<0?'−':'+')+Math.abs(vq).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' %)'}</span>`:'');tp.style.display='block';const er=el.getBoundingClientRect();tp.style.left=Math.max(60,Math.min(er.width-60,r.left-er.left+x/W*r.width))+'px';tp.style.top=(r.top-er.top+4)+'px'};
-  sv.onpointermove=mv;sv.onpointerdown=mv;sv.onpointerleave=()=>{tp.style.display='none';ln.style.display=ci.style.display='none'}}
+    read(i)};
+  sv.onpointermove=mv;sv.onpointerdown=mv;sv.onpointerleave=()=>{read(pts.length-1);ln.style.display=ci.style.display='none'}}
 /* ---------- Répartition du patrimoine par actif ---------- */
 const RCOL=['#0ea5e9','#8b5cf6','#f59e0b','#10b981','#14b8a6','#ec4899','#f97316'];
 const NCOL={'PEA':'#0ea5e9','CTO':'#8b5cf6','Crypto':'#f59e0b','Épargne salariale':'#10b981','Comptes bancaires':'#14b8a6','Livrets':'#ec4899','Immobilier':'#fb7185'};

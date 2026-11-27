@@ -287,6 +287,60 @@ canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .mgit{display:block;width:100%;text-align:left;padding:10px 12px;border:0;border-bottom:1px solid #eef0f3;background:transparent;font:inherit;font-size:.9rem;color:#31333f;cursor:pointer;height:auto;white-space:normal}
 .mgit:hover,.mgit.on{background:#eef4ff}.mgno{padding:9px 12px;font-size:.82rem;color:#64748b}
 @media(orientation:landscape) and (max-height:520px){#opsbar{padding:6px max(16px,6vw) calc(6px + env(safe-area-inset-bottom,0px));gap:.6rem;border-radius:14px 14px 0 0}#opsbar button{height:38px;font-size:.9rem}}
+
+/* ===== Simulations : présentation modernisée (contenu inchangé) ===== */
+#sim{max-width:540px;max-height:92vh;max-height:92dvh;padding:0 16px 18px;border:0;border-radius:22px;background:#f8fafc;box-shadow:0 24px 70px rgba(15,23,42,.35)}
+#sim::backdrop{background:rgba(15,23,42,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+@media(max-width:600px){#sim{margin:auto 0 0;width:100%;max-width:100%;border-radius:22px 22px 0 0}}
+#sim .sm-hd{position:sticky;top:0;z-index:30;display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 -16px 14px;padding:14px 16px;background:linear-gradient(135deg,#0284c7,#7c3aed);color:#fff}
+#sim .sm-hd h2{margin:0;font-size:1.08rem;color:#fff;line-height:1.3}
+#sim .sm-hd button{flex:none;width:34px;height:34px;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;font-size:1rem}
+#sim label{font-size:.78rem;font-weight:600;color:#64748b;margin:10px 0 4px}
+#sim .ft{margin:12px 0 5px;letter-spacing:.05em}
+#sim input:not([type=radio]):not([type=checkbox]),#sim select{height:44px;border-radius:12px;border:1px solid #e2e8f0;background:#fff;font-size:1rem;font-weight:600;color:#0f172a;transition:border-color .15s,box-shadow .15s}
+#sim input:not([type=radio]):not([type=checkbox]):focus,#sim select:focus{outline:0;border-color:#0284c7;box-shadow:0 0 0 3px rgba(2,132,199,.18)}
+#sim hr.sh{border-top-color:#e2e8f0;margin:14px 0}
+#sim .c2{align-items:end}
+#sim .rad{gap:4px;padding:4px;background:#e9eef5;border-radius:14px}
+#sim .rad>span{width:100%;padding:2px 6px;font-size:.78rem;font-weight:600}
+#sim .rad label{position:relative;flex:1 1 auto;justify-content:center;margin:0;padding:8px 10px;border-radius:10px;font-size:.84rem;font-weight:700;color:#64748b;text-align:center;cursor:pointer}
+#sim .rad input{position:absolute;opacity:0;pointer-events:none}
+#sim .rad label:has(input:checked){background:#fff;color:#0369a1;box-shadow:0 2px 8px rgba(15,23,42,.12)}
+#sim .rad label:has(input:focus-visible){outline:2px solid #0284c7}
+#sim label.ck{margin:10px 0 0;padding:10px 12px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;color:#0f172a;font-size:.84rem;line-height:1.35;cursor:pointer;gap:10px}
+#sim label.ck input{appearance:none;-webkit-appearance:none;flex:none;order:2;margin-left:auto;width:36px;height:21px;border-radius:99px;background:#cbd5e1 radial-gradient(circle,#fff 7.5px,transparent 8px) left center/21px 21px no-repeat;transition:background-color .18s,background-position .18s;cursor:pointer}
+#sim label.ck input:checked{background-color:#0284c7;background-position:right center}
+#sim .bx{background:#fff;border-color:#e2e8f0;border-radius:16px;padding:2px 12px 14px;box-shadow:0 2px 10px rgba(15,23,42,.05)}
+#sim .sbtn{border-radius:12px;padding:11px 14px;font-weight:700;border:1px solid #e2e8f0;background:#fff}
+#sim .sbtn.primary{border:0;color:#fff;background:linear-gradient(135deg,#0284c7,#4f46e5);box-shadow:0 5px 14px rgba(37,99,235,.3)}
+#sim .sbtn.exb{border:0;background:linear-gradient(135deg,#2563eb,#7c3aed)}
+#sim .c3 .sbtn{padding:11px 4px;line-height:1.3}
+#sim .warn,#sim .err,#sim .info{border-radius:12px}
+.sm-step{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;margin:20px 0 10px}
+.sm-step .n{flex:none;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9px;background:var(--c);color:#fff;font-weight:800;font-size:.88rem;box-shadow:0 4px 10px color-mix(in srgb,var(--c) 35%,transparent)}
+.sm-step .t{font-weight:800;font-size:1.04rem;color:#0f172a}.sm-step .s{font-size:.78rem;color:#64748b}
+.sm-step::after{content:"";flex:1;min-width:24px;height:2px;border-radius:2px;background:linear-gradient(90deg,color-mix(in srgb,var(--c) 40%,transparent),transparent)}
+.sm-tk{margin:8px 0 10px;border-radius:18px;overflow:hidden;color:#fff;background:linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 65%,#0f172a));box-shadow:0 10px 24px color-mix(in srgb,var(--c) 30%,transparent)}
+.sm-tk .h{padding:11px 12px 0;text-align:center;font-size:min(.72rem,3vw);font-weight:800;letter-spacing:.07em;text-transform:uppercase;opacity:.9}
+.sm-tk .g{display:grid;grid-template-columns:1fr 1.6fr;padding:10px 8px 14px;text-align:center}.sm-tk .g>div+div{border-left:1px solid rgba(255,255,255,.28)}
+.sm-tk .tk-k{font-size:.64rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;opacity:.82}
+.sm-tk .v{margin-top:2px;font-size:min(1.75rem,7vw);font-weight:800;line-height:1.2}
+.sm-tk .note{padding:0 14px 12px;text-align:center;font-size:.75rem;opacity:.88}
+div.pea-duo div.pea-duo-item{border:1px solid #e2e8f0;border-radius:16px;background:#fff;box-shadow:0 2px 10px rgba(15,23,42,.06)}
+div.pea-duo div.pea-duo-item .v{color:#0f172a}
+div.pea-duo div.pea-duo-item.hl{border-color:#bae6fd;background:linear-gradient(180deg,#f0f9ff,#fff)}div.pea-duo div.pea-duo-item.hl .v{color:#0284c7}
+div.pea-duo div.pea-duo-item.col{border-color:color-mix(in srgb,var(--c) 28%,#e2e8f0);background:linear-gradient(180deg,color-mix(in srgb,var(--c) 9%,#fff),#fff)}
+div.pea-duo div.pea-duo-item.col .v{color:var(--c)}
+div.pea-duo div.pea-duo-item.tint{background:color-mix(in srgb,var(--c) 10%,#fff)}
+.sm-ba{border:1px solid #e2e8f0;border-radius:16px;background:#fff;overflow:hidden;box-shadow:0 2px 10px rgba(15,23,42,.06)}
+.sm-ba .r{padding:11px 14px}.sm-ba .r+.r{border-top:1px solid #eef2f7}
+.sm-ba .top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
+.sm-ba .l{font-size:.7rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#64748b}
+.sm-ba .d{padding:2px 10px;border-radius:99px;font-size:.75rem;font-weight:800;color:var(--c);background:color-mix(in srgb,var(--c) 12%,#fff)}
+.sm-ba .vals{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:10px;margin-top:6px}.sm-ba .vals i{font-style:normal;color:#cbd5e1;font-weight:800}
+.sm-ba small{display:block;font-size:.6rem;font-weight:700;text-transform:uppercase;color:#94a3b8}
+.sm-ba .av{font-size:.92rem;font-weight:600;color:#64748b}.sm-ba .to{text-align:right}.sm-ba .ap{font-size:1.18rem;font-weight:800;color:#0f172a}
+.sm-ph{padding:24px 18px;border:1.5px dashed #cbd5e1;border-radius:16px;background:#fff;text-align:center;color:#64748b;font-size:.88rem;font-weight:600}.sm-ph .i{font-size:1.6rem;margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -345,7 +399,7 @@ canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 
 <dialog id="op"><form id="opf" method="dialog"></form></dialog>
 
-<dialog id="sim"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px"><h2 style="margin:0;font-size:1.2rem">🧪 Simulation nouvelle opération</h2><button type="button" id="sim_x">✕</button></div><div id="sTop"></div><div id="sB"></div><div id="sC"></div><div id="sD"></div></dialog>
+<dialog id="sim"><div class="sm-hd"><h2>🧪 Simulation nouvelle opération</h2><button type="button" id="sim_x">✕</button></div><div id="sTop"></div><div id="sB"></div><div id="sC"></div><div id="sD"></div></dialog>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 const $=s=>document.querySelector(s);
@@ -428,7 +482,10 @@ function compute(tx,prices){
 }
 
 /* ---------- État ---------- */
-let S={raw:[],synced:false,editing:null,tx:[],prices:LS.g('prices')||{},url:LS.g('url')||'',tab:'ov'},R=null,CH={};
+const TABK='tab_pea';
+const TAB0=(()=>{try{return sessionStorage.getItem(TABK)||'ov'}catch(e){return'ov'}})();
+const tabSave=k=>{try{sessionStorage.setItem(TABK,k)}catch(e){}};
+let S={raw:[],synced:false,editing:null,tx:[],prices:LS.g('prices')||{},url:LS.g('url')||'',tab:TAB0},R=null,CH={};
 const COLS=['Nom','Type','Rompu','Ticker','Quantité','TTF (€)','Date_Heure','Date_Rompus','Arrondi_Courtier','Commission (€)','Frais Totaux (€)','Prix Unitaire (€)','Remboursement_Capital','Retenue_Source_Etrangere'];
 const TXT=['Nom','Type','Ticker','Date_Heure','Date_Rompus'];
 function toRaw(o){const r={};COLS.forEach(k=>r[k]=TXT.includes(k)?(o[k]||null):(parseFloat(o[k])||0));if(!r.Date_Rompus)r.Date_Rompus=r.Date_Heure;return r}
@@ -1468,19 +1525,17 @@ const COLR=(c,a)=>c+a;
 
 /* --- briques d'affichage (mêmes styles que le Streamlit) --- */
 function sStep(num,titre,c,sub=''){rec(['step',num,titre,c]);
-  return`<div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:18px 0 8px 0;padding:9px 12px;background:linear-gradient(90deg,${c}26,${c}0d);border-left:6px solid ${c};border-radius:12px"><span style="background:${c};color:#fff;border-radius:999px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;flex:none">${num}</span><span style="font-weight:800;font-size:1.05rem;color:var(--ink)">${titre}</span>${sub?`<span style="font-size:.78rem;color:var(--mute);font-weight:500;margin-left:6px">${sub}</span>`:''}</div>`}
+  return`<div class="sm-step" style="--c:${c}"><span class="n">${num}</span><span class="t">${titre}</span>${sub?`<span class="s">${sub}</span>`:''}</div>`}
 function sTicket(titre,qte,prix,c,note=''){rec(['ticket',titre,qte,prix,c]);
-  const k='font-size:.66rem;color:var(--mute);text-transform:uppercase;font-weight:700;letter-spacing:.04em',v=`font-size:min(1.7rem,7vw);font-weight:800;color:${c};line-height:1.2;margin-top:2px`;
-  return`<div style="margin:8px 0;border:2px solid ${c};border-radius:14px;background:${c}10;overflow:hidden"><div style="background:${c};color:#fff;padding:6px 12px;font-size:min(.78rem,3.2vw);font-weight:800;letter-spacing:.04em;text-transform:uppercase;text-align:center">📝 ${titre}</div><div style="display:grid;grid-template-columns:1fr 1.6fr;gap:8px;padding:10px 8px;text-align:center"><div><div style="${k}">Quantité</div><div style="${v}">${qte}</div></div><div><div style="${k}">Prix limite / action</div><div style="${v}">${prix}</div></div></div>${note?`<div style="padding:0 12px 10px 12px;text-align:center;font-size:.76rem;color:var(--mute)">${note}</div>`:''}</div>`}
+  return`<div class="sm-tk" style="--c:${c}"><div class="h">📝 ${titre}</div><div class="g"><div><div class="tk-k">Quantité</div><div class="v">${qte}</div></div><div><div class="tk-k">Prix limite / action</div><div class="v">${prix}</div></div></div>${note?`<div class="note">${note}</div>`:''}</div>`}
 function sDuo(items){rec(['cards',items.map(i=>[i[0],i[1],i[2],i[4]||GRY,i[3]])]);
-  return`<div class="pea-duo${items.length==3?' tri':''}">`+items.map(([k,v,s,hl,col])=>`<div class="pea-duo-item${hl?' hl':''}"${col?` style="background:${col}14;border:1px solid ${col}55;border-top:3px solid ${col}"`:''}><div class="k">${k}</div><div class="v"${col?` style="color:${col}"`:''}>${v}</div>${s?`<div class="s">${s}</div>`:''}</div>`).join('')+'</div>'}
+  return`<div class="pea-duo${items.length==3?' tri':''}">`+items.map(([k,v,s,hl,col])=>`<div class="pea-duo-item${hl?' hl':''}${col?' col':''}"${col?` style="--c:${col}"`:''}><div class="k">${k}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:''}</div>`).join('')+'</div>'}
 function sGain(items){rec(['cards',items.map(([l,v,c])=>[l,v,'',c,false])]);
-  const bg={[GRN]:['#f0fdf4','#86efac'],[RED]:['#fef2f2','#fca5a5']};
-  return'<div class="pea-duo">'+items.map(([l,v,c])=>{const[b,d]=bg[c]||['#f8fafc','#e2e8f0'];return`<div class="pea-duo-item" style="background:${b};border:1px solid ${d};border-top:3px solid ${c}"><div class="k">${l}</div><div class="v" style="color:${c}">${v}</div></div>`}).join('')+'</div>'}
+  return'<div class="pea-duo">'+items.map(([l,v,c])=>`<div class="pea-duo-item col tint" style="--c:${c}"><div class="k">${l}</div><div class="v">${v}</div></div>`).join('')+'</div>'}
 function sBA(items){
-  return'<div style="display:flex;flex-wrap:wrap;gap:10px">'+items.map(([l,av,ap,d,c])=>{const a=/^#/.test(c)?c:'#94a3b8',pill=a.length==7?a+'1a':'#f1f5f9';
-    return`<div style="background:${a}12;border:1px solid ${a}55;border-top:4px solid ${a};border-radius:12px;padding:12px 14px;flex:1 1 150px;min-width:0;box-shadow:0 1px 3px rgba(15,23,42,.06)"><div style="font-size:.7rem;color:var(--mute);text-transform:uppercase;font-weight:800;letter-spacing:.05em;margin-bottom:10px">${l}</div><div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap"><div><div style="font-size:.6rem;color:#94a3b8;font-weight:700;text-transform:uppercase">Avant</div><div style="font-size:.9rem;color:var(--mute);font-weight:600">${av}</div></div><div style="color:#94a3b8;font-weight:800;font-size:1.1rem;padding-bottom:1px">→</div><div><div style="font-size:.6rem;color:#94a3b8;font-weight:700;text-transform:uppercase">Après</div><div style="font-size:1.2rem;font-weight:800;color:${a.length==7&&a!='#94a3b8'?a:'var(--ink)'};line-height:1.15">${ap}</div></div></div><div style="display:inline-block;margin-top:10px;padding:2px 10px;border-radius:999px;background:${pill};font-size:.76rem;font-weight:800;color:${a}">${d}</div></div>`}).join('')+'</div>'}
-const ph=(ic,t)=>`<div style="padding:20px;background:var(--alt);border:1px dashed var(--line);border-radius:12px;text-align:center;color:var(--mute)"><div style="font-size:1.4rem">${ic}</div><div style="font-size:.88rem;font-weight:600;margin-top:6px">${t}</div></div>`;
+  return'<div class="sm-ba">'+items.map(([l,av,ap,d,c])=>{const a=/^#/.test(c)?c:'#94a3b8';
+    return`<div class="r" style="--c:${a}"><div class="top"><span class="l">${l}</span><span class="d">${d}</span></div><div class="vals"><div><small>Avant</small><span class="av">${av}</span></div><i>→</i><div class="to"><small>Après</small><span class="ap">${ap}</span></div></div></div>`}).join('')+'</div>'}
+const ph=(ic,t)=>`<div class="sm-ph"><div class="i">${ic}</div><div>${t}</div></div>`;
 const fld=(t)=>`<div class="ft">${t}</div>`;
 const sInp=(path,val,ph,id,extra='')=>`<input type="text" inputmode="decimal" autocomplete="off" id="${id}" data-s="${path}" placeholder="${ph||''}" value="${esc(val)}" ${extra}>`;
 const ckb=(path,on,t)=>`<label class="ck"><input type="checkbox" data-s="${path}" ${on?'checked':''}><span>${t}</span></label>`;
@@ -2026,7 +2081,7 @@ function draw(){TIPS.length=0;
 /* ---------- Événements ---------- */
 document.addEventListener('click',e=>{
   const tr=e.target.closest('tr[data-i]');if(tr){openOp(+tr.dataset.i);return}
-  const t=e.target.closest('[data-t]');if(t){S.tab=t.dataset.t;draw();return}
+  const t=e.target.closest('[data-t]');if(t){S.tab=t.dataset.t;tabSave(S.tab);draw();return}
   if(e.target.closest('#pfretry')){S.htry=null;S.hmsg='';ensureHist();return}
 });
 $('#cfg').onclick=()=>{$('#url').value=S.url;const s=SB.s;$('#sbu').value=s.url||'';$('#sbk').value=s.key||'';$('#sbe').value=s.email||'';$('#sbst').textContent=connected()?'Connecté ('+(s.email||'')+')':'';$('#dlg').showModal()};
@@ -2467,6 +2522,8 @@ matchMedia('(prefers-color-scheme:dark)').addEventListener('change',draw);
 load();draw();refreshPrices();pull();cfgLoad();setTimeout(()=>{try{ensureHist()}catch(e){}},1500);setInterval(()=>{if(!document.hidden&&navigator.onLine)try{ensureHist()}catch(e){}},6e5);document.addEventListener('visibilitychange',()=>{if(!document.hidden&&navigator.onLine)try{ensureHist()}catch(e){}});
 setInterval(()=>{if(!document.hidden&&navigator.onLine)refreshPrices()},12e4);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&navigator.onLine&&Date.now()-(LS.g('pricesAt')||0)>6e4)refreshPrices()});
+/* le menu ramène à la page générale (comme CTO / Crypto) */
+addEventListener('message',e=>{if(e.source===parent&&e.data&&e.data.hubHome){document.querySelectorAll('dialog[open]').forEach(d=>{try{d.close()}catch(_){}});tabSave('ov');if(S.tab!=='ov'){S.tab='ov';draw()}scrollTo(0,0)}});
 </script>
 </body>
 </html>
