@@ -107,6 +107,33 @@ dialog .hint{color:var(--mut);font-size:12px;margin:6px 0 0}
 body{background:radial-gradient(circle at 8% 8%,rgba(2,132,199,.10) 0%,transparent 45%),radial-gradient(circle at 92% 18%,rgba(124,58,237,.08) 0%,transparent 45%),radial-gradient(circle at 15% 92%,rgba(13,148,136,.08) 0%,transparent 45%),linear-gradient(180deg,#f8fafc 0%,#eef2f7 100%);background-attachment:fixed}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 @media(orientation:landscape) and (max-height:520px){nav{gap:0;padding-top:calc(4px + env(safe-area-inset-top));padding-bottom:calc(40px + env(safe-area-inset-bottom))}nav button{padding:4px 2px}nav button b{font-size:17px}}
+
+/* ===== En-tête « Mon patrimoine » : titre, date, brut / net ===== */
+.top{align-items:flex-end;gap:12px}
+.ttl .ey{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--acc)}
+.ttl .ey i{width:18px;height:3px;border-radius:2px;background:linear-gradient(90deg,#0284c7,#7c3aed)}
+.top h1{font-size:clamp(1.7rem,6.4vw,2.2rem);font-weight:800;letter-spacing:-.035em;line-height:1.1;margin:4px 0 9px;background:linear-gradient(120deg,#0f172a 30%,#0369a1 70%,#7c3aed);-webkit-background-clip:text;background-clip:text;color:transparent}
+.dtp{display:inline-flex;align-items:center;gap:8px;padding:5px 13px 5px 11px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--mut);box-shadow:0 1px 4px rgba(15,23,42,.05)}
+.dtp::before{content:"";flex:none;width:7px;height:7px;border-radius:50%;background:linear-gradient(135deg,#0284c7,#7c3aed);box-shadow:0 0 0 3px rgba(2,132,199,.15)}
+.dpk{flex-wrap:nowrap;gap:4px;padding:4px 4px 4px 12px;border-radius:14px;background:var(--card);border:1px solid var(--line);box-shadow:0 2px 8px rgba(15,23,42,.05)}
+.dpk label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.dpk input{border:0;background:transparent;padding:6px 4px;font-weight:600;min-width:0;width:128px}
+.dpk button{border:0;background:color-mix(in srgb,var(--acc) 12%,transparent);color:var(--acc);font-weight:700;padding:8px 12px;border-radius:10px;white-space:nowrap}
+@media(max-width:520px){.dpk{width:100%}.dpk input{flex:1}}
+.hero{position:relative;overflow:hidden;margin:16px 0;padding:18px 20px;border-radius:26px;background:radial-gradient(120% 140% at 100% 0%,rgba(168,85,247,.55) 0%,transparent 55%),radial-gradient(90% 120% at 0% 100%,rgba(14,165,233,.55) 0%,transparent 60%),linear-gradient(135deg,#0c4a8a 0%,#3730a3 55%,#5b21b6 100%);box-shadow:0 18px 40px -14px rgba(67,56,202,.55),inset 0 1px 0 rgba(255,255,255,.18)}
+.hero::before{content:"";position:absolute;right:-60px;top:-60px;width:200px;height:200px;border-radius:50%;border:1px solid rgba(255,255,255,.14);box-shadow:0 0 0 28px rgba(255,255,255,.04),0 0 0 56px rgba(255,255,255,.03);pointer-events:none}
+.hero>*{position:relative}
+.hh{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.hl{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.88}
+.hl i{width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.25)}
+.hero .sw{margin:0;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.hero .sw button.on{background:#fff;color:#3730a3;box-shadow:0 2px 8px rgba(15,23,42,.25)}
+.hero .n{font-size:clamp(2.4rem,10.5vw,3.4rem);font-weight:800;letter-spacing:-.04em;line-height:1.05;margin:16px 0 0;font-variant-numeric:tabular-nums;text-shadow:0 2px 14px rgba(15,23,42,.25)}
+.hf{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;margin-top:12px}
+.hero .tr{margin-top:0;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.2)}
+.hero .tr[hidden]{display:none}
+.hf small{font-size:12.5px;font-weight:600;opacity:.95;padding:4px 11px;border-radius:999px;background:rgba(0,0,0,.16)}
+.hf small:empty{display:none}
 </style>
 </head>
 <body>
@@ -114,8 +141,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 <button id="ntg" type="button" aria-label="Afficher / masquer le menu" title="Afficher / masquer le menu">‹</button>
 <div id="stage">
   <div id="home"><div class="w">
-    <div class="top"><div><h1>Mon patrimoine</h1><div class="sub" id="date"></div></div><div class="dpk"><label for="asof">📅 État au</label><input type="date" id="asof"><button id="asoft" type="button">Aujourd’hui</button></div></div>
-    <div class="hero"><div class="sw" id="sw"><button data-m="brut">Brut</button><button data-m="net">Net</button></div><div class="n" id="tot">–</div><div class="tr" id="trend" hidden></div><small id="totsub"></small></div>
+    <div class="top"><div class="ttl"><div class="ey"><i></i>Vue d’ensemble</div><h1>Mon patrimoine</h1><div class="dtp" id="date"></div></div><div class="dpk"><label for="asof">📅 État au</label><input type="date" id="asof"><button id="asoft" type="button">Aujourd’hui</button></div></div>
+    <div class="hero"><div class="hh"><span class="hl"><i></i><span id="hl">Patrimoine brut</span></span><div class="sw" id="sw"><button data-m="brut">Brut</button><button data-m="net">Net</button></div></div><div class="n" id="tot">–</div><div class="hf"><div class="tr" id="trend" hidden></div><small id="totsub"></small></div></div>
     <div class="cd" id="asb" hidden></div>
     <div class="cd" id="evo"></div>
     <div class="cd" id="rep"></div>
@@ -439,7 +466,7 @@ function stateAt(ao,A,D,cf,net_){
   const items=[['PEA','📈',pea],['CTO','🏦',cto],['Crypto','₿',cry],['Épargne salariale','🎁',EPV(D,ao,()=>Math.max(0,pl-rt))],['Comptes bancaires','🏧',sb],['Livrets','🐖',sl],['Immobilier','🏡',imm]];
   return{items,total:items.reduce((t,x)=>t+x[2],0)}}
 function renderHome(){
-  $('#date').textContent=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  {const ds_=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});$('#date').textContent=ds_.charAt(0).toUpperCase()+ds_.slice(1)}
   const A=accs(),ctos=A.filter(a=>a.type==='CTO'),AB=t=>A.find(a=>a.type===t),bk=a=>{const b=a&&brokerOf(a,A);return b?`<div class="m">🏛️ ${esc(b)}</div>`:''};
   const p=LS.g('hub_pea'),dm=depMois(),D=LS.g('depenses_v1')||{},ds=[...(D.salaires||[])].filter(s=>s.date).sort((x,y)=>x.date<y.date?1:-1)[0],
     de=epargne(D),di=crdPrets(D),cf=CF.v,cr=LS.g('hub_crypto');
@@ -450,7 +477,8 @@ function renderHome(){
     brut=fin+immoBrut,net=fin+immoNet,net_=cf.mode==='net';
   $('#tot').textContent=eur(net_?net:brut);
   document.querySelectorAll('#sw button').forEach(b=>b.classList.toggle('on',b.dataset.m===(net_?'net':'brut')));
-  $('#totsub').textContent='';
+  $('#hl').textContent=net_?'Patrimoine net':'Patrimoine brut';
+  $('#totsub').textContent=Math.abs(brut-net)>=1?(net_?'Brut : '+eur(brut):'Net : '+eur(net)):'';
   {const tg=(p?p.gain:0)+(ct?ct.gain:0)+(cr?cr.gain:0),ta=(p?p.apports||0:0)+(ct?ct.apports||0:0)+(cr?cr.apports||0:0),tp=ta>0?tg/ta*100:null,tr=$('#trend');
    if(tp==null||!isFinite(tp)){tr.hidden=true}else{const k=tg>=0?'up':'dn';tr.hidden=false;tr.className='tr '+k;tr.innerHTML='<i></i><b>'+(tg<0?'−':'+')+eur(Math.abs(tg))+' · '+(tg<0?'−':'+')+Math.abs(tp).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' %</b>'}}
   const cl=v=>v>0?'up':v<0?'dn':'';
