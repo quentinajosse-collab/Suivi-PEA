@@ -124,16 +124,19 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .hero::before,.hero::after{content:"";position:absolute;z-index:-1;border-radius:50%;filter:blur(18px);pointer-events:none}
 .hero::before{right:-70px;top:-90px;width:260px;height:260px;background:radial-gradient(closest-side,rgba(168,85,247,.30),rgba(236,72,153,.12) 60%,transparent 75%)}
 .hero::after{left:-80px;bottom:-110px;width:280px;height:240px;background:radial-gradient(closest-side,rgba(14,165,233,.28),rgba(20,184,166,.12) 60%,transparent 75%)}
-.hh{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.hero{text-align:center}
+.hh{display:flex;flex-direction:column;align-items:center;gap:12px}
+.hero .sw{display:inline-flex}
+.hero .n{margin-left:auto;margin-right:auto}
 .hl{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
 .hl i{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.22);animation:hlp 2.4s ease-in-out infinite}
 @keyframes hlp{50%{box-shadow:0 0 0 6px rgba(34,197,94,.08)}}
 .hero .sw{margin:0;background:#eef2f7;border:1px solid var(--line)}
 .hero .sw button{color:var(--mut)}
 .hero .sw button.on{background:linear-gradient(135deg,#0284c7,#7c3aed);color:#fff;box-shadow:0 4px 12px -2px rgba(79,70,229,.45)}
-.hero .n{font-size:clamp(2.6rem,12.5vw,3.9rem);font-weight:800;letter-spacing:-.045em;line-height:1.05;margin:14px 0 0;font-variant-numeric:tabular-nums;background:linear-gradient(115deg,#0f172a 0%,#1e40af 48%,#7c3aed 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;width:fit-content;max-width:100%}
+.hero .n{font-size:clamp(2.6rem,12.5vw,3.9rem);font-weight:800;letter-spacing:-.045em;line-height:1.05;margin:14px auto 0;font-variant-numeric:tabular-nums;background:linear-gradient(115deg,#0f172a 0%,#1e40af 48%,#7c3aed 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;width:fit-content;max-width:100%}
 .hero .n .cu{font-size:.52em;font-weight:700;margin-left:.14em;-webkit-text-fill-color:#94a3b8;color:#94a3b8}
-.hf{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;margin-top:12px}
+.hf{display:flex;align-items:center;justify-content:center;gap:8px 10px;flex-wrap:wrap;margin-top:12px}
 .hero .tr{margin-top:0;font-size:13px;color:var(--up);background:color-mix(in srgb,var(--up) 11%,#fff);border:1px solid color-mix(in srgb,var(--up) 26%,transparent);backdrop-filter:none}
 .hero .tr.dn{color:var(--dn);background:color-mix(in srgb,var(--dn) 10%,#fff);border-color:color-mix(in srgb,var(--dn) 26%,transparent)}
 .hero .tr.up b{color:var(--up)}.hero .tr.dn b{color:var(--dn)}
@@ -149,7 +152,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 <div id="stage">
   <div id="home"><div class="w">
     <div class="top"><div class="ttl"><div class="ey"><i></i>Vue d’ensemble</div><h1>Mon patrimoine</h1><div class="dtp" id="date"></div></div><div class="dpk"><label for="asof">📅 État au</label><input type="date" id="asof"><button id="asoft" type="button">Aujourd’hui</button></div></div>
-    <div class="hero"><div class="hh"><span class="hl"><i></i><span id="hl">Patrimoine brut</span></span><div class="sw" id="sw"><button data-m="brut">Brut</button><button data-m="net">Net</button></div></div><div class="n" id="tot">–</div><div class="hf"><div class="tr" id="trend" hidden></div><small id="totsub"></small></div></div>
+    <div class="hero"><div class="hh"><div class="sw" id="sw"><button data-m="brut">Brut</button><button data-m="net">Net</button></div><span class="hl"><i></i><span id="hl">Patrimoine brut</span></span></div><div class="n" id="tot">–</div><div class="hf"><div class="tr" id="trend" hidden></div><small id="totsub"></small></div></div>
     <div class="cd" id="asb" hidden></div>
     <div class="cd" id="evo"></div>
     <div class="cd" id="rep"></div>
@@ -486,7 +489,7 @@ function renderHome(){
   $('#tot').innerHTML=heroNum(net_?net:brut);
   document.querySelectorAll('#sw button').forEach(b=>b.classList.toggle('on',b.dataset.m===(net_?'net':'brut')));
   $('#hl').textContent=net_?'Patrimoine net':'Patrimoine brut';
-  $('#totsub').textContent=Math.abs(brut-net)>=1?(net_?'Brut : '+eur(brut):'Net : '+eur(net)):'';
+  $('#totsub').textContent='';
   {const tg=(p?p.gain:0)+(ct?ct.gain:0)+(cr?cr.gain:0),ta=(p?p.apports||0:0)+(ct?ct.apports||0:0)+(cr?cr.apports||0:0),tp=ta>0?tg/ta*100:null,tr=$('#trend');
    if(tp==null||!isFinite(tp)){tr.hidden=true}else{const k=tg>=0?'up':'dn';tr.hidden=false;tr.className='tr '+k;tr.innerHTML='<i></i><b>'+(tg<0?'−':'+')+eur(Math.abs(tg))+' · '+(tg<0?'−':'+')+Math.abs(tp).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' %</b>'}}
   const cl=v=>v>0?'up':v<0?'dn':'';
