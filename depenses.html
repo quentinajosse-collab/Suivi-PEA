@@ -289,6 +289,7 @@ th{color:var(--mute);font-weight:600;font-size:12px;text-transform:uppercase;let
 th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:inherit;max-width:52vw;overflow:hidden;text-overflow:ellipsis}
 td:first-child{background:var(--card)}
 tbody tr{cursor:pointer}
+tbody tr.z td{background:#e9eef5}th{background:color-mix(in srgb,var(--acc) 12%,#fff);color:#334155}thead th:first-child{background:color-mix(in srgb,var(--acc) 12%,#fff)}tbody tr.gh td{background:color-mix(in srgb,var(--acc) 7%,#fff);color:var(--acc);border-left:0}
 tbody tr:not(.gh):hover td{background:color-mix(in srgb,var(--acc) 8%,var(--card))}
 tr:last-child td{border-bottom:0}
 td small{display:block;color:var(--mute);font-size:11px}
@@ -605,7 +606,7 @@ function render0(){
   R.sort((a,b)=>{const x=key(a),y=key(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return-1;return(x<y?-1:x>y?1:0)*SORT.d});
   if(!R0.length&&!G.length){$('#tb').innerHTML=`<tr><td colspan="2" class="empty">Ta watchlist est vide. Ajoute une première valeur.</td></tr>`;return}
   if(Q&&!R.length){$('#tb').innerHTML=`<tr><td colspan="2" class="empty">Aucune valeur ne correspond à « ${esc($('#q').value.trim())} ».</td></tr>`;return}
-  const line=r=>`<tr data-tk="${esc(r.ticker)}"><td><div class="nm"><b>${esc(r.nom)}</b>${isDelayed(r.ticker)?'<span title="Cours différé de 15 min" style="color:var(--mute);font-size:10px">⏱</span>':''}<span class="alx">${alBadges(r.ticker)}</span></div></td><td>${priceCell(r)}</td></tr>`;
+  const line=(r,i)=>`<tr${i%2?' class="z"':''} data-tk="${esc(r.ticker)}"><td><div class="nm"><b>${esc(r.nom)}</b>${isDelayed(r.ticker)?'<span title="Cours différé de 15 min" style="color:var(--mute);font-size:10px">⏱</span>':''}<span class="alx">${alBadges(r.ticker)}</span></div></td><td>${priceCell(r)}</td></tr>`;
   if(VIEW!=='grp'){const f=r=>VIEW==='sec'?(secOf(r.ticker)||'Secteur inconnu'):zoneOf(r.ticker),K=[...new Set(R.map(f))].sort((a,b)=>a.localeCompare(b,'fr'));
     $('#tb').innerHTML=K.map(g=>{const L=R.filter(r=>f(r)===g),k=VIEW+':'+g,c=Q?false:!!COLL[k];return`<tr class="gh" data-g="${esc(k)}"><td colspan="2"><span class="gt">${c?'▸':'▾'}</span>${esc(g)} <small>· ${L.length}</small></td></tr>`+(c?'':L.map(line).join(''))}).join('');return}
   const names=[...allG(),...(R.some(r=>!(r.groupes||[]).length)?['']:[])],groups=names.map(g=>[g,R.filter(r=>g===''?!(r.groupes||[]).length:(r.groupes||[]).includes(g))]).filter(x=>!Q||x[1].length);
@@ -795,7 +796,7 @@ function anNoteAt(w,D,F,years,crypto,bm,cur){
   const a=Math.max(0,j-899),cut=x=>x.slice(a,j+1),d={t:cut(D.t),c:cut(D.c),hi:cut(D.hi),lo:cut(D.lo),v:cut(D.v),hl:D.hl};
   let b=null;if(bm){let k=bm.t.length-1;while(k>0&&bm.t[k]>D.t[j])k--;const s=Math.max(0,k-599);b={t:bm.t.slice(s,k+1),c:bm.c.slice(s,k+1),name:bm.name}}
   const N=anNote(d.t,d.c,F?anFinAt(F,years,w[0]):null,crypto,d,b);
-  return{t:w[0],c:w[1],note:N.total,fin:anHasFin(N)}}
+  return{t:w[0],c:w[1],note:N.total,fin:anHasFin(N),q:anQual(N),dd:anDd(d.c)}}
 function anNoteStats(pts){const L=[];for(let i=pts.length-1;i>=0;i-=4)L.push({note:pts[i].note,fut:i+52<=pts.length-1?pts[i+52].c/pts[i].c-1:null});
   const cat=(lb,f)=>{const R=L.filter(x=>x.fut!=null&&f(x.note));return{lb,n:R.length,avg:R.length?R.reduce((s,x)=>s+x.fut,0)/R.length:null,up:R.length?R.filter(x=>x.fut>0).length/R.length:null}};
   return[cat('fav',v=>v>=70),cat('neu',v=>v>=45&&v<70),cat('bad',v=>v<45)]}
@@ -933,6 +934,31 @@ function anNote(t,c,F,crypto,D,bm){
   const groups=[];P.forEach(x=>{let g=groups.find(y=>y.sh===x.sh);if(!g)groups.push(g={sh:x.sh,pts:0,max:0});g.pts+=x.pts;g.max+=x.max});
   return{parts:P,groups,total,conf,cap,stock}}
 /*AN-MATH-END*/
+/* ---------- Qualité (hors cours) et recul du cours : repérer les entreprises de qualité en difficulté ----------
+   Qualité = seuls les critères de l'entreprise (chiffre d'affaires, bénéfices, marges, rentabilité et dette) : elle ne dépend pas du cours.
+   Recul = écart du cours au plus haut des 252 dernières séances. Qualité en difficulté = qualité d'au moins 60 et recul de 20 % ou plus. */
+const QSH=['Revenus','Bénéfices','Marges','Solidité'],QMIN=60,DDMIN=-.2,OPC='color-mix(in srgb,var(--up) 22%,transparent)';
+let NZM=LS.g('wl_nzm')||'q';
+function anQual(N){if(!N||!N.stock)return null;const g=N.groups.filter(x=>QSH.includes(x.sh)),mx=g.reduce((s,x)=>s+x.max,0);if(mx<15)return null;
+  let q=g.reduce((s,x)=>s+x.pts,0)/mx*100;if(N.cap)q=Math.min(40,q);return q}
+function anDd(c){if(!c||!c.length)return null;const a=c.slice(-252),m=Math.max(...a);return m>0?c[c.length-1]/m-1:null}
+const QLB={diff:['Qualité élevée (60 et plus) et cours en recul de 20 % ou plus','up'],near:['Qualité élevée, cours proche de ses plus hauts','am'],low:['Qualité faible (moins de 45)','dn']};
+const QHOW='La qualité reprend uniquement les critères de l’entreprise (croissance du chiffre d’affaires et des bénéfices, marges, rentabilité et dette) avec les comptes connus à cette date : elle ne dépend pas du cours, contrairement à la note globale. Le recul est mesuré depuis le plus haut des 12 derniers mois. Les zones vertes marquent les périodes où la qualité était d’au moins 60 alors que le cours avait reculé de 20 % ou plus. Avant la première publication de comptes, la qualité n’est pas calculée.';
+const QLEG='<div class="sub2"><b style="color:var(--acc)">━ Cours (échelle de gauche)</b> &nbsp; <b style="color:var(--ink)">━ Qualité sur 100, hors cours (échelle de droite)</b> &nbsp; <b style="color:var(--up)">▮ Qualité en difficulté</b></div>';
+function anQualStats(pts){const L=[];for(let i=pts.length-1;i>=0;i-=4)L.push({q:pts[i].q,dd:pts[i].dd,fut:i+52<=pts.length-1?pts[i+52].c/pts[i].c-1:null});
+  const cat=(lb,f)=>{const R=L.filter(x=>x.fut!=null&&x.q!=null&&x.dd!=null&&f(x));return{lb,n:R.length,avg:R.length?R.reduce((s,x)=>s+x.fut,0)/R.length:null,up:R.length?R.filter(x=>x.fut>0).length/R.length:null}};
+  return[cat('diff',x=>x.q>=QMIN&&x.dd<=DDMIN),cat('near',x=>x.q>=QMIN&&x.dd>-.1),cat('low',x=>x.q<45)]}
+function anQualVerdict(r){const d=r[0],n=r[1];
+  if(d.n<8)return'Trop peu de relevés « qualité en difficulté » sur cette valeur pour conclure : la qualité a rarement été en recul de 20 % ou plus.';
+  if(n.n>=8)return d.avg>n.avg?'Sur cette valeur, acheter la qualité après un recul a plutôt mieux payé que l’acheter près de ses plus hauts.':'Sur cette valeur, acheter la qualité après un recul n’a pas mieux payé que l’acheter près de ses plus hauts.';
+  return d.avg>0?'Sur cette valeur, après un recul d’une entreprise de qualité, le cours était en moyenne plus haut un an plus tard.':'Sur cette valeur, après un recul d’une entreprise de qualité, le cours n’était pas plus haut un an plus tard.'}
+function nzOpp(V){const o=[];let a=null,pv=null;V.forEach(x=>{const on=x.q!=null&&x.q>=QMIN&&x.dd!=null&&x.dd<=DDMIN;if(on&&a==null)a=x.t;if(!on&&a!=null){o.push({a,b:pv,c:OPC});a=null}pv=x.t});if(a!=null)o.push({a,b:pv,c:OPC});return o}
+function nzHead(T,hasQ,qm,N,p,qn,dd){
+  const btn=hasQ?`<div class="zm" id="nzk"><button data-nm="q" class="${qm?'on':''}">Qualité et recul du cours</button><button data-nm="g" class="${qm?'':'on'}">Note globale</button></div>`:'';
+  if(!qm)return`<h3>${T}</h3>${btn}<div class="sub2">Aujourd’hui : <b class="${zcls(Math.round(N.total))}">${Math.round(N.total)} / 100</b> · cours <b>${fe(p)}</b></div>`;
+  const opp=qn!=null&&qn>=QMIN&&dd!=null&&dd<=DDMIN,ddt=dd==null?'–':sg0(dd*100),qs=qn==null?'–':`<b class="${zcls(Math.round(qn))}">${Math.round(qn)} / 100</b>`;
+  return`<h3>${T}</h3>${btn}<div class="sub2">Qualité (hors cours) : ${qs} · cours <b>${fe(p)}</b> · ${ddt} depuis son plus haut sur 1 an</div>`
+    +`<div class="sub2"><b class="${opp?'up':''}">${opp?'Qualité en difficulté : entreprise de qualité dont le cours a reculé, à étudier.':qn!=null&&qn>=QMIN?'Entreprise de qualité, mais le cours est proche de ses plus hauts : pas de prix d’entrée intéressant.':'Qualité insuffisante pour y voir une opportunité.'}</b></div>`}
 
 /* ---------- Données ---------- */
 const ANC={};let ANT=0,ANA=null,ANTAB='mm';
@@ -1084,6 +1110,7 @@ function svgChart(o){const Wd=Math.max(300,o.W||320),H=o.H||250,pl=o.S.some(s=>s
   const t0=Math.min(...S.map(s=>s.p[0][0])),t1=Math.max(...S.map(s=>s.p[s.p.length-1][0]));
   const X=t=>pl+(t-t0)/(t1-t0||1)*(Wd-pl-pr),Y=v=>pt+(hi-(o.log?Math.log(v):v))/(hi-lo)*(H-pt-pb),yb=H-pb;
   let g='';(o.zones||[]).forEach(z=>{g+=`<rect x="${pl}" width="${Wd-pl-pr}" y="${Y(z.b).toFixed(1)}" height="${Math.max(0,Y(z.a)-Y(z.b)).toFixed(1)}" fill="${z.c}"/>`});
+  (o.vz||[]).forEach(z=>{const x1=X(Math.max(z.a,t0)),x2=X(Math.min(z.b,t1));if(x2>=x1)g+=`<rect x="${x1.toFixed(1)}" y="${pt}" width="${Math.max(2,x2-x1).toFixed(1)}" height="${(yb-pt).toFixed(1)}" fill="${z.c}"/>`});
   (o.bands||[]).forEach(b=>{const y1=Y(b.b),y2=Y(b.a),x1=X(Math.max(b.t,t0));g+=`<rect x="${x1.toFixed(1)}" width="${Math.max(0,Wd-pr-x1).toFixed(1)}" y="${y1.toFixed(1)}" height="${Math.max(1.5,y2-y1).toFixed(1)}" fill="${b.c}"/>`});
   if(o.hist){const bw=(Wd-pl-pr)*.2;o.hist.forEach(b=>{if(b.f>0)g+=`<rect x="${pl}" y="${Y(b.hi).toFixed(1)}" width="${(b.f*bw).toFixed(1)}" height="${Math.max(1,Y(b.lo)-Y(b.hi)-1).toFixed(1)}" fill="var(--mute)" opacity=".22"/>`})}
   const labs=(o.hl||[]).filter(h=>h.l).map(h=>({...h,y:Y(h.v)})).sort((a,b)=>a.y-b.y);for(let k=1;k<labs.length;k++)if(labs[k].y-labs[k-1].y<15)labs[k].y=labs[k-1].y+15;
@@ -1298,35 +1325,39 @@ function nzSet(a,b){const{T0,T1}=NZC;NZ.a=a<=T0+864e5?null:a;NZ.b=b>=T1-864e5?nu
 function nzDraw(){const C=NZC,el=$('#nzch');if(!C||!el)return;const[a,b]=nzWin(),{T0,T1,pts}=C,V=pts.filter(x=>x.t>=a&&x.t<=b),end=b>=T1-864e5,last=pts[pts.length-1];
   /* partie sans comptes (technique seule) en gris, partie avec les comptes en couleur pleine */
   const iF=C.stock?pts.findIndex(x=>x.fin):0,tF=iF<0?Infinity:pts[iF].t,ser=f=>V.filter(f).map(x=>[x.t,x.note]),S=[{n:'Cours',p:V.map(x=>[x.t,x.c]),c:'var(--acc)',w:1.3,left:true,tf:fe}];
-  if(C.stock){S.push({n:'Note (technique seule)',p:ser(x=>x.t<=tF),c:'var(--mute)',w:1.4});S.push({n:'Note',p:ser(x=>x.t>=tF),c:'var(--ink)',w:2})}else S.push({n:'Note',p:ser(()=>true),c:'var(--ink)',w:1.7});
+  const qm=C.mode==='q';
+  if(qm)S.push({n:'Qualité (hors cours)',p:V.filter(x=>x.q!=null).map(x=>[x.t,x.q]),c:'var(--ink)',w:2});
+  else if(C.stock){S.push({n:'Note (technique seule)',p:ser(x=>x.t<=tF),c:'var(--mute)',w:1.4});S.push({n:'Note',p:ser(x=>x.t>=tF),c:'var(--ink)',w:2})}else S.push({n:'Note',p:ser(()=>true),c:'var(--ink)',w:1.7});
+  const lv=qm?last.q:last.note;
   for(const q of Object.keys(CH))if(q===C.id)delete CH[q];
-  const html=svgChart({W:C.W,H:250,lo:0,hi:100,ticks:[0,45,70,100],fy:v=>nf(0).format(v),tf:v=>nf(0).format(v)+' / 100',fyl:v=>nf(v<10?2:0).format(v),
-    zones:[{a:0,b:45,c:'color-mix(in srgb,var(--dn) 10%,transparent)'},{a:45,b:70,c:'color-mix(in srgb,#b45309 9%,transparent)'},{a:70,b:100,c:'color-mix(in srgb,var(--up) 10%,transparent)'}],
-    S,marks:end?[{t:last.t,v:last.note,c:'var(--ink)'}]:[],hl:end?[{v:last.note,c:'var(--mute)',l:nf(0).format(Math.round(last.note))}]:[]});
+  const hz=qm?70-10:70,html=svgChart({W:C.W,H:250,lo:0,hi:100,ticks:[0,45,hz,100],fy:v=>nf(0).format(v),tf:v=>nf(0).format(v)+' / 100',fyl:v=>nf(v<10?2:0).format(v),
+    zones:[{a:0,b:45,c:'color-mix(in srgb,var(--dn) 10%,transparent)'},{a:45,b:hz,c:'color-mix(in srgb,#b45309 9%,transparent)'},{a:hz,b:100,c:'color-mix(in srgb,var(--up) 10%,transparent)'}],
+    vz:qm?nzOpp(V):[],
+    S,marks:end&&lv!=null?[{t:last.t,v:lv,c:'var(--ink)'}]:[],hl:end&&lv!=null?[{v:lv,c:'var(--mute)',l:nf(0).format(Math.round(lv))}]:[]});
   const m=html.match(/data-ch="(c\d+)"/);C.id=m?m[1]:null;el.innerHTML=html||'<div class="sub">Pas assez de points sur cette période : élargis-la.</div>';
   $('#nzr').textContent=dFr(a)+' → '+dFr(b);
   const x=t=>(t-T0)/(T1-T0)*100,w=$('#nvw');w.style.left=x(a)+'%';w.style.width=(x(b)-x(a))+'%';$('#nvl').style.width=x(a)+'%';$('#nvr').style.width=(100-x(b))+'%';
   document.querySelectorAll('#nzm button').forEach(z=>{const y=+z.dataset.zy;z.classList.toggle('on',y?end&&Math.abs((b-a)-y*YRMS)<864e5:NZ.a==null&&NZ.b==null)})}
-function nzShow(A,box,T){const R=A.B.nhv,pts=R.pts.slice(),p=A.p,N=A.NS,Wd=anW();
+function nzShow(A,box,T){const R=A.B.nhv,pts=R.pts.slice(),p=A.p,N=A.NS,Wd=anW(),qn=anQual(N),ddn=A.Dl&&A.Dl.c&&A.Dl.c.length?anDd(A.Dl.c):null,hasQ=!!R.stock&&R.pts.some(x=>x.q!=null),mode=hasQ&&NZM!=='g'?'q':'g';
   /* dernier point = exactement la note du cercle */
-  if(pts.length){const l=pts[pts.length-1];pts[pts.length-1]={t:l.t,c:p,note:N.total,fin:anHasFin(N)}}
-  const dp=(R.dense||R.pts).slice();if(dp.length){const l=dp[dp.length-1];dp[dp.length-1]={t:l.t,c:p,note:N.total,fin:anHasFin(N)}}
+  if(pts.length){const l=pts[pts.length-1];pts[pts.length-1]={t:l.t,c:p,note:N.total,fin:anHasFin(N),q:qn,dd:ddn}}
+  const dp=(R.dense||R.pts).slice();if(dp.length){const l=dp[dp.length-1];dp[dp.length-1]={t:l.t,c:p,note:N.total,fin:anHasFin(N),q:qn,dd:ddn}}
   if(pts.length<5){box.innerHTML=`<h3>${T}</h3><div class="sub">Historique trop court (il faut plus d’un an de cours).</div>`;return}
-  const T0=pts[0].t,T1=pts[pts.length-1].t,yrs=(T1-T0)/YRMS;if(NZ.tk!==A.tk)NZ={tk:A.tk,a:null,b:null};NZC={pts:dp,T0,T1,W:Wd,stock:R.stock,id:null};
+  const T0=pts[0].t,T1=pts[pts.length-1].t,yrs=(T1-T0)/YRMS;if(NZ.tk!==A.tk)NZ={tk:A.tk,a:null,b:null};NZC={pts:dp,T0,T1,W:Wd,stock:R.stock,id:null,mode};
   const lc=pts.map(x=>Math.log(x.c)),mn=Math.min(...lc),mx=Math.max(...lc),mini=pts.map((x,i)=>(i?'L':'M')+((x.t-T0)/(T1-T0||1)*1000).toFixed(1)+' '+(37-(lc[i]-mn)/(mx-mn||1)*34).toFixed(1)).join('');
-  const rows=anNoteStats(pts),lb={fav:['Favorable (70 et plus)','up'],neu:['Neutre (45 à 69)','am'],bad:['Peu favorable (moins de 45)','dn']},
-    verdict=rows[0].n<10||rows[2].n<10?'Trop peu de relevés en zone favorable ou peu favorable pour dire si la note a été utile sur cette valeur.':(rows[0].avg>rows[2].avg?'Sur cette valeur, la note a plutôt été utile : le cours montait davantage après une note favorable.':'Sur cette valeur, la note n’a pas été utile : le cours ne montait pas davantage après une note favorable.'),
+  const qm=mode==='q',rows=qm?anQualStats(pts):anNoteStats(pts),lb=qm?QLB:{fav:['Favorable (70 et plus)','up'],neu:['Neutre (45 à 69)','am'],bad:['Peu favorable (moins de 45)','dn']},
+    verdict=qm?anQualVerdict(rows):rows[0].n<10||rows[2].n<10?'Trop peu de relevés en zone favorable ou peu favorable pour dire si la note a été utile sur cette valeur.':(rows[0].avg>rows[2].avg?'Sur cette valeur, la note a plutôt été utile : le cours montait davantage après une note favorable.':'Sur cette valeur, la note n’a pas été utile : le cours ne montait pas davantage après une note favorable.'),
     f1=R.stock&&pts.find(x=>x.fin);
-  const how=!R.stock?'Chaque point reprend le même calcul que la note du cercle (tendance et point d’entrée), avec les seuls cours connus à cette date.'
+  const how=qm?QHOW:!R.stock?'Chaque point reprend le même calcul que la note du cercle (tendance et point d’entrée), avec les seuls cours connus à cette date.'
     :(f1?`Chaque point reprend le calcul de la note du cercle avec les données connues à cette date. Les comptes de l’entreprise comptent à partir de ${mY(f1.t)} ; avant (courbe grise), seuls la tendance et le point d’entrée sont notés.`:'Les comptes passés de l’entreprise sont indisponibles : seuls la tendance et le point d’entrée sont notés dans le passé (courbe grise).')
       +' Le PER prévisionnel et l’objectif des analystes n’ont pas d’historique : ils ne comptent que dans le dernier point, qui peut donc faire un saut.'
       +(f1&&!R.cash?' La trésorerie passée n’est pas fournie : la valeur DCF est absente du passé et la dette est comptée sans la déduire (redéploie la dernière version du script Google pour corriger).':'');
-  box.innerHTML=`<h3>${T}</h3><div class="sub2">Aujourd’hui : <b class="${zcls(Math.round(N.total))}">${Math.round(N.total)} / 100</b> · cours <b>${fe(p)}</b></div>`
+  box.innerHTML=nzHead(T,hasQ,qm,N,p,qn,ddn)
     +'<div class="zm" id="nzm">'+[[1/12,'1 mois'],[.5,'6 mois'],[1,'1 an'],[3,'3 ans'],[5,'5 ans'],[10,'10 ans']].filter(([y])=>y<yrs-.3).map(([y,l])=>`<button data-zy="${y}">${l}</button>`).join('')+'<button data-zy="0">Tout</button></div>'
     +'<div class="sub2" id="nzr" style="margin:6px 0 4px"></div><div id="nzch"></div>'
     +`<div class="nv" id="nv" aria-label="Période affichée"><svg viewBox="0 0 1000 40" preserveAspectRatio="none"><path d="${mini}" fill="none" stroke="var(--acc)" stroke-width="1.2" vector-effect="non-scaling-stroke"/></svg><div class="nvs" id="nvl" style="left:0"></div><div class="nvs" id="nvr" style="right:0"></div><div class="nvw" id="nvw"><i data-h="a"></i><i data-h="b"></i></div></div>`
     +'<div class="sub2">Fais glisser le cadre pour te déplacer, ou ses poignées pour élargir et resserrer la période.</div>'
-    +`<div class="sub2"><b style="color:var(--acc)">━ Cours (échelle de gauche)</b> &nbsp; <b style="color:var(--ink)">━ Note sur 100 (échelle de droite)</b>${R.stock?' &nbsp; <b>━ Technique seule</b>':''}</div><p style="font-weight:700;margin:10px 0">${verdict}</p><div class="tw2"><table class="nt"><thead><tr><th>Quand la note était…</th><th>Relevés</th><th>Cours un an plus tard (moyenne)</th><th>En hausse un an plus tard</th></tr></thead><tbody>`
+    +`${qm?QLEG:''}<div class="sub2" style="${qm?'display:none':''}"><b style="color:var(--acc)">━ Cours (échelle de gauche)</b> &nbsp; <b style="color:var(--ink)">━ Note sur 100 (échelle de droite)</b>${R.stock?' &nbsp; <b>━ Technique seule</b>':''}</div><p style="font-weight:700;margin:10px 0">${verdict}</p><div class="tw2"><table class="nt"><thead><tr><th>${qm?'Situation à ce moment-là':'Quand la note était…'}</th><th>Relevés</th><th>Cours un an plus tard (moyenne)</th><th>En hausse un an plus tard</th></tr></thead><tbody>`
     +rows.map(r=>`<tr><td class="${lb[r.lb][1]}">${lb[r.lb][0]}</td><td>${r.n}</td><td>${r.avg==null?'–':sg0(r.avg*100)}</td><td>${r.up==null?'–':nf(0).format(r.up*100)+' % des fois'}</td></tr>`).join('')
     +`</tbody></table></div><div class="sub" style="margin-top:8px">${how} Un point par semaine, 20 ans au maximum ; le tableau prend un relevé toutes les 4 semaines. Les périodes d’un an se chevauchent et le passé ne garantit rien.</div>`;
   nzDraw()}
@@ -1338,7 +1369,8 @@ document.addEventListener('pointermove',e=>{if(!NZD||e.pointerId!==NZD.id||!NZC)
   if(h==='a')a=Math.max(T0,Math.min(b-NZMIN,a+d));else if(h==='b')b=Math.min(T1,Math.max(a+NZMIN,b+d));else{const w=b-a;a=Math.max(T0,Math.min(T1-w,a+d));b=a+w}
   nzSet(a,b)});
 ['pointerup','pointercancel'].forEach(n=>document.addEventListener(n,()=>{NZD=null}));
-document.addEventListener('click',e=>{const zb=e.target.closest('#nzm button');if(zb&&NZC){const y=+zb.dataset.zy,{T0,T1}=NZC;nzSet(y?Math.max(T0,T1-y*YRMS):T0,T1);return}
+document.addEventListener('click',e=>{const nk=e.target.closest('#nzk button');if(nk&&ANA){NZM=nk.dataset.nm;LS.s('wl_nzm',NZM);const bx=document.querySelector('#ana [data-st="note"]');if(bx)nzShow(ANA,bx,'Évolution de la note sur 100');return}
+  const zb=e.target.closest('#nzm button');if(zb&&NZC){const y=+zb.dataset.zy,{T0,T1}=NZC;nzSet(y?Math.max(T0,T1-y*YRMS):T0,T1);return}
   const b=e.target.closest('#atabs button');if(b){ANTAB=b.dataset.k;renderTab();return}
   const pb=e.target.closest('#apers button');if(pb&&CUR&&ANC[CUR.tk]){ANP=pb.dataset.p;LS.s('wl_anp',ANP);const dl=$('#cdlg'),st=dl.scrollTop;ANA=anCompute(ANC[CUR.tk],ANP);renderAna();dl.scrollTop=st}});
 function setMode(m){const d=$('#cdlg');d.classList.toggle('mA',m==='a');d.classList.toggle('mF',m==='f');document.querySelectorAll('#mode button').forEach(x=>x.classList.toggle('on',x.dataset.m===m));if(m==='a')loadAnalysis();else if(m==='f')loadFond();else if(CUR&&CUR.R)draw()}
@@ -1571,9 +1603,12 @@ function secNote(tk,F){if(F&&(F.sector||F.qt==='ETF'||F.qt==='MUTUALFUND')){cons
 const SC=LS.g('wl_sc7')||{};let RKC=LS.g('wl_rkc')||'PEA',RKB=false,RKD=0,RKT=0;
 function SCget(tk){try{return SC[tk]?SC[tk][0]:null}catch(e){return null}}
 const rkCat=tk=>isCrypto(tk)?'Crypto':/^\^/.test(tk)?'':isUS(tk)?'US':'PEA';
-const rkOk=tk=>SC[tk]&&Date.now()-SC[tk][1]<864e5; /* une note est refaite au plus une fois par jour */
+const rkOk=tk=>SC[tk]&&SC[tk].length>=4&&Date.now()-SC[tk][1]<864e5; /* une note est refaite au plus une fois par jour */
 let RKA=false,RKS=LS.g('wl_rks')||'note';
 const rkLine=x=>`<div class="rr" data-tk="${esc(x.tk)}"><span>${esc(x.nom)}</span><b class="${x.s==null?'':zcls(x.s)}">${x.s??'–'}</b></div>`;
+const rkQRows=cat=>WF().filter(x=>rkCat(x.ticker)===cat&&SC[x.ticker]&&SC[x.ticker][2]!=null&&SC[x.ticker][2]>=QMIN&&SC[x.ticker][3]!=null&&SC[x.ticker][3]<=DDMIN).map(x=>({tk:x.ticker,nom:x.nom,q:SC[x.ticker][2],dd:SC[x.ticker][3]})).sort((a,b)=>b.q-a.q);
+function rkQBlock(cat){const L=rkQRows(cat),ok=WF().some(x=>rkCat(x.ticker)===cat&&SC[x.ticker]&&SC[x.ticker][2]!=null);
+  return`<h4 style="margin:12px 0 4px">Qualité en difficulté</h4>`+(L.length?L.map(x=>`<div class="rr" data-tk="${esc(x.tk)}"><span>${esc(x.nom)}</span><b class="up" title="Qualité sur 100 · recul depuis le plus haut sur 1 an">${x.q} · ${nf(0).format(x.dd*100)} %</b></div>`).join(''):`<div class="sub2">${ok?'Aucune valeur de qualité (60 et plus) en recul de 20 % ou plus.':RKB?'Analyse en cours…':'Calcul au prochain passage.'}</div>`)}
 function rkAll(cat){const L=WF().filter(x=>rkCat(x.ticker)===cat).map(x=>({tk:x.ticker,nom:x.nom,s:SC[x.ticker]&&SC[x.ticker][0]!=null?SC[x.ticker][0]:null})).sort((a,b)=>(b.s??-1)-(a.s??-1));
   if(!L.length)return'<div class="sub2">Aucune valeur dans cette catégorie.</div>';
   if(RKS!=='sec')return L.map(rkLine).join('');
@@ -1588,7 +1623,7 @@ function rkRender(){rkHead();wSect('rk',rkRender1)}
 function rkRender1(){const box=BX.cur||$('#rk');if(!box)return;if(!W.length){box.innerHTML='';return}
   if(BX.cur&&!WF().some(x=>rkCat(x.ticker)===RKC)){box.innerHTML='';return} /* section sans valeur dans cette catégorie : masquée */
   const L=WF().filter(x=>rkCat(x.ticker)===RKC&&SC[x.ticker]&&SC[x.ticker][0]!=null).map(x=>({tk:x.ticker,nom:x.nom,s:SC[x.ticker][0]})).sort((a,b)=>b.s-a.s),top=L.slice(0,5),low=L.slice(Math.max(5,L.length-5)).reverse();
-  box.innerHTML=`<div class="rkb">`+(RKA?rkAll(RKC):L.length?`<div class="rkg"><div><h4>Indicateur le plus élevé</h4>${top.map(rkLine).join('')}</div><div><h4>Indicateur le plus bas</h4>${low.length?low.map(rkLine).join(''):'<div class="sub2">–</div>'}</div></div>`:`<div class="sub2">${RKB?'Analyse en cours…':'Aucune note disponible pour cette catégorie.'}</div>`)+`</div>`}
+  box.innerHTML=`<div class="rkb">`+(RKA?rkAll(RKC):L.length?`<div class="rkg"><div><h4>Indicateur le plus élevé</h4>${top.map(rkLine).join('')}</div><div><h4>Indicateur le plus bas</h4>${low.length?low.map(rkLine).join(''):'<div class="sub2">–</div>'}</div></div>`:`<div class="sub2">${RKB?'Analyse en cours…':'Aucune note disponible pour cette catégorie.'}</div>`)+rkQBlock(RKC)+`</div>`}
 document.addEventListener('click',e=>{if(e.target.closest('#rkh .rkall')){RKA=!RKA;rkRender();return}const s=e.target.closest('#rkh [data-s]');if(s){RKS=s.dataset.s;LS.s('wl_rks',RKS);rkRender();return}const b=e.target.closest('#rkh .rkc button[data-c]');if(b){RKC=b.dataset.c;LS.s('wl_rkc',RKC);rkRender();return}const r=e.target.closest('#rk .rr');if(r)openChart(r.dataset.tk)});
 document.addEventListener('toggle',e=>{if(e.target.closest&&e.target.closest('#rk'))LS.s('wl_rko',e.target.open?1:0)},true);
 const bgSleep=ms=>new Promise(r=>setTimeout(r,ms)),bgWait=async()=>{while(document.hidden||($('#cdlg')&&$('#cdlg').open))await bgSleep(2000)};
@@ -1598,8 +1633,8 @@ async function secRun(){if(!URL_())return;const L=W.filter(x=>rkCat(x.ticker)&&r
 async function rkRun(){secRun();if(RKB||!URL_()||!W.length)return;const hOk=tk=>HC[tk]&&Date.now()-HC[tk]<72e6,today=dstr(new Date()),todo=W.filter(x=>rkCat(x.ticker)&&(!rkOk(x.ticker)||!hOk(x.ticker)||!ALS[x.ticker]||ALS[x.ticker].d!==today)).map(x=>x.ticker);if(!todo.length){rkRender();return}
   RKB=true;RKD=0;RKT=todo.length;let sec=false;rkRender();
   const wk=async()=>{while(todo.length){await bgWait();const tk=todo.shift();
-    try{let B=await anBase(tk,!hOk(tk));ANC[tk]=B;if(secNote(tk,B.F))sec=true;SC[tk]=[Math.round(anNoteOf(B).total),Date.now()];ALS[tk]=alData(B)}
-    catch(e){SC[tk]=[null,Date.now()-864e5+108e5]}
+    try{let B=await anBase(tk,!hOk(tk));ANC[tk]=B;if(secNote(tk,B.F))sec=true;{const N0=anNoteOf(B),q0=anQual(N0),Dl0=anLive(B.H.D,tk),d0=Dl0&&Dl0.c&&Dl0.c.length?anDd(Dl0.c):null;SC[tk]=[Math.round(N0.total),Date.now(),q0==null?null:Math.round(q0),d0==null?null:Math.round(d0*1000)/1000]};ALS[tk]=alData(B)}
+    catch(e){SC[tk]=[null,Date.now()-864e5+108e5,null,null]}
     RKD++;if(RKD%4===0){LS.s('wl_sc7',SC);LS.s('wl_al',ALS)}rkRender();patch();await bgSleep(600)}};
   await wk();LS.s('wl_sc7',SC);LS.s('wl_al',ALS);RKB=false;ALSIG=null;alRender();rkRender();if(sec)render()}
 setTimeout(rkRun,6000);setInterval(()=>{if(!document.hidden)rkRun()},18e5);
@@ -1867,10 +1902,15 @@ if(new URLSearchParams(location.search).get("m")==="watchlist"){const src=docume
  <label>Apport personnel versé (€)</label><input id="bApp" type="number" step="1" min="0" inputmode="decimal" placeholder="0">
  <label>Date d'acquisition (acte de vente)</label><input id="bDate" type="date">
  <label>Prix d'acquisition du bien, hors frais (€)</label><input id="bPrix" type="number" step="1" min="0" inputmode="decimal" placeholder="Optionnel">
- <label>Frais de notaire et d'acquisition (€)</label><input id="bFrais" type="number" step="1" min="0" inputmode="decimal" placeholder="Optionnel (utilisé avec le prix d'acquisition)">
+ <label>Frais de notaire et d'acquisition (% du prix d'acquisition)</label><input id="bFrais" type="number" step="any" min="0" max="100" inputmode="decimal" placeholder="Ex. 7,5">
+ <div class="d" id="bFraisE" style="margin-top:4px"></div>
  <div id="bLocW"><label>Loyers perçus par mois, 100 % (€) · facultatif</label><input id="bLoy" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0">
  <label>Charges mensuelles (copropriété non récupérable, assurance PNO, gestion…) (€) · facultatif</label><input id="bChg" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0">
- <label>Taxe foncière annuelle (€) · facultatif</label><input id="bTax" type="number" step="1" min="0" inputmode="decimal" placeholder="0"></div>
+ <label>Taxe foncière annuelle (€) · facultatif</label><input id="bTax" type="number" step="1" min="0" inputmode="decimal" placeholder="0">
+ <label>Fiscalité des loyers</label><select id="bReg"><option value="">— Non renseignée —</option><option value="mf">Location nue · micro-foncier</option><option value="rf">Location nue · réel</option><option value="mb">Meublé (LMNP) · micro-BIC longue durée</option><option value="lr">Meublé (LMNP) · réel</option><option value="tx">Autre (SCI…) · taux saisi</option></select>
+ <div id="bTmiW"><label>Tranche marginale d'imposition</label><select id="bTmi"><option value="0">0 %</option><option value="11">11 %</option><option value="30">30 %</option><option value="41">41 %</option><option value="45">45 %</option></select></div>
+ <div id="bAmoW"><label>Amortissement annuel déductible (ta part, €)</label><input id="bAmo" type="number" step="1" min="0" inputmode="decimal" placeholder="0"></div>
+ <div id="bTxW"><label>Taux d'imposition sur le résultat (%)</label><input id="bTxF" type="number" step="0.1" min="0" max="100" inputmode="decimal" placeholder="0"></div></div>
  <div class="sh" style="margin-top:12px">🏦 Crédits associés</div><div id="bCreds"></div>
  <button type="button" class="sec" id="bNewP" style="width:100%;margin-top:8px">➕ Créer un nouveau crédit pour ce bien</button>
  <div class="row" style="margin-top:14px"><button type="button" class="sec" id="bCancel" style="flex:1">Annuler</button><button type="submit" style="flex:2">Enregistrer</button></div>
@@ -1911,7 +1951,7 @@ const PAL=["#0284c7","#7c3aed","#0d9488","#f97316","#dc2626","#ca8a04","#db2777"
 const SEC={depenses:["Depenses","Depense"],recurrentes:["Recurrentes","Recurrente"],salaires:["Salaires","Salaire"],prets:["Prets","Pret"],interessement:["Interessements","Interessement"],groupes:["Groupes","Groupe"]};
 const NUM=new Set(["montant","net","brut","impot","capital","taux","duree","assurance","premiere_reelle"]);
 const VER="26.8-c",KEY="depenses_v1",FKEY="depenses_fold";
-const MOD=new URLSearchParams(location.search).get("m")||"",MODT={dep:["home","ana","rec"],immo:["cred"],epargne:["ov","pos","cla","int","ehs"],livrets:["liv","hst","lvi"],salaire:["sal","tax","simsal"],sante:["sante"]},TKEY="depenses_tab"+(MOD?"_"+MOD:""),TIDS=MODT[MOD]||["home","ana","rec","cred","sal","tax","simsal","int","ov","pos","cla","ehs","cpt","ret","sante","data"];
+const MOD=new URLSearchParams(location.search).get("m")||"",MODT={dep:["home","ana","rec"],immo:["cred","simbien"],epargne:["ov","pos","cla","int","ehs"],livrets:["liv","hst","lvi"],salaire:["sal","tax","simsal"],sante:["sante"]},TKEY="depenses_tab"+(MOD?"_"+MOD:""),TIDS=MODT[MOD]||["home","ana","rec","cred","simbien","sal","tax","simsal","int","ov","pos","cla","ehs","cpt","ret","sante","data"];
 let D=load(),tab=loadTab(),per="m:"+TODAY().slice(0,7),gran="jour",q="",sens="Dépense";
 let FOLD=(()=>{try{return JSON.parse(localStorage.getItem(FKEY))||{}}catch(e){return{}}})();
 function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.depenses)return r}catch(e){}return{version:1,depenses:[],recurrentes:[],salaires:[],prets:[]}}
@@ -2301,14 +2341,23 @@ function imOv(label,val,gain,base,crd,kv){
  return`<div class="ov2-top"><div><span class="l">${label}</span><span class="v big">${val>0?eur(val):"N/A"}</span></div>
  ${gain!=null&&base>0?`<div class="ov2-chip${gain<0?" r":""}"><span class="v">${imSg(gain,eur)}</span><span class="v">${imSg(gain/base*100,pcxI)}</span></div><span class="l" style="margin-top:5px">Plus-value estimée</span>`:""}
  ${val>0?imSplit([[val-crd,"#0284c7"],[Math.min(crd,val),"#dc2626"]]):""}${imKv(kv)}</div>`}
+/* Fiscalité annuelle estimée des loyers. PS 2026 : 17,2 % en location nue, 18,6 % en meublé non professionnel.
+   la : loyers annuels ; ca : charges + taxe foncière (ta part). Au réel, on déduit aussi les intérêts et l'assurance des crédits de l'année. */
+const PS_NU=17.2,PS_LMNP=18.6;
+function fiscBien(b,L,la,ca){const r=b.regime;if(!r||!(la>0))return null;
+ const y=TODAY().slice(0,4),fin=L.reduce((t,x)=>{const a=x.S.filter(z=>z.d.slice(0,4)===y);return t+sum(a,"it")+a.length*(x.as||0)},0),tmi=b.tmi!=null?+b.tmi:30,reel=Math.max(0,la-ca-fin);
+ const base=r==="mf"?la*.7:r==="mb"?Math.max(0,la-Math.max(305,la*.5)):r==="lr"?Math.max(0,reel-(+b.amort||0)):reel,
+  taux=r==="tx"?+b.taux_fisc||0:tmi+(r==="mb"||r==="lr"?PS_LMNP:PS_NU);
+ return{base,taux,impot:base*taux/100,nom:{mf:"Micro-foncier",rf:"Foncier réel",mb:"LMNP micro-BIC",lr:"LMNP réel",tx:"Taux saisi"}[r]||""}}
 function vBien(b,L,bi,extra){
  const st=bienStats(b,L),{k,full,val,app,cap0,pc,crd,mens}=st,part=bPart(b);
  const loy=(+b.loyer||0)*k,chg=(+b.charges||0)*k,tax=(+b.taxe||0)*k,la=loy*12,ca=chg*12+tax,net=la-ca,cf=loy-chg-tax/12-mens;
+ const fx=fiscBien(b,L,la,ca);
  const title="🏡 Vue d'ensemble · "+esc(bNom(b))+(b.nom&&b.type?" · "+esc(b.type):"")+(part<100?" · "+pcxI(part):"");
- const kLoc=(loy>0||chg>0||tax>0)?`<h4>💶 Rentabilité locative${part<100?" (ma part)":""}</h4><div class="ov2-rows c2">${imRow("Loyers par an",eur(la))}${imRow("Charges par an",eur(ca))}${imRow("Revenu net avant crédit",eur(net),null,net<0?"r":"g")}${imRow("Cash-flow mensuel",eur(cf),null,cf<0?"r":"g")}${val>0?imRow("Rendement brut",pcxI(la/val*100))+imRow("Rendement net",pcxI(net/val*100)):""}${mens>0?imRow("Mensualités de crédit",eur(mens)):""}</div>`:"";
+ const kLoc=(loy>0||chg>0||tax>0)?`<h4>💶 Rentabilité locative${part<100?" (ma part)":""}</h4><div class="ov2-rows c2">${imRow("Loyers par an",eur(la))}${imRow("Charges par an",eur(ca))}${imRow("Revenu net avant crédit",eur(net),null,net<0?"r":"g")}${imRow("Cash-flow mensuel",eur(cf),null,cf<0?"r":"g")}${mens>0?imRow("Mensualités de crédit",eur(mens)):""}</div><h4>🧾 Du brut au net</h4><div class="ov2-rows c2">${val>0?imRow("Rendement brut",pcxI(la/val*100))+imRow("Net de charges",pcxI(net/val*100)):""}${fx?imRow("Fiscalité par an",eur(fx.impot),null,"r")+imRow("Régime",fx.nom+" · "+pcxI(fx.taux))+(val>0?imRow("Rendement net d'impôts",pcxI((net-fx.impot)/val*100),null,net<fx.impot?"r":"g"):"")+imRow("Cash-flow mensuel net d'impôts",eur(cf-fx.impot/12),null,cf<fx.impot/12?"r":"g"):""}</div>${fx?`<div class="d" style="margin:6px 14px 10px;white-space:normal">Estimation sur une année de loyers actuels, base imposable ${eur(fx.base)}. Hors déficit foncier, CSG déductible et plus-value à la revente.</div>`:`<div class="d" style="margin:6px 14px 10px;white-space:normal">Choisis la « Fiscalité des loyers » dans ✏️ Modifier le bien pour obtenir le rendement net d'impôts.</div>`}`:"";
  return imEx("im-bien-"+b.id,title,`<div class="ov2">
  ${imOv(part<100?"Valeur estimée (ma part "+pcxI(part)+")":"Valeur estimée",val,val>0?val-(app+cap0):null,app+cap0,crd,[["Valeur − restant dû",val>0?eur(val-crd):"N/A","#0284c7"],["Apport",eur(app)],["Restant dû",eur(crd),"#dc2626"]])}
- <h4>📈 Patrimoine</h4><div class="ov2-rows c2">${imRow("Capital déjà remboursé",eur(pc))}${imRow("Patrimoine immo net",eur(app+pc))}${part<100&&full>0?imRow("Valeur du bien (100 %)",eur(full)):""}</div>
+ <h4>📈 Patrimoine</h4><div class="ov2-rows c2">${imRow("Capital déjà remboursé",eur(pc))}${imRow("Patrimoine immo net",eur(app+pc))}${part<100&&full>0?imRow("Valeur du bien (100 %)",eur(full)):""}${+b.frais>0?imRow("Frais de notaire",eur(+b.frais),fraisPct(b)!=null?pcxI(fraisPct(b)):null):""}</div>
  ${kLoc}</div>
  ${extra||""}
  <button type="button" class="sec" id="bEdBien" data-bi="${bi}" style="width:100%">✏️ Modifier le bien${L.length?"":" · associer des crédits"}</button>`)}
@@ -2572,13 +2621,15 @@ function irCalc(net,parts,B,ded){const ab=ded===false?0:Math.min(Math.max(net*.1
  return{rev,ir,tmi,taux:net>0?ir/net:0}}
 function vTax(){
  const F=D.fisc||{},parts=F.parts>0?F.parts:1,ratio=F.ratio>0?F.ratio:1.03,B=BAR[F.bar]||BAR["2025"],ded=F.ded!==false,cy=TODAY().slice(0,4),
- ca=Math.round(taxEst(cy,1).proj),
+ auto=Math.round(taxEst(cy,1).proj),man=F.net>0?F.net:0,ca=man>0?Math.round(man):auto,
  R=irCalc(ca*ratio,parts,B,ded),taux=ca>0?R.ir/ca:0,mb=ca/12,mn=(ca-R.ir)/12;
- return`${card("t-set","Simulateur d'impôts",`<div class="kpis" style="margin:0 0 8px"><div class="kpi wide" style="--c:var(--bleu)"><span>Net avant impôts estimé en ${cy} (versements de l'année étendus sur 12 mois)</span><b>${ca>0?eur(ca):"—"}</b></div></div>
+ return`${card("t-set","Simulateur d'impôts",`<div class="kpis" style="margin:0 0 8px"><div class="kpi wide" style="--c:var(--bleu)"><span>Net avant impôts estimé automatiquement en ${cy} (Suivi Salaire)</span><b>${auto>0?eur(auto):"—"}</b></div></div>
+ <label>Net avant impôts annuel à simuler (€)</label><input type="number" step="1" min="0" inputmode="decimal" data-d="fisc.net" value="${man>0?man:""}" placeholder="${auto>0?auto:"ex. 40000"}">
+ ${man>0?'<button type="button" class="sec" id="taxNetReset" style="width:100%;margin-top:6px">↺ Revenir à l\'estimation automatique</button>':'<div class="d" style="margin-top:4px">Vide : le simulateur utilise l\'estimation automatique.</div>'}
  <label>Nombre de parts</label><input type="number" step="0.5" min="1" inputmode="decimal" data-d="fisc.parts" value="${parts}">
  <label style="display:flex;align-items:center;gap:10px;margin-top:12px;font-size:.85rem;color:var(--txt)"><input type="checkbox" data-d="fisc.ded" ${ded?"checked":""} style="width:22px;height:22px;padding:0;flex:none"> Déduction fiscale de 10 %</label>
  <div class="d" style="margin-top:8px">Estimation simplifiée (sans crédits ni réductions d'impôt, ni revenus du capital). Net imposable ≈ net avant impôts × ${String(ratio).replace(".",",")}.</div>`,"margin-top:0")}
- ${ca>0?`<div class="kpis k3"><div class="kpi" style="--c:var(--bleu)"><span>Net avant impôts / mois</span><b>${eur(mb)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Taux d'imposition</span><b>${fp(taux*100)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Net après impôts / mois</span><b>${eur(mn)}</b></div></div>`:'<div class="card"><div class="empty">Saisis un salaire net avant impôts annuel, ou ajoute des salaires dans Suivi Salaire.</div></div>'}`}
+ ${ca>0?`<div class="kpis k3"><div class="kpi" style="--c:var(--bleu)"><span>Net avant impôts / mois</span><b>${eur(mb)}</b></div><div class="kpi" style="--c:var(--orange)"><span>Taux d'imposition</span><b>${fp(taux*100)}</b></div><div class="kpi" style="--c:var(--vert)"><span>Net après impôts / mois</span><b>${eur(mn)}</b></div></div>`:'<div class="card"><div class="empty">Saisis un salaire net avant impôts annuel, ou ajoute des salaires dans Suivi Salaire.</div></div>'}${vEndet()}`}
 /* ---------- Simulateur de salaire : brut → net avant impôts → net après impôts (+ remboursements non imposables, ex. Navigo) ---------- */
 function vSimSal(){
  const S=D.sim||{},H=D.salaires.filter(s=>s.date&&s.brut>0&&s.net>0).sort((a,b)=>a.date<b.date?1:-1).slice(0,12),
@@ -2600,8 +2651,75 @@ function vSimSal(){
  ${card("ss-out","Détail du calcul",`<div style="overflow-x:auto"><table class="rc"><thead><tr><th></th><th>Par mois</th><th>Par an</th></tr></thead><tbody>
  ${row("Salaire brut",m(bM),y(bM),"",0)}${row("− Cotisations ("+fp(cot)+")","−"+m(cotM),"−"+y(cotM),"neg",0)}${row("= Net imposable",m(nI),y(nI),"",0)}${remb>0?row("+ Remboursement non imposable",m(remb),y(remb),"pos",0):""}${row("= Net avant impôts",m(nA),y(nA),"",1)}${row("− Impôt ("+fp(taux)+")","−"+m(imp),"−"+y(imp),"neg",0)}${row("= Net après impôts",m(nP),y(nP),"pos",1)}</tbody></table></div>
  <div class="d" style="margin-top:8px">Estimation simplifiée : l'impôt est calculé sur le net imposable, sans les remboursements non imposables. Le net imposable réel peut différer légèrement (CSG non déductible, mutuelle, tickets restaurant…).</div>`)}`:'<div class="card"><div class="empty">Saisis un salaire brut pour calculer le net avant et après impôts.</div></div>'}`}
+/* ---------- Taux d'endettement : revenus = net avant impôts des 12 derniers mois de versements ---------- */
+const ENDMAX=35;
+document.addEventListener("click",e=>{if(e.target&&e.target.id==="taxNetReset"){D.fisc=D.fisc||{};D.fisc.net=0;save();render()}
+ if(e.target&&e.target.id==="sbReset"){if(confirm("Effacer la simulation ?")){D.simbien={};save();render()}}});
+function netMois12(){const T=TODAY(),S=(D.salaires||[]).filter(s=>s.date&&s.date<=T&&s.net>0),ms=[...new Set(S.map(s=>s.date.slice(0,7)))].sort().reverse().slice(0,12),set=new Set(ms),tot=sum(S.filter(s=>set.has(s.date.slice(0,7))),"net");
+ return{tot,mois:ms.length,moy:ms.length?tot/ms.length:0}}
+/* mensualités (assurance comprise) des crédits en cours, hors crédits d'un bien en SCI (pas en nom propre) */
+function credEnCours(){const T=TODAY().slice(0,7),B=biens(),L=[];
+ (D.prets||[]).forEach((p,i)=>{const b=B.find(x=>x.id===p.bien);if(b&&b.type==="SCI")return;const s=sched(p);if(s.S[s.n-1].d.slice(0,7)<T)return;L.push({nom:p.nom||"Prêt "+(i+1),m:s.m+(p.assurance||0)})});
+ return{L,tot:sum(L,"m")}}
+function vEndet(){
+ const E=D.fisc||{},ne=netMois12(),cr=credEnCours(),net=E.endet_net>0?E.endet_net:ne.moy,exist=E.endet_cred>0?E.endet_cred:cr.tot,nw=E.endet_new>0?E.endet_new:0,
+  t0=net>0?exist/net*100:null,t1=net>0?(exist+nw)/net*100:null,mx=net*ENDMAX/100-exist-nw,
+  k=(l,v,c,w)=>`<div class="kpi${w?" wide":""}" style="--c:var(--${c})"><span>${l}</span><b>${v}</b></div>`;
+ return card("t-end","Taux d'endettement",`<label>Salaire net avant impôts par mois (€)</label><input type="number" step="0.01" min="0" inputmode="decimal" data-d="fisc.endet_net" value="${E.endet_net>0?E.endet_net:""}" placeholder="${ne.moy>0?Math.round(ne.moy)+" (moyenne de tes "+ne.mois+" derniers mois)":"ex. 3000"}">
+ <label>Mensualités de crédits en cours (€ / mois)</label><input type="number" step="0.01" min="0" inputmode="decimal" data-d="fisc.endet_cred" value="${E.endet_cred>0?E.endet_cred:""}" placeholder="${Math.round(cr.tot)+(cr.L.length?" ("+cr.L.length+" crédit"+(cr.L.length>1?"s":"")+" de l'appli)":"")}">
+ <label>Nouvelle mensualité à ajouter (€ / mois, assurance comprise)</label><input type="number" step="0.01" min="0" inputmode="decimal" data-d="fisc.endet_new" value="${E.endet_new>0?E.endet_new:""}" placeholder="0">
+ ${net>0?`<div class="kpis k3" style="margin-top:12px">${k("Taux actuel",fp(t0),t0>ENDMAX?"rouge":"vert")}${k("Avec la nouvelle mensualité",fp(t1),t1>ENDMAX?"rouge":"vert")}${k("Marge avant "+ENDMAX+" %",eur(mx),mx<0?"rouge":"bleu")}</div>`:'<div class="d" style="margin-top:8px">Renseigne ton salaire net avant impôts, ou ajoute des salaires dans Suivi Salaire.</div>'}`)}
+/* ---------- Simulateur de bien immobilier (onglet Immobilier) : mêmes infos que la vue d'un bien, avant achat ---------- */
+function vSimBien(){
+ const S=D.simbien||{},T=TODAY(),num=v=>+v>0?+v:0,
+  type=IMT.includes(S.type)?S.type:IMT[0],loc=isLoc(type),part=S.part>0&&S.part<=100?+S.part:100,k=part/100,
+  prix=num(S.prix),fr=num(S.frais_pct),frais=prix*fr/100,cost=(prix+frais)*k,app=Math.min(num(S.apport),cost),cap=Math.max(0,cost-app),
+  ans=num(S.duree)||20,n=Math.max(1,Math.round(ans*12)),tx=num(S.taux),ass=num(S.assurance),val=prix*k,
+  loy=num(S.loyer)*k,chg=num(S.charges)*k,tax=num(S.taxe)*k,reg=loc?S.regime||"":"",
+  mode=S.mode||(type==="SCI"?"sci":"np"),ne=netMois12(),
+  inp=(l,key,st,ph,v)=>`<label>${l}</label><input type="number" step="${st}" min="0" inputmode="decimal" data-d="simbien.${key}" value="${v!=null?v:(S[key]>0?S[key]:"")}" placeholder="${ph||""}">`;
+ const form=card("sb-in","🧮 Simulateur de bien immobilier",`
+ <label>Type de bien</label><select data-d="simbien.type">${IMT.map(t=>opt(t,t,type)).join("")}</select>
+ <label>Nom du bien (facultatif)</label><input type="text" data-d="simbien.nom" value="${esc(S.nom||"")}" autocomplete="off" placeholder="Ex. Appartement Lyon">
+ ${inp("Prix du bien, hors frais (€)","prix","1","0")}
+ ${inp("Frais de notaire et d'acquisition (% du prix)","frais_pct","any","Ex. 7,5")}
+ ${inp("% de détention","part","0.01","100",part<100?part:"")}
+ ${inp("Apport personnel (€)","apport","1","0")}
+ ${inp("Durée du crédit (années)","duree","0.5","20")}
+ ${inp("Taux du crédit (% par an)","taux","any","Ex. 3,5")}
+ ${inp("Assurance emprunteur (€ par mois)","assurance","0.01","0")}
+ ${loc?`${inp("Loyers perçus par mois, 100 % (€)","loyer","0.01","0")}${inp("Charges mensuelles (€)","charges","0.01","0")}${inp("Taxe foncière annuelle (€)","taxe","1","0")}
+ <label>Fiscalité des loyers</label><select data-d="simbien.regime"><option value="">— Non renseignée —</option>${[["mf","Location nue · micro-foncier"],["rf","Location nue · réel"],["mb","Meublé (LMNP) · micro-BIC longue durée"],["lr","Meublé (LMNP) · réel"],["tx","Autre (SCI…) · taux saisi"]].map(x=>opt(x[0],x[1],reg)).join("")}</select>
+ ${reg&&reg!=="tx"?`<label>Tranche marginale d'imposition</label><select data-d="simbien.tmi">${[0,11,30,41,45].map(t=>opt(t,t+" %",S.tmi==null||S.tmi===""?30:S.tmi)).join("")}</select>`:""}
+ ${reg==="lr"?inp("Amortissement annuel déductible (ta part, €)","amort","1","0"):""}${reg==="tx"?inp("Taux d'imposition sur le résultat (%)","taux_fisc","0.1","0"):""}`:""}
+ <label>Emprunt</label><select data-d="simbien.mode">${opt("np","En nom propre",mode)}${opt("sci","Via une SCI",mode)}</select>
+ ${mode==="np"?`${inp("Salaire net avant impôts par mois (€)","net","0.01",ne.moy>0?Math.round(ne.moy)+" (moyenne de tes "+ne.mois+" derniers mois)":"ex. 3000")}
+ ${loc?`<label style="display:flex;align-items:center;gap:10px;margin-top:12px;font-size:.85rem;color:var(--txt)"><input type="checkbox" data-d="simbien.l70" ${S.l70?"checked":""} style="width:22px;height:22px;padding:0;flex:none"> Compter 70 % des loyers dans les revenus</label>`:""}`:""}
+ <button type="button" class="sec" id="sbReset" style="width:100%;margin-top:12px">↺ Effacer la simulation</button>`,"margin-top:0");
+ if(!(prix>0))return form+'<div class="card"><div class="empty">Saisis le prix du bien pour lancer la simulation.</div></div>';
+ /* crédit simulé */
+ let s=null,mens=0,ti=0;
+ if(cap>0){s=sched({capital:cap,taux:tx,duree:n,date_debut:T,assurance:ass});mens=s.m+ass;ti=sum(s.S,"it")}
+ const la=loy*12,ca=chg*12+tax,net=la-ca,cf=loy-chg-tax/12-mens,
+  fx=loc&&reg&&la>0?fiscBien({regime:reg,tmi:S.tmi==null||S.tmi===""?30:+S.tmi,amort:num(S.amort),taux_fisc:num(S.taux_fisc)},s?[{S:s.S.slice(0,12).map(r=>({d:T.slice(0,4)+"-01-01",it:r.it})),as:ass}]:[],la,ca):null,
+  title=esc(S.nom||type)+(part<100?" · "+pcxI(part):"");
+ const ov=imEx("sb-ov","🏡 Vue d'ensemble · "+title,`<div class="ov2">
+  ${imOv(part<100?"Valeur estimée (ma part "+pcxI(part)+")":"Valeur estimée",val,val-cost,cost,cap,[["Valeur − restant dû",eur(val-cap),"#0284c7"],["Apport",eur(app)],["Restant dû",eur(cap),"#dc2626"]])}
+  <h4>📈 Coût de l'opération</h4><div class="ov2-rows c2">${imRow("Prix du bien",eur(prix))}${frais>0?imRow("Frais de notaire",eur(frais),fr>0?pcxI(fr):null):""}${imRow("Coût total"+(part<100?" (ma part)":""),eur(cost))}${imRow("Montant emprunté",eur(cap))}</div></div>`);
+ const cred=s?imEx("sb-cred","🏦 Crédit simulé",`<div class="ov2"><div class="ov2-top"><div><span class="l">Mensualité avec assurance</span><span class="v big">${eur2(mens)}</span></div>
+  ${imSplit([[cap,"#0d9488"],[ti,"#f97316"]])}${imKv([["Capital emprunté",eur(cap),"#0d9488"],["Intérêts",eur(ti),"#f97316"],["Coût total du crédit",eur(ti+ass*n)]])}</div>
+  <h4>📅 Échéances</h4><div class="ov2-rows c2">${imRow("Mensualité (hors ass.)",eur2(s.m))}${imRow("Avec assurance",eur2(mens))}${imRow("Durée",n+" mois")}${imRow("Fin du prêt",esc(mlabel(s.S[n-1].d.slice(0,7))))}</div></div>`):"";
+ const lo=(loy>0||chg>0||tax>0)?imEx("sb-loc","💶 Rentabilité locative"+(part<100?" (ma part)":""),`<div class="ov2"><div class="ov2-rows c2">${imRow("Loyers par an",eur(la))}${imRow("Charges par an",eur(ca))}${imRow("Revenu net avant crédit",eur(net),null,net<0?"r":"g")}${imRow("Cash-flow mensuel",eur(cf),null,cf<0?"r":"g")}${mens>0?imRow("Mensualités de crédit",eur(mens)):""}</div>
+  <h4>🧾 Du brut au net</h4><div class="ov2-rows c2">${val>0?imRow("Rendement brut",pcxI(la/val*100))+imRow("Net de charges",pcxI(net/val*100)):""}${fx?imRow("Fiscalité par an",eur(fx.impot),null,"r")+imRow("Régime",fx.nom+" · "+pcxI(fx.taux))+(val>0?imRow("Rendement net d'impôts",pcxI((net-fx.impot)/val*100),null,net<fx.impot?"r":"g"):"")+imRow("Cash-flow mensuel net d'impôts",eur(cf-fx.impot/12),null,cf<fx.impot/12?"r":"g"):""}</div></div>`):"";
+ /* taux d'endettement : seulement pour un emprunt en nom propre */
+ let en="";
+ if(mode==="sci")en=imEx("sb-end","📊 Taux d'endettement",'<div class="d" style="margin:6px 14px 10px;white-space:normal">Emprunt via une SCI : le taux d\'endettement personnel n\'est pas calculé.</div>');
+ else{const nt=S.net>0?+S.net:ne.moy,l70=loc&&S.l70?0.7*loy:0,rev=nt+l70,cr=credEnCours(),t0=rev>0?cr.tot/rev*100:null,t1=rev>0?(cr.tot+mens)/rev*100:null,mx=rev*ENDMAX/100-cr.tot-mens;
+  en=imEx("sb-end","📊 Taux d'endettement",rev>0?`<div class="ov2"><div class="ov2-rows c2">${imRow("Net avant impôts par mois",eur(nt),S.net>0?"saisi":ne.mois+" derniers mois")}${l70>0?imRow("70 % des loyers",eur(l70)):""}${imRow("Mensualités en cours",eur(cr.tot),cr.L.length?cr.L.length+" crédit"+(cr.L.length>1?"s":""):null)}${imRow("Nouvelle mensualité",eur(mens))}${imRow("Taux actuel",pcxI(t0))}${imRow("Taux avec ce bien",pcxI(t1),null,t1>ENDMAX?"r":"g")}${imRow("Marge avant "+ENDMAX+" %",eur(mx),null,mx<0?"r":"g")}</div></div>`
+   :'<div class="d" style="margin:6px 14px 10px;white-space:normal">Renseigne ton salaire net avant impôts, ou ajoute des salaires dans Suivi Salaire.</div>')}
+ return form+ov+cred+lo+en}
 /* Ordre des onglets : … Suivi Salaire · Prime · Simulateur d'impôts · Santé (tout à droite) · Données */
-const TABS=[["home","🏠","Vue d'ensemble",vHome],["ana","📊","Analyse",vAna],["rec","🧮","Simulation de dépenses",vRec],["cred","🏦","Suivi Crédit",vCred],["sal","💼","Suivi Salaire",vSal],["ov","🏠","Vue d'ensemble",vOv],["pos","📊","Positions",vPos],["cla","🏆","Classement par gain",vCla],["int","📜","Versements & retraits",vMvt],["ehs","🧾","Historique",vEhs],["tax","🧾","Simulateur d'impôts",vTax],["simsal","🧮","Simulateur de salaire",vSimSal],["sante","🩺","Santé",vSante],["data","🔄","Données",vData],["liv","🐖","Tableau de bord",vLiv],["hst","📜","Historique",vHst],["lvi","📝","Taux & intérêts",vLvi]];
+const TABS=[["home","🏠","Vue d'ensemble",vHome],["ana","📊","Analyse",vAna],["rec","🧮","Simulation de dépenses",vRec],["cred","🏦","Suivi Crédit",vCred],["simbien","🧮","Simulateur de bien",vSimBien],["sal","💼","Suivi Salaire",vSal],["ov","🏠","Vue d'ensemble",vOv],["pos","📊","Positions",vPos],["cla","🏆","Classement par gain",vCla],["int","📜","Versements & retraits",vMvt],["ehs","🧾","Historique",vEhs],["tax","🧾","Simulateur d'impôts",vTax],["simsal","🧮","Simulateur de salaire",vSimSal],["sante","🩺","Santé",vSante],["data","🔄","Données",vData],["liv","🐖","Tableau de bord",vLiv],["hst","📜","Historique",vHst],["lvi","📝","Taux & intérêts",vLvi]];
 /* Limite chaque liste et chaque tableau à 5 lignes visibles, le reste défile */
 function fitLists(){
  document.querySelectorAll(".lst").forEach(l=>{l.style.maxHeight="";if(!l.offsetParent)return;const k=l.children[5];if(k)l.style.maxHeight=(k.offsetTop+1)+"px"});
@@ -2722,7 +2840,7 @@ function fromXml(raw){const doc=new DOMParser().parseFromString(raw,"application
  for(const[k,[par,ch]]of Object.entries(SEC)){p[k]=[...doc.querySelectorAll(`${par} > ${ch}`)].map(el=>{const r={};for(const a of el.attributes){r[a.name]=NUM.has(a.name)?(parseFloat(a.value)||0):a.value}return r})}return p}
 function toCsv(){const q=v=>'"'+String(v).replace(/"/g,'""')+'"';return"\uFEFFDate;Libelle;Categorie;Montant;Sens;Groupe\n"+D.depenses.map(o=>[o.date,q(o.libelle),q(o.categorie),String(o.montant).replace(".",","),o.sens,q(o.groupe||"")].join(";")).join("\n")}
 function norm(p){const n=x=>parseFloat(x)||0;
- return{sante:p.sante,fisc:p.fisc,rec:p.rec,sim:p.sim,retraits_epargne:p.retraits_epargne,solde_epargne:p.solde_epargne,mouvements_epargne:p.mouvements_epargne,releves_epargne:p.releves_epargne,transferts:p.transferts,livrets_lignes:p.livrets_lignes,version:1,exporte_le:p.exporte_le||"",
+ return{sante:p.sante,fisc:p.fisc,rec:p.rec,sim:p.sim,simbien:p.simbien,retraits_epargne:p.retraits_epargne,solde_epargne:p.solde_epargne,mouvements_epargne:p.mouvements_epargne,releves_epargne:p.releves_epargne,transferts:p.transferts,livrets_lignes:p.livrets_lignes,version:1,exporte_le:p.exporte_le||"",
  groupes:p.groupes?p.groupes.map(g=>({nom:String(g&&g.nom!=null?g.nom:g)})).filter(g=>g.nom):undefined,
  depenses:(p.depenses||[]).filter(o=>o.date).map(o=>({date:String(o.date).slice(0,10),libelle:String(o.libelle??""),categorie:String(o.categorie??"Divers"),montant:n(o.montant),sens:o.sens||(REV.includes(o.categorie)?"Revenu":"Dépense"),...(o.lien?{lien:String(o.lien)}:{}),...(o.groupe?{groupe:String(o.groupe)}:{}),...(o.compte?{compte:String(o.compte)}:{})})),
  recurrentes:(p.recurrentes||[]).map(r=>({libelle:String(r.libelle??""),categorie:String(r.categorie??""),montant:n(r.montant),type:r.type||"Charge",...(r.groupe?{groupe:String(r.groupe)}:{})})),
@@ -2730,8 +2848,8 @@ function norm(p){const n=x=>parseFloat(x)||0;
  interessement:p.interessement?p.interessement.map(s=>({date:String(s.date||"").slice(0,10),type:String(s.type||"Intéressement"),montant:n(s.montant),brut:n(s.brut),dest:String(s.dest||""),employeur:String(s.employeur||""),...(s.plan?{plan:String(s.plan)}:{}),...(s.ref?{ref:String(s.ref)}:{})})):undefined,
  salaires:(p.salaires||[]).map(s=>({date:String(s.date||"").slice(0,10),employeur:String(s.employeur??""),type:String(s.type??""),net:n(s.net),impot:n(s.impot),brut:n(s.brut),notes:String(s.notes??""),...(s.lien?{lien:String(s.lien)}:{})})),
  immo:p.immo?{...p.immo,valeur:n(p.immo.valeur),apport:n(p.immo.apport)}:undefined,
- biens:Array.isArray(p.biens)?p.biens.map(b=>({id:String(b.id||"b"+Math.random().toString(36).slice(2,8)),nom:String(b.nom||""),type:String(b.type||""),valeur:n(b.valeur),apport:n(b.apport),part:b.part==null?100:n(b.part),loyer:n(b.loyer),charges:n(b.charges),taxe:n(b.taxe),date_achat:String(b.date_achat||""),prix:n(b.prix),frais:n(b.frais)})):undefined,
- prets:(p.prets||[]).map(r=>({nom:String(r.nom??""),capital:n(r.capital),taux:n(r.taux),duree:n(r.duree)||240,date_debut:String(r.date_debut||"").slice(0,10),assurance:n(r.assurance),premiere_reelle:n(r.premiere_reelle),...(r.bien?{bien:String(r.bien)}:{})}))}}
+ biens:Array.isArray(p.biens)?p.biens.map(b=>({id:String(b.id||"b"+Math.random().toString(36).slice(2,8)),nom:String(b.nom||""),type:String(b.type||""),valeur:n(b.valeur),apport:n(b.apport),part:b.part==null?100:n(b.part),loyer:n(b.loyer),charges:n(b.charges),taxe:n(b.taxe),date_achat:String(b.date_achat||""),prix:n(b.prix),frais:n(b.frais),frais_pct:n(b.frais_pct),regime:String(b.regime||""),tmi:b.tmi==null?30:n(b.tmi),amort:n(b.amort),taux_fisc:n(b.taux_fisc)})):undefined,
+ prets:(p.prets||[]).map(r=>({nom:String(r.nom??""),capital:n(r.capital),taux:n(r.taux),duree:n(r.duree)||240,date_debut:String(r.date_debut||"").slice(0,10),assurance:n(r.assurance),premiere_reelle:n(r.premiere_reelle),...(r.bien?{bien:String(r.bien)}:{}),...(r.cap_auto?{cap_auto:true}:{})}))}}
 /* ---- Lecture Excel (.xlsx) hors connexion : zip + XML, sans bibliothèque ---- */
 async function unzip(buf){const dv=new DataView(buf),u8=new Uint8Array(buf);let e=u8.length-22;while(e>=0&&dv.getUint32(e,true)!==0x06054b50)e--;
  if(e<0)throw new Error("Fichier .xlsx invalide");const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const out={},td=new TextDecoder();
@@ -2763,7 +2881,7 @@ $("#file").onchange=async e=>{const files=[...e.target.files];e.target.value="";
   if(low.endsWith(".xlsx")||low.endsWith(".xlsm"))p=fromRows(await readXlsx(await f.arrayBuffer()));
   else{const raw=await f.text();p=norm(low.endsWith(".xml")||raw.trim().startsWith("<")?fromXml(raw):JSON.parse(raw));p.exporte_le=p.exporte_le||""}
   for(const k of Object.keys(SEC))if(p[k]&&(p[k].length||low.match(/\.(json|xml)$/))){if(k==="depenses")p[k]=p[k].filter(o=>o.date);nd[k]=p[k];log.push(`${f.name} → ${p[k].length} ${k}`)}
-  if(p.sante)nd.sante=p.sante;if(p.sgroupes)nd.sgroupes=p.sgroupes;if(p.fisc)nd.fisc=p.fisc;if(p.rec)nd.rec=p.rec;if(p.sim)nd.sim=p.sim;["immo","biens","retraits_epargne","solde_epargne","mouvements_epargne","releves_epargne","transferts","livrets_lignes"].forEach(k=>{if(p[k]!==undefined)nd[k]=p[k]});
+  if(p.sante)nd.sante=p.sante;if(p.sgroupes)nd.sgroupes=p.sgroupes;if(p.fisc)nd.fisc=p.fisc;if(p.rec)nd.rec=p.rec;if(p.sim)nd.sim=p.sim;if(p.simbien)nd.simbien=p.simbien;["immo","biens","retraits_epargne","solde_epargne","mouvements_epargne","releves_epargne","transferts","livrets_lignes"].forEach(k=>{if(p[k]!==undefined)nd[k]=p[k]});
   if(p.exporte_le)nd.exporte_le=p.exporte_le}catch(err){log.push(`${f.name} : ${err.message}`)}}
  if(!log.some(l=>l.includes("→")))return alert(log.join("\n"));
  if(!confirm("Remplacer les données du téléphone par :\n"+log.join("\n")))return;
@@ -2794,7 +2912,7 @@ function fillRec(on){const R=D.recurrentes.map((r,i)=>({r,i})).sort((a,b)=>a.r.l
  $("#fRec").innerHTML='<option value="">— Saisie libre —</option>'+R.map(x=>`<option value="${x.i}">${esc(x.r.libelle)} · ${eur2(x.r.montant)}${x.r.type==="Revenu"?" (revenu)":""}</option>`).join("")}
 function fillGrp(cur){const L=grpNames();$("#fGrpW").classList.toggle("hide",!L.length);$("#fGrp").innerHTML='<option value="">— Aucun —</option>'+L.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");$("#fGrp").value=cur&&L.includes(cur)?cur:""}
 /* Barre fixe en bas (comme PEA / CTO) : une ou deux actions selon l'onglet */
-function barSet(){const B=$("#opsbar"),a=$("#fabA"),b=$("#fabB"),hid=["sante","tax","sal","simsal"].includes(tab);B.style.display=hid?"none":"";if(hid)return;
+function barSet(){const B=$("#opsbar"),a=$("#fabA"),b=$("#fabB"),hid=["sante","tax","sal","simsal","simbien"].includes(tab);B.style.display=hid?"none":"";if(hid)return;
  let A,C=null;
  if(tab==="liv"||tab==="lvi"||tab==="hst")A=["➕ Nouvelle ligne",()=>openLv(-1)];
  else if(["int","pos","ov","cla","ehs"].includes(tab))A=["➕ Nouveau versement",()=>openInt(-1)];
@@ -3260,10 +3378,10 @@ function vCla(){
   bars=L.map(x=>`<div class="cbar"><div class="n" title="${esc(x.nom)}">${esc(x.nom)}</div><div class="t"><i style="width:${(Math.abs(x.g)/mx*100).toFixed(1)}%;background:${x.g>=0?"#16a34a":"#dc2626"}"></i></div><b style="color:${x.g>=0?"#16a34a":"#dc2626"}">${oDE(x.g)}</b></div>`).join("")+`<div class="d" style="text-align:right">Gain total (latent + réalisé) : <b>${oDE(tot)}</b></div>`,
   cols=["N°","Nom","Gain Réalisé (€)","Gain Latent (€)","Dividendes Reçus (€)","Gain Total Global (€)","Performance (%)","Contribution perf. (%)","Perf. annuelle moy. (%)","Nombre de mouvements","Détention (jour)"],
   EQ=["Gain Total Global (€)","Performance (%)","Contribution perf. (%)","Perf. annuelle moy. (%)"],FL=["Gain Réalisé (€)","Gain Latent (€)","Gain Total Global (€)","Performance (%)","Contribution perf. (%)","Perf. annuelle moy. (%)"],
-  ctb=x=>bt>0?x.g/bt*100:NaN,
+  ctb=x=>Math.abs(tot)>0.005?x.g/Math.abs(tot)*100:NaN,
   rows=L.map((x,i)=>[i+1,x.nom,pEA(x.real),pEA(x.lat),oGE(x.dv),pEA(x.g),pPf(x.perf),pPf(ctb(x)),pPf(perfAnn(x.perf,x.jours)),String(x.nb),x.jours!=null?String(x.jours):""]),
   T=cols.map(()=>"");T[1]="Total";T[2]=pEA(L.reduce((t,x)=>t+x.real,0));T[3]=pEA(L.reduce((t,x)=>t+x.lat,0));T[4]=oGE(L.reduce((t,x)=>t+x.dv,0));T[5]=pEA(tot);
- if(bt>0){T[6]=pPf(tot/bt*100);T[7]=pPf(L.reduce((t,x)=>t+(isNaN(ctb(x))?0:ctb(x)),0))}T[9]=String(L.reduce((t,x)=>t+x.nb,0));
+ if(bt>0){T[6]=pPf(tot/bt*100);}if(Math.abs(tot)>0.005)T[7]=pPf(L.reduce((t,x)=>t+ctb(x),0));T[9]=String(L.reduce((t,x)=>t+x.nb,0));
  const Td=dashRow(T,cols,EQ);Td[0]="";
  return(P.inc.length?`<div class="ovnote" style="margin-top:0">⚠ Historique incomplet pour ${P.inc.map(r=>esc(supNm(r.nom))).join(", ")} : leur plus-value latente n'est pas comptée dans le classement.</div>`:"")
   +exp2("clb","🏆 Classement des fonds par gain",bars)+exp2("clt","📋 Détail du classement",pTbl(cols,rows.map(r=>dashRow(r,cols,EQ)),{col:FL,total:Td,maxH:900})+'<div class="d" style="margin:6px 4px">Les dividendes réinvestis sont déjà inclus dans le gain latent (parts reçues sans coût d\'achat) : ils ne sont pas ajoutés une seconde fois au gain total.</div>')+partNote(P)}
@@ -3306,18 +3424,27 @@ function openBien(i=-1){const B=biens(),b=i>=0?B[i]:null;bIdx=i;$("#frmB").reset
  const id=b?b.id:"";
  $("#bCreds").innerHTML=D.prets.map((p,k)=>{const o=p.bien&&p.bien!==id?B.find(x=>x.id===p.bien):null;return`<label style="display:flex;gap:8px;align-items:center;margin:6px 0;font-weight:400"><input type="checkbox" data-pi="${k}"${id&&p.bien===id?" checked":""} style="width:auto;margin:0"><span>${esc(p.nom||"Crédit immobilier")} · ${eur(p.capital)}${o?` <span class="d">(actuellement sur ${esc(bNom(o))})</span>`:""}</span></label>`}).join("")||'<div class="d">Aucun crédit existant pour l\'instant.</div>';
  if(b){$("#bNomI").value=b.nom||"";$("#bVal").value=b.valeur||"";$("#bPart").value=bPart(b);$("#bApp").value=b.apport||"";$("#bLoy").value=b.loyer||"";$("#bChg").value=b.charges||"";$("#bTax").value=b.taxe||""}
- $("#bDate").value=b?b.date_achat||"":"";$("#bPrix").value=b?b.prix||"":"";$("#bFrais").value=b?b.frais||"":"";
+ $("#bDate").value=b?b.date_achat||"":"";$("#bPrix").value=b?b.prix||"":"";$("#bFrais").value=b&&fraisPct(b)!=null?+fraisPct(b).toFixed(4):"";
+ $("#bReg").value=b&&b.regime||"";$("#bTmi").value=String(b&&b.tmi!=null?b.tmi:30);$("#bAmo").value=b&&b.amort||"";$("#bTxF").value=b&&b.taux_fisc||"";bForm();
 
  $("#bDel").classList.toggle("hide",!b);dlgB.showModal()}
 $("#bCancel").onclick=()=>dlgB.close();
+/* Frais de notaire saisis en % du prix ; le montant en € (b.frais) en découle. Les anciens biens saisis en € sont convertis à l'ouverture */
+const fraisPct=b=>b.frais_pct>0?b.frais_pct:+b.prix>0&&+b.frais>0?b.frais/b.prix*100:null;
+function bForm(){const p=parseFloat($("#bPrix").value)||0,t=parseFloat($("#bFrais").value)||0,r=$("#bReg").value,i=bIdx>=0?biens()[bIdx]:null;
+ $("#bFraisE").textContent=p>0&&t>0?"Soit "+eur2(p*t/100):t>0?"Saisis le prix d'acquisition pour calculer le montant.":i&&+i.frais>0&&!(p>0)?"Montant enregistré : "+eur2(+i.frais)+" (saisis le prix pour l'exprimer en %).":"";
+ $("#bTmiW").classList.toggle("hide",!["mf","rf","mb","lr"].includes(r));$("#bAmoW").classList.toggle("hide",r!=="lr");$("#bTxW").classList.toggle("hide",r!=="tx")}
+["#bPrix","#bFrais"].forEach(x=>$(x).oninput=bForm);$("#bReg").onchange=bForm;
 function saveBien(){const g=x=>$("#"+x),n=x=>Math.max(0,parseFloat(g(x).value)||0),B=biens();
  let part=parseFloat(g("bPart").value);if(!(part>0))part=100;part=Math.min(100,part);
  const old=bIdx>=0?B[bIdx]:null,id=old?old.id:"b"+Date.now().toString(36),ty=g("bType").value,
-  o={...(old||{}),id,nom:g("bNomI").value.trim(),type:ty,valeur:n("bVal"),part:Math.round(part*100)/100,apport:n("bApp"),date_achat:g("bDate").value||"",prix:n("bPrix"),frais:n("bFrais")};
- o.loyer=n("bLoy");o.charges=n("bChg");o.taxe=n("bTax")
+  o={...(old||{}),id,nom:g("bNomI").value.trim(),type:ty,valeur:n("bVal"),part:Math.round(part*100)/100,apport:n("bApp"),date_achat:g("bDate").value||"",prix:n("bPrix")};
+ o.loyer=n("bLoy");o.charges=n("bChg");o.taxe=n("bTax");
+ {const t=n("bFrais");o.frais_pct=t;o.frais=o.prix>0?Math.round(o.prix*t)/100:(old&&!(+old.prix>0)?+old.frais||0:0)}
+ o.regime=g("bReg").value;o.tmi=+g("bTmi").value||0;o.amort=n("bAmo");o.taux_fisc=n("bTxF");
  if(old)B[bIdx]=o;else{B.push(o);bIdx=B.length-1}
  document.querySelectorAll("#bCreds [data-pi]").forEach(c=>{const p=D.prets[+c.dataset.pi];if(!p)return;if(c.checked)p.bien=id;else if(p.bien===id)delete p.bien});
- UI.bien=id;save();return id}
+ syncCap(id);UI.bien=id;save();return id}
 $("#frmB").onsubmit=()=>{saveBien();render()};
 $("#bNewP").onclick=()=>{const id=saveBien();dlgB.close();render();openPret(-1,id)};
 $("#bDel").onclick=()=>{if(bIdx<0||!confirm("Supprimer ce bien ? Les crédits restent enregistrés, sans bien associé."))return;const B=biens(),id=B[bIdx].id;B.splice(bIdx,1);D.prets.forEach(p=>{if(p.bien===id)delete p.bien});UI.bien="all";save();dlgB.close();render()};
@@ -3325,18 +3452,29 @@ $("#bDel").onclick=()=>{if(bIdx<0||!confirm("Supprimer ce bien ? Les crédits re
 const dlgP=$("#dlgP");let pIdx=-1;
 function updMens(){const c=parseFloat($("#pCap").value)||0,t=parseFloat($("#pTaux").value)||0,n=parseInt($("#pDur").value)||0,a=parseFloat($("#pAss").value)||0;
  $("#pMens").innerHTML=c>0&&n>0?`Mensualité calculée : <span>${eur2(pmt(c,t,n))}</span>${a>0?` · avec assurance <span>${eur2(pmt(c,t,n)+a)}</span>`:""}`:""}
-["#pCap","#pTaux","#pDur","#pAss"].forEach(id=>$(id).oninput=updMens);
+["#pTaux","#pDur","#pAss"].forEach(id=>$(id).oninput=updMens);
+$("#pCap").oninput=()=>{pAuto=false;updMens()};
+/* Montant emprunté automatique : prix d'acquisition (à défaut valeur estimée) × % de détention − apport − autres crédits du bien.
+   Il suit les changements du bien tant que le montant n'est pas retouché à la main (p.cap_auto). */
+let pAuto=false;
+function capBien(bid,skip){const b=biens().find(x=>x.id===bid);if(!b)return null;const base=+b.prix||+b.valeur||0;if(!(base>0))return null;
+ const autres=D.prets.reduce((t,p,k)=>t+(p.bien===bid&&k!==skip?+p.capital||0:0),0),v=Math.round((base*bPart(b)/100-(+b.apport||0)-autres)*100)/100;return v>0?v:null}
+function fillCap(){if(!pAuto)return;const v=capBien($("#pBien").value,pIdx);$("#pCap").value=v==null?"":v;updMens()}
+function syncCap(bid){D.prets.forEach((p,k)=>{if(p.bien===bid&&p.cap_auto){const v=capBien(bid,k);if(v!=null)p.capital=v}})}
 function openPret(i=-1,bid){pIdx=i;$("#frmP").reset();const p=i>=0?D.prets[i]:null;
  $("#pBien").innerHTML='<option value="">— Aucun —</option>'+biens().map(b=>opt(b.id,bNom(b),"")).join("");$("#pBien").value=p?(p.bien||""):(bid||(UI.bien&&UI.bien!=="all"&&UI.bien!=="none"?UI.bien:""));
  $("#pTitle").textContent=p?"Modifier le prêt":"Nouveau prêt";
  if(p){$("#pNom").value=p.nom||"";$("#pCap").value=p.capital;$("#pTaux").value=p.taux;$("#pDur").value=p.duree;$("#pDeb").value=p.date_debut||"";$("#pAss").value=p.assurance||"";$("#pPrem").value=p.premiere_reelle||""}
  else $("#pDeb").value=TODAY();
+ pAuto=p?!!p.cap_auto:true;if(!p)fillCap();
  $("#pDel").classList.toggle("hide",!p);dlgP.showModal();updMens()}
+$("#pBien").onchange=fillCap;
 $("#pCancel").onclick=()=>dlgP.close();
 $("#pDel").onclick=()=>{if(pIdx>=0&&confirm("Supprimer ce prêt ?")){D.prets.splice(pIdx,1);save();dlgP.close();render()}};
 $("#frmP").onsubmit=e=>{const c=parseFloat($("#pCap").value),n=parseInt($("#pDur").value);if(!(c>0)||!(n>0)){e.preventDefault();return}
  const o={...(pIdx>=0?D.prets[pIdx]:{}),nom:$("#pNom").value.trim(),capital:Math.round(c*100)/100,taux:parseFloat($("#pTaux").value)||0,duree:n,date_debut:$("#pDeb").value,assurance:parseFloat($("#pAss").value)||0,premiere_reelle:parseFloat($("#pPrem").value)||0};
  {const bv=$("#pBien").value;if(bv)o.bien=bv;else delete o.bien}
+ if(pAuto&&o.bien)o.cap_auto=true;else delete o.cap_auto;
  if(pIdx>=0)D.prets[pIdx]=o;else D.prets.push(o);save();render()};
 /* Modification d'un acte de santé (base Sécu, taux Sécu, franchise, prix habituel) */
 const dlgM=$("#dlgM");let mId=null;

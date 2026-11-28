@@ -115,7 +115,7 @@ hr.sh{border:0;border-top:1px solid var(--line);margin:10px 0}
 .pea-tbl th.stk,.pea-tbl td.stk{position:sticky;left:0;z-index:3;background:var(--card);text-align:left;font-weight:700;box-shadow:2px 0 4px -2px rgba(15,23,42,.25)}
 .pea-tbl tbody tr:nth-child(even) td.stk{background:var(--alt)}.pea-tbl th.stk{background:var(--alt);z-index:4}
 .pea-tbl .ca{display:inline-flex;align-items:baseline;gap:.12em}.pea-tbl .ar{display:inline-block;width:.85em;text-align:center}
-.pea-tbl .dd,.pea-tbl .dh{display:inline-block;font-variant-numeric:tabular-nums}.pea-tbl .dd{width:10ch;text-align:right}.pea-tbl .dh{width:8ch;text-align:left}
+.pea-tbl .dd,.pea-tbl .dh{display:inline-block;font-variant-numeric:tabular-nums}.pea-tbl .dd i{font-style:normal;font-variant-numeric:normal}.pea-tbl .dh{margin-left:.9ch}
 .pea-tbl .rv{display:inline-block;text-align:right;font-variant-numeric:tabular-nums}.pea-tbl .un{display:inline-block;width:.9em;text-align:left;padding-left:.15em}
 .stv{display:flex;flex-direction:column;gap:1rem}.stv .exp{margin-top:0}.spin{color:var(--mute);font-size:14px}
 .c3m{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}.mtr .ml{font-size:14px;color:var(--mute)}.mtr .mv{font-size:1.75rem;font-weight:400}
@@ -690,19 +690,19 @@ function perfCalc(){
   IDX.forEach(([k])=>{if(H[k])IX[k]=al(H[k])});
   const ev=[];tx.forEach(t=>{const d=dstr(t.d);if(t.type=='SPLIT'){ev.push({d,t});if(t.rompu>0)ev.push({d:dstr(t.dr),t,c:1})}else ev.push({d,t})});
   ev.sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:a.t.d-b.t.d);
-  const sh={},V=[],F=[],RC=[],DC=[],AV=[],CI=[],iv={};let cash=0,e=0,rl=0,dvc=0;
-  for(let i=0;i<D.length;i++){let f=0;
+  const sh={},V=[],F=[],RC=[],DC=[],AV=[],CI=[],BU=[],IN=[],iv={};let cash=0,e=0,rl=0,dvc=0;
+  for(let i=0;i<D.length;i++){let f=0,bu=0,inc=0; /* bu : achats du jour ; inc : ventes, dividendes et rompus du jour */
     while(e<ev.length&&ev[e].d<=D[i]){const x=ev[e++],t=x.t,k=t.tk;
-      if(x.c)cash+=t.rompu;
-      else if(t.type=='ACHAT'){sh[k]=(sh[k]||0)+t.q;cash-=t.q*t.p+t.f;iv[k]=(iv[k]||0)+t.q*t.p+t.f}
-      else if(t.type=='VENTE'){const s0=sh[k]||0;if(s0>0){const pru=(iv[k]||0)/s0;rl+=t.q*t.p-t.f-t.q*pru;iv[k]=Math.max(0,s0-t.q)*pru}sh[k]=(sh[k]||0)-t.q;cash+=t.q*t.p-t.f}
+      if(x.c){cash+=t.rompu;inc+=t.rompu}
+      else if(t.type=='ACHAT'){sh[k]=(sh[k]||0)+t.q;cash-=t.q*t.p+t.f;bu+=t.q*t.p+t.f;iv[k]=(iv[k]||0)+t.q*t.p+t.f}
+      else if(t.type=='VENTE'){const s0=sh[k]||0;if(s0>0){const pru=(iv[k]||0)/s0;rl+=t.q*t.p-t.f-t.q*pru;iv[k]=Math.max(0,s0-t.q)*pru}sh[k]=(sh[k]||0)-t.q;cash+=t.q*t.p-t.f;inc+=t.q*t.p-t.f}
       else if(t.type=='SPLIT')sh[k]=Math.trunc((sh[k]||0)*t.q+1e-9);
-      else if(t.type=='DIVIDENDE'){const nd=t.p-t.ret-t.c+t.remb+t.arr;cash+=nd;dvc+=nd;if(t.remb>0)iv[k]=Math.max(0,(iv[k]||0)-t.remb)}
+      else if(t.type=='DIVIDENDE'){const nd=t.p-t.ret-t.c+t.remb+t.arr;cash+=nd;dvc+=nd;inc+=nd;if(t.remb>0)iv[k]=Math.max(0,(iv[k]||0)-t.remb)}
       else if(t.type=='APPORT'){cash+=t.q;f+=t.q}
       else if(t.type=='RETRAIT'){cash-=t.q;f-=t.q}}
     let v=cash,av=0,ci=0;for(const k in sh)if(Math.abs(sh[k])>1e-9&&PX[k]){av+=sh[k]*PX[k][i];ci+=iv[k]||0}v+=av;
-    V.push(v);F.push(f);RC.push(rl);DC.push(dvc);AV.push(av);CI.push(ci)}
-  return{D,V,F,IX,RC,DC,AV,CI}}
+    V.push(v);F.push(f);RC.push(rl);DC.push(dvc);AV.push(av);CI.push(ci);BU.push(bu);IN.push(inc)}
+  return{D,V,F,IX,RC,DC,AV,CI,BU,IN}}
 /* ===== Performances & Indices : reprise de l'onglet 6 du Streamlit ===== */
 const INDS=[['CAC 40','^FCHI','#e11d48',"Indice phare de la bourse de Paris (40 plus grandes capitalisations françaises)."],['MSCI World','URTH','#9333ea',"Indice boursier mondial de référence (actions des pays développés)."],
   ['S&P 500','^GSPC','#d97706',"Indice américain regroupant les 500 plus grandes entreprises cotées aux USA."],['Stoxx 600','^STOXX','#059669',"Indice paneuropéen représentant 600 grandes, moyennes et petites capitalisations."],
@@ -822,7 +822,7 @@ function drawPerf(v){
 
 let _pubS='';
 /* Historique mensuel de la valeur du compte, pour le graphique d'évolution du patrimoine de la page Général */
-const pubHist=(C,key)=>{try{if(!C||!C.D||!C.V||!C.D.length)return;const m=new Map();C.D.forEach((d,i)=>m.set(String(d).slice(0,7),[String(d),Math.round(C.V[i]*100)/100]));const a=[...m.values()].sort((x,y)=>x[0]<y[0]?-1:1),str=JSON.stringify(a);if(str!==_pubS){_pubS=str;localStorage.setItem(key,str)}const cut=new Date(Date.now()-430*864e5).toISOString().slice(0,10),dl=JSON.stringify(C.D.map((d,i)=>[String(d),Math.round(C.V[i]*100)/100]).filter(x=>x[0]>=cut));if(dl!==localStorage.getItem(key+'d'))localStorage.setItem(key+'d',dl)}catch(e){}};
+const pubHist=(C,key)=>{try{if(!C||!C.D||!C.V||!C.D.length)return;let c=0;const R3=C.D.map((d,i)=>{c+=C.F[i];return[String(d),Math.round(C.V[i]*100)/100,Math.round(c*100)/100]}),m=new Map();R3.forEach(x=>m.set(x[0].slice(0,7),x));const a=[...m.values()].sort((x,y)=>x[0]<y[0]?-1:1),str=JSON.stringify(a);if(str!==_pubS){_pubS=str;localStorage.setItem(key,str)}const cut=new Date(Date.now()-430*864e5).toISOString().slice(0,10),dl=JSON.stringify(R3.filter(x=>x[0]>=cut));if(dl!==localStorage.getItem(key+'d'))localStorage.setItem(key+'d',dl)}catch(e){}};
 const getC=()=>{if(!Object.keys(S.hist).length)return null;try{const C=perfCalc();pubHist(C,'hub_pea_hist');return C}catch(e){return null}};
 const needHist=()=>`<p class="hint">${S.hbusy?'Chargement de l’historique des cours…':'Historique des cours indisponible : vérifie l’adresse du script Google dans Réglages.'}</p>`;
 function sales(){const by={},out=[];S.tx.forEach(t=>{if(t.type!='APPORT'&&t.type!='RETRAIT')(by[t.tk]=by[t.tk]||[]).push(t)});
@@ -848,7 +848,7 @@ const OMT0={"Performance Globale":"% = gains cumulés (plus-values latentes + ac
 "Frais Totaux":"% = frais totaux (courtage + TTF) ÷ gains totaux (plus-values latentes + actées + dividendes encaissés).",
 "Rendement sur cours":"% = dividendes nets annuels (reçus ÷ nombre d'années depuis l'ouverture, après 3 mois) ÷ valeur actuelle des titres détenus (cours du jour). La flèche indique le dividende annuel moyen en €.",
 "Rendement sur coût":"% = dividendes nets annuels (reçus ÷ nombre d'années depuis l'ouverture, après 3 mois) ÷ coût de revient des titres détenus (PRU × quantités). La flèche indique le dividende annuel moyen en €.",
-"Drawdown Maximum":"% = plus forte baisse du portefeuille depuis un sommet, calculée sur la performance quotidienne (hors apports et retraits). La flèche indique l'écart actuel par rapport au dernier sommet."};
+"Drawdown Maximum":"% = plus forte baisse du portefeuille depuis un sommet, calculée sur les titres détenus uniquement (cash exclu ; achats, ventes et retraits ne comptent pas comme des variations). La flèche indique l'écart actuel par rapport au dernier sommet."};
 const OMT_V={},OMT={};
 const ospc=x=>String(x).replace(/[\u202f\u00a0]/g,' ');
 const oGE=v=>isFinite(v)?ospc((v<0?'-':'')+nf(2).format(Math.abs(v)))+' €':'N/A';
@@ -892,12 +892,13 @@ function ovAlerts(){let h='';
   $('#alerts').innerHTML=h}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-ttfdis]');if(b){S.ttfDis.add(b.dataset.ttfdis);draw()}});
 /* Performances YTD / mois / jour et drawdown depuis l'historique quotidien (même règle que le Streamlit) */
-function ovHistX(inv){const C=getC();if(!C)return null;const{D,V,F}=C,n=D.length,A=[];let c=0;for(let i=0;i<n;i++){c+=F[i];A.push(c)}
+function ovHistX(inv){const C=getC();if(!C)return null;const{D,V,F,AV,BU,IN}=C,n=D.length,A=[];let c=0;for(let i=0;i<n;i++){c+=F[i];A.push(c)}
   const now=n-1,per=(lim,incl)=>{let j=-1;for(let i=0;i<n;i++)if(incl?D[i]<=lim:D[i]<lim)j=i;
     const v0=j>=0?V[j]:0,a0=j>=0?A[j]:0,gain=V[now]-v0-(A[now]-a0),den=v0>0?v0:a0>0?a0:inv>0?inv:1;return[gain,den>0?gain/den*100:0]};
   const t=new Date(),y=t.getFullYear(),m=t.getMonth(),yest=new Date(y,m,t.getDate()-1);
+  /* Drawdown sur les seuls titres détenus : le cash est exclu ; achats et ventes sont neutralisés, une vente totale ou un retrait n'est donc pas une baisse */
   let dd=null,cur=null;
-  if(n>=3){let idx=1,pk=1,mn=0,lastdd=0;for(let i=1;i<n;i++){const p=V[i-1],r=p>0?(V[i]-p-F[i])/p:0;idx*=1+r;pk=Math.max(pk,idx);const d=(idx/pk-1)*100;if(d<mn)mn=d;lastdd=d}dd=mn;cur=lastdd}
+  if(n>=3){let idx=1,pk=1,mn=0,lastdd=0;for(let i=0;i<n;i++){const p=i?AV[i-1]:0,base=p+BU[i],r=base>0.005?(AV[i]+IN[i]-BU[i]-p)/base:0;idx*=1+r;pk=Math.max(pk,idx);const d=(idx/pk-1)*100;if(d<mn)mn=d;lastdd=d}dd=mn;cur=AV[n-1]>0.005?lastdd:null}
   return{y:per(y+'-01-01'),m:per(y+'-'+pad(m+1)+'-01'),j:per(dstr(yest),true),dd,cur}}
 /* Vue d'ensemble : mêmes libellés (donc mêmes infobulles) et mêmes calculs qu'avant, seule la présentation change */
 const ovTip=l=>OMT[l]?` data-mt="${esc(OMT[l])}"`:'';
@@ -953,7 +954,7 @@ function ovX(v){
     <div class="ov2-rows">${ovRow('Plus-Value Latente',oGE(pnl),oDP(pl),0,ovSign(pnl))}${ovRow('Plus-Value Actée',oGE(real),pa!=null?oDP(pa):null,0,ovSign(real))}${ovRow('Dividendes Reçus',oGE(dv),pd!=null?oDP(pd):null)}${ovRow('Frais Totaux',oGE(fees),pf!=null?pf.toFixed(2).replace('.',',')+'%':null,1)}${ovRow('Rendement sur cours',rc,dam!=null?oDE(dam):null)}${ovRow('Rendement sur coût',rk,dam!=null?oDE(dam):null)}</div>
   </div></div></details>
   <details class="exp" open><summary>🎯 Objectif</summary><div class="in">
-    <div class="sbox"><p><b>💰 Objectif</b></p><div class="ocols">${num('yearly_target','Valeur visée (€)',T,1,0)}<div><label>Date de fin</label><div class="din"><input type="date" data-cfg="objectif_fin" value="${fin}" min="2000-01-01" max="2100-12-31"></div></div>${num('objectif_perf','Performance / an (%)',pfo.toFixed(1),.5,-50,100)}</div></div>
+    <div class="sbox"><div class="ocols">${num('yearly_target','Valeur visée (€)',T,1,0)}<div><label>Date de fin</label><div class="din"><input type="date" data-cfg="objectif_fin" value="${fin}" min="2000-01-01" max="2100-12-31"></div></div>${num('objectif_perf','Performance / an (%)',pfo.toFixed(1),.5,-50,100)}</div></div>
     ${body}</div></details>`;
   if(!H)setTimeout(ensureHist,0);
   if(!S.cfgOk)setTimeout(cfgLoad,0)}
@@ -1184,12 +1185,13 @@ function claHTML(){
   const inv=P.reduce((s,p)=>s+p.inv,0),cost=P.reduce((s,p)=>s+p.ach,0),base=cost>0?cost:inv; /* classement : ni apports ni retraits dans la base */
   const S2=[...P].sort((a,b)=>b.tot-a.tot),cols=['N°','Nom','Gain Réalisé (€)','Gain Latent (€)','Dividendes Reçus (€)','Gain Total Global (€)','Performance (%)','Contribution perf. (%)','Perf. annuelle moy. (%)','Nombre de mouvements','Détention (jour)'];
   const EQ=['Gain Total Global (€)','Performance (%)','Contribution perf. (%)','Perf. annuelle moy. (%)'],FL=['Gain Réalisé (€)','Gain Latent (€)','Gain Total Global (€)','Performance (%)','Contribution perf. (%)','Perf. annuelle moy. (%)'];
-  const ctb=p=>base>0?p.tot/base*100:NaN;
+  /* part de chaque ligne dans le gain total du compte (latent + réalisé + dividendes) : le total fait 100 % (-100 % si le compte est en perte) */
+  const gt=Math.abs(P.reduce((s,p)=>s+p.tot,0)),ctb=p=>gt>0.005?p.tot/gt*100:NaN;
   const rows=S2.map((p,i)=>[i+1,p.nom,pEurA(p.rl),pEurA(p.lat),pEur(p.div),pEurA(p.tot),pPerf(p.perf),pPerf(ctb(p)),pPerf(perfAnn(p.perf,p.jours)),String(p.nb),pDuree(p.jours,p.secs)]);
   const sum=k=>S2.reduce((s,p)=>s+(p[k]||0),0),T=cols.map(()=>'');T[1]='Total';T[2]=pEurA(sum('rl'));T[3]=pEurA(sum('lat'));T[4]=pEur(sum('div'));T[5]=pEurA(sum('tot'));
   const bs=S2.filter(p=>isFinite(p.perf)&&Math.abs(p.perf)>1e-9).map(p=>({b:p.tot/p.perf*100,p})).filter(x=>x.b>0),sb=bs.reduce((s,x)=>s+x.b,0);
   if(bs.length&&sb>0){const pt=bs.reduce((s,x)=>s+x.p.tot,0)/sb*100,jt=bs.reduce((s,x)=>s+(x.p.jours||0)*x.b,0)/sb;T[6]=pPerf(pt);T[8]=pPerf(perfAnn(pt,jt))}
-  if(base>0)T[7]=pPerf(S2.reduce((s,p)=>s+ctb(p),0));
+  if(gt>0.005)T[7]=pPerf(S2.reduce((s,p)=>s+ctb(p),0));
   T[9]=String(sum('nb'));
   const Td=dashRow(T,cols,EQ);Td[0]='';
   return peaTable(cols,rows.map(r=>dashRow(r,cols,EQ)),{cell:flecheStyle(FL),sticky:'Nom',total:Td,maxH:386})}
@@ -1372,7 +1374,7 @@ function peaTable(cols,rows,o={}){
     const ms=vals.map(t=>PAREN_RE.exec(t)).filter(Boolean);if(ms.length)parenW[ci]=[Math.max(...ms.map(m=>m[1].length)),Math.max(...ms.map(m=>m[3].replace(/%$/,'').length))]});
   const inner=(ci,v,i)=>{const p=parsed[ci]?parsed[ci][i]:null;
     if(p)return'<span class="ca">'+(hasAr[ci]?`<span class="ar">${p[0]}</span>`:'')+`<span class="rv" style="min-width:${numW[ci]}ch">${esc(p[1])}</span>`+(p[2]?`<span class="un">${p[2]}</span>`:'')+'</span>';
-    const dm=/^(\d{2}-\d{2}-\d{4}) (\d{2}:\d{2}:\d{2})$/.exec(String(v));if(dm)return`<span class="dd">${dm[1]}</span> <span class="dh">${dm[2]}</span>`;
+    const dm=/^(\d{2}-\d{2}-\d{4}) (\d{2}:\d{2}:\d{2})$/.exec(String(v));if(dm)return`<span class="dd">${dm[1].replace(/-/g,'<i>-</i>')}</span> <span class="dh">${dm[2]}</span>`;
     return(parenW[ci]?parenCell(v,...parenW[ci]):null)||esc(String(v))};
   const head=(ix?`<th>${esc(o.indexLabel||'N°')}</th>`:'')+cols.map(c=>`<th${c==o.sticky?' class="stk"':''}>${esc(c)}</th>`).join('');
   const body=rows.map((r,i)=>{const rs=(o.row&&o.row[i])||'';
@@ -1498,11 +1500,11 @@ function divX(v){
   if(rows.length){
     const tot=rows.reduce((s,r)=>s+r.v,0),ys={};rows.forEach(r=>(ys[r.d.getFullYear()]=ys[r.d.getFullYear()]||[]).push(r));
     h+=totalCard('Total Général perçu net (Div. + Rompus)',tot,'#0d9488',lines(rows));
-    h+='<div style="height:18px"></div><p><b>Détail net par année :</b></p>';
+    h+='<p><b>Détail net par année :</b></p>';
     h+=yearCards(Object.keys(ys).map(y=>({y:+y,m:ys[y].reduce((s,r)=>s+r.v,0),lines:lines(ys[y])})),'#0d9488');
-    h+='<div style="height:1em"></div><p><b>Cartographie des dividendes mensuels :</b></p>';
+    h+='<p><b>Cartographie des dividendes mensuels :</b></p>';
     h+=heat(rows,{cs:['#f0fdfa','#0d9488'],open,kind:lines,compact:true});
-    h+='<p style="margin:-26px 0 0 0;font-weight:700">Cartographie des rendements mensuels :</p>';
+    h+='<p style="margin:-12px 0 0 0;font-weight:700">Cartographie des rendements mensuels :</p>';
     const im=invMonthly(),sm={};rows.forEach(r=>{const k=r.d.getFullYear()+'-'+r.d.getMonth();sm[k]=(sm[k]||0)+r.v});
     const rr=[];for(const k in sm){const inv=im[k]||0;if(inv>0){const[y,m]=k.split('-').map(Number);rr.push({d:new Date(y,m,1),v:sm[k]/inv*100})}}
     h+=rr.length?heat(rr,{cs:['#f0fdfa','#0f766e'],open,unit:'pct'}):'<div class="info">Pas encore de rendement mensuel à afficher.</div>';
@@ -1963,9 +1965,9 @@ function drawFra(v){
     const open=S.tx.reduce((m,t)=>t.d<m?t.d:m,S.tx[0].d),tot=rows.reduce((s,r)=>s+r.v,0),ys={};
     rows.forEach(r=>(ys[r.d.getFullYear()]=ys[r.d.getFullYear()]||[]).push(r));
     h+=totalCard('Total Général des Frais',tot,'#f97316',lines(rows));
-    h+='<div style="height:18px"></div><p><b>Détail des frais par année :</b></p>';
+    h+='<p><b>Détail des frais par année :</b></p>';
     h+=yearCards(Object.keys(ys).map(y=>({y:+y,m:ys[y].reduce((s,r)=>s+r.v,0),lines:lines(ys[y])})),'#f97316');
-    h+='<div style="height:1em"></div><p><b>Cartographie des frais mensuels :</b></p>';
+    h+='<p><b>Cartographie des frais mensuels :</b></p>';
     h+=heat(rows,{cs:['#fff7ed','#f97316'],open,kind:lines});
   }else h+='<div class="info">Aucun frais enregistré pour le moment.</div>';
   v.innerHTML=h+'</div></details>'}
